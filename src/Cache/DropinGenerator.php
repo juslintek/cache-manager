@@ -8,6 +8,21 @@ final class DropinGenerator
 {
     public function generate(): string
     {
+        $socket = get_option('vlt_redis_socket', '');
+        $host   = get_option('vlt_redis_host', '127.0.0.1') ?: '127.0.0.1';
+        $port   = (int) (get_option('vlt_redis_port', 0) ?: 6379);
+
+        if ($socket) {
+            $connectLine = "if ( ! @\$this->redis->connect( '" . addslashes($socket) . "' ) ) { \$this->connected = false; }";
+        } else {
+            $connectLine = "if ( ! @\$this->redis->connect( '" . addslashes($host) . "', $port, 1.0 ) ) { \$this->connected = false; }";
+        }
+
+        return str_replace('%%REDIS_CONNECT%%', $connectLine, $this->template());
+    }
+
+    private function template(): string
+    {
         return <<<'DROPIN'
 <?php
 
@@ -92,7 +107,8 @@ class VLT_WP_Object_Cache {
 		$this->debug = isset( $_COOKIE['vlt_debug_cache'] );
 		try {
 			$this->redis = new Redis();
-			$this->connected = $this->redis->connect( '127.0.0.1', 6379, 1.0 );
+			$this->connected = true;
+			%%REDIS_CONNECT%%
 			if ( $this->connected ) {
 				$this->redis->setOption( Redis::OPT_PREFIX, 'vlt_' );
 				$this->redis->setOption( Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP );

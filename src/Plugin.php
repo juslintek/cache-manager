@@ -18,6 +18,7 @@ use VLT\CacheManager\Cache\DropinInstaller;
 use VLT\CacheManager\Log\Logger;
 use VLT\CacheManager\Purge\PurgeManager;
 use VLT\CacheManager\Purge\Strategy\ElementorStrategy;
+use VLT\CacheManager\Purge\Strategy\LiteSpeedStrategy;
 use VLT\CacheManager\Purge\Strategy\NginxStrategy;
 use VLT\CacheManager\Purge\Strategy\OpcacheStrategy;
 use VLT\CacheManager\Purge\Strategy\RedisStrategy;
@@ -52,7 +53,8 @@ final class Plugin
             new NginxStrategy(),
             new OpcacheStrategy(),
             new RedisStrategy(),
-            new ElementorStrategy()
+            new ElementorStrategy(),
+            ...( get_option('vlt_litespeed_purge') ? [new LiteSpeedStrategy()] : [] )
         );
 
         add_action('init', [$self->logger, 'logCfRequest']);

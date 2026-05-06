@@ -26,6 +26,12 @@ final class SettingsPage extends AdminPage
             }
             update_option('vlt_cm_log_max_mb', max(0, (int) ($_POST['vlt_cm_log_max_mb'] ?? 500)));
             update_option('vlt_cm_trace_max_mb', max(0, (int) ($_POST['vlt_cm_trace_max_mb'] ?? 200)));
+            // Redis manual config
+            update_option('vlt_redis_socket', sanitize_text_field($_POST['vlt_redis_socket'] ?? ''));
+            update_option('vlt_redis_host', sanitize_text_field($_POST['vlt_redis_host'] ?? ''));
+            update_option('vlt_redis_port', max(0, (int) ($_POST['vlt_redis_port'] ?? 0)));
+            // LiteSpeed
+            update_option('vlt_litespeed_purge', !empty($_POST['vlt_litespeed_purge']));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
         }
 
@@ -44,6 +50,14 @@ final class SettingsPage extends AdminPage
         $log_days  = (int) get_option('vlt_cm_log_days', 30);
         $debug_on  = isset($_COOKIE['vlt_debug_cache']);
         $dropin_ok = Plugin::instance()->dropin()->isOurs();
+
+        $redis_socket = get_option('vlt_redis_socket', '');
+        $redis_host   = get_option('vlt_redis_host', '');
+        $redis_port   = (int) get_option('vlt_redis_port', 0);
+        $ls_purge     = get_option('vlt_litespeed_purge', false);
+
+        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $nonce    = wp_create_nonce('wp_rest');
 
         echo '<div class="wrap"><h1>Podėlio Valdymas — Nustatymai</h1>';
         echo '<form method="post"><table class="form-table">';
@@ -68,6 +82,72 @@ final class SettingsPage extends AdminPage
         echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" style="width:80px"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
 
         echo '</table>';
+
+        // ── Redis connection section ──────────────────────────────────────────
+        ?>
+        <h2>Redis ryšys</h2>
+        <div id="vlt-redis-detect-wrap" style="margin-bottom:12px">
+            <button type="button" id="vlt-redis-detect-btn" class="button">🔍 Aptikti Redis automatiškai</button>
+            <span id="vlt-redis-detect-status" style="margin-left:10px;color:#666"></span>
+            <div id="vlt-redis-detect-result" style="margin-top:8px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:none;white-space:pre-wrap;font-family:monospace;font-size:12px"></div>
+        </div>
+        <table class="form-table">
+        <tr><th>Unix socket</th><td>
+            <input type="text" name="vlt_redis_socket" id="vlt_redis_socket" value="<?php echo esc_attr($redis_socket); ?>" class="regular-text" placeholder="/var/run/redis/redis.sock">
+            <p class="description">Jei nurodyta — naudojamas socket (greičiau). Palikite tuščią naudoti TCP.</p>
+        </td></tr>
+        <tr><th>Host</th><td>
+            <input type="text" name="vlt_redis_host" id="vlt_redis_host" value="<?php echo esc_attr($redis_host); ?>" class="regular-text" placeholder="127.0.0.1">
+        </td></tr>
+        <tr><th>Port</th><td>
+            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" style="width:100px" placeholder="6379">
+            <p class="description">Palikite tuščią — bus naudojamas automatinis aptikimas.</p>
+        </td></tr>
+        </table>
+
+        <script>
+        document.getElementById('vlt-redis-detect-btn').addEventListener('click', function() {
+            const status = document.getElementById('vlt-redis-detect-status');
+            const result = document.getElementById('vlt-redis-detect-result');
+            status.textContent = 'Aptinkama...';
+            result.style.display = 'none';
+            fetch('<?php echo $rest_url; ?>/redis/detect', {headers: {'X-WP-Nonce': '<?php echo $nonce; ?>'}})
+                .then(r => r.json())
+                .then(d => {
+                    status.textContent = d.connected ? '✅ Redis rastas!' : '❌ Redis nerastas';
+                    if (d.connected) {
+                        if (d.method === 'socket') {
+                            document.getElementById('vlt_redis_socket').value = d.socket;
+                            document.getElementById('vlt_redis_host').value = '';
+                            document.getElementById('vlt_redis_port').value = '';
+                        } else {
+                            document.getElementById('vlt_redis_socket').value = '';
+                            document.getElementById('vlt_redis_host').value = d.host;
+                            document.getElementById('vlt_redis_port').value = d.port;
+                        }
+                        result.style.display = 'block';
+                        result.style.borderColor = '#46b450';
+                        result.textContent = 'Metodas: ' + d.method + (d.socket ? '\nSocket: ' + d.socket : '\nHost: ' + d.host + ':' + d.port) + (d.version ? '\nVersija: ' + d.version : '') + '\nServeris: ' + d.panel + (d.litespeed ? '\nLiteSpeed: aptiktas' : '');
+                    } else {
+                        result.style.display = 'block';
+                        result.style.borderColor = '#dc3232';
+                        result.textContent = d.instructions || 'Redis nerastas.';
+                    }
+                })
+                .catch(() => { status.textContent = '❌ Klaida'; });
+        });
+        </script>
+
+        <?php
+        // ── LiteSpeed section ─────────────────────────────────────────────────
+        $ls_detected = \VLT\CacheManager\Redis\RedisDetector::detectLiteSpeed();
+        echo '<h2>LiteSpeed / OpenLiteSpeed talpykla</h2>';
+        echo '<table class="form-table">';
+        echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span style="color:#46b450">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
+        echo '<tr><th>Valyti LiteSpeed talpyklą</th><td><label><input type="checkbox" name="vlt_litespeed_purge" value="1"' . checked($ls_purge, true, false) . '> Įjungti LiteSpeed talpyklos valymą po publikavimo</label>';
+        echo '<p class="description">Naudoja <code>litespeed_purge_all()</code> arba <code>do_action("litespeed_purge_all")</code>.</p></td></tr>';
+        echo '</table>';
+
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
         echo '</form>';
 

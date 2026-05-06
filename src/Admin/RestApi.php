@@ -121,6 +121,10 @@ final class RestApi
             'methods' => 'GET', 'callback' => [self::class, 'redis'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/redis/save-config', [
+            'methods' => 'POST', 'callback' => [self::class, 'redisSaveConfig'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Cloudflare
         register_rest_route(self::NS, '/cloudflare', [
@@ -227,19 +231,49 @@ final class RestApi
 
     public static function redis(\WP_REST_Request $req): \WP_REST_Response
     {
+        $sub = $req->get_param('sub');
+
+        if ($sub === 'detect') {
+            return self::redisDetect();
+        }
+
         $r = RedisFactory::create(2.0);
         if (!$r) {
             return new \WP_REST_Response(['error' => 'Redis nepasiekiamas'], 503);
         }
-        $sub = $req->get_param('sub');
         return match ($sub) {
             'stats'        => self::redisStats($r),
             'keys'         => self::redisKeys($r, $req),
             'preview'      => self::redisPreview($r, $req),
             'delete'       => self::redisDelete($r, $req),
             'delete_group' => self::redisDeleteGroup($r, $req),
+            'detect'       => self::redisDetect(),
             default        => new \WP_REST_Response(['error' => 'Unknown'], 400),
         };
+    }
+
+    private static function redisDetect(): \WP_REST_Response
+    {
+        return new \WP_REST_Response(\VLT\CacheManager\Redis\RedisDetector::detect());
+    }
+
+    public static function redisSaveConfig(\WP_REST_Request $req): \WP_REST_Response
+    {
+        $socket = sanitize_text_field($req->get_param('socket') ?? '');
+        $host   = sanitize_text_field($req->get_param('host') ?? '');
+        $port   = (int) ($req->get_param('port') ?? 0);
+
+        update_option('vlt_redis_socket', $socket);
+        update_option('vlt_redis_host', $host);
+        update_option('vlt_redis_port', $port);
+
+        // Verify connection with new config
+        $r = \VLT\CacheManager\Redis\RedisFactory::create(2.0);
+        if (!$r) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'Nepavyko prisijungti su naujais nustatymais'], 400);
+        }
+        $r->close();
+        return new \WP_REST_Response(['ok' => true]);
     }
 
     private static function redisStats(\Redis $r): \WP_REST_Response
