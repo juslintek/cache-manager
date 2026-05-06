@@ -136,6 +136,16 @@ final class RestApi
             'permission_callback' => [self::class, 'canManage'],
         ]);
 
+        // Image optimization
+        register_rest_route(self::NS, '/img-optm/status', [
+            'methods' => 'GET', 'callback' => [self::class, 'imgOptmStatus'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+        register_rest_route(self::NS, '/img-optm/run', [
+            'methods' => 'POST', 'callback' => [self::class, 'imgOptmRun'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
             'methods' => 'GET', 'callback' => [self::class, 'tracerStream'],
@@ -510,6 +520,19 @@ final class RestApi
         }
         $r->close();
         exit;
+    }
+
+    // ── Image Optimization ──
+
+    public static function imgOptmStatus(): \WP_REST_Response
+    {
+        return new \WP_REST_Response(\VLT\CacheManager\Image\ImageOptimizer::status());
+    }
+
+    public static function imgOptmRun(\WP_REST_Request $req): \WP_REST_Response
+    {
+        $limit = max(1, min(500, (int) ($req->get_param('limit') ?? 50)));
+        return new \WP_REST_Response(\VLT\CacheManager\Image\ImageOptimizer::runBulk($limit));
     }
 
     // ── Tracer ──

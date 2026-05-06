@@ -32,6 +32,10 @@ final class SettingsPage extends AdminPage
             update_option('vlt_redis_port', max(0, (int) ($_POST['vlt_redis_port'] ?? 0)));
             // LiteSpeed
             update_option('vlt_litespeed_purge', !empty($_POST['vlt_litespeed_purge']));
+            // Image optimization
+            update_option('vlt_img_optm_enabled', !empty($_POST['vlt_img_optm_enabled']));
+            update_option('vlt_img_optm_serve_webp', !empty($_POST['vlt_img_optm_serve_webp']));
+            update_option('vlt_img_optm_quality', max(1, min(100, (int) ($_POST['vlt_img_optm_quality'] ?? 82))));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
         }
 
@@ -55,6 +59,9 @@ final class SettingsPage extends AdminPage
         $redis_host   = get_option('vlt_redis_host', '');
         $redis_port   = (int) get_option('vlt_redis_port', 0);
         $ls_purge     = get_option('vlt_litespeed_purge', false);
+        $img_enabled  = get_option('vlt_img_optm_enabled', false);
+        $img_webp     = get_option('vlt_img_optm_serve_webp', true);
+        $img_quality  = (int) get_option('vlt_img_optm_quality', 82);
 
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');
@@ -148,6 +155,62 @@ final class SettingsPage extends AdminPage
         echo '<p class="description">Naudoja <code>litespeed_purge_all()</code> arba <code>do_action("litespeed_purge_all")</code>.</p></td></tr>';
         echo '</table>';
 
+        echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
+        echo '</form>';
+
+        // ── Image optimization status + bulk run ──────────────────────────────
+        $imgStatus = \VLT\CacheManager\Image\ImageOptimizer::status();
+        echo '<h2>Paveikslėlių optimizavimas</h2>';
+        if ($imgStatus['lscwp']) {
+            echo '<p>✅ LiteSpeed Cache įskiepis aktyvus — naudojamas QUIC.cloud paveikslėlių optimizavimas.</p>';
+            echo '<p><a href="' . esc_url(admin_url('admin.php?page=litespeed-img_optm')) . '" class="button">Atidaryti LSCWP paveikslėlių optimizavimą →</a></p>';
+        } else {
+            $gd      = $imgStatus['gd'] ? '✅ GD (WebP)' : '❌ GD WebP nepasiekiamas';
+            $imagick = $imgStatus['imagick'] ? '✅ Imagick (WebP)' : '❌ Imagick WebP nepasiekiamas';
+            echo '<p>' . $gd . ' &nbsp; ' . $imagick . '</p>';
+            echo '<p>Iš viso paveikslėlių: <strong>' . $imgStatus['total'] . '</strong> &nbsp; '
+                . 'Optimizuota: <strong>' . $imgStatus['optimized'] . '</strong> &nbsp; '
+                . 'Laukia: <strong>' . $imgStatus['pending'] . '</strong></p>';
+            if (!$imgStatus['gd'] && !$imgStatus['imagick']) {
+                echo '<div class="notice notice-warning inline"><p>WebP konvertavimui reikalingas GD su WebP palaikymu arba Imagick. '
+                    . 'Įdiekite <code>php-gd</code> arba <code>php-imagick</code>.</p></div>';
+            }
+            echo '<button type="button" id="vlt-img-optm-run" class="button button-primary" '
+                . ($imgStatus['pending'] === 0 ? 'disabled' : '') . '>'
+                . 'Optimizuoti laukiančius (' . $imgStatus['pending'] . ')</button> '
+                . '<span id="vlt-img-optm-status" style="margin-left:10px;color:#666"></span>';
+            ?>
+            <script>
+            document.getElementById('vlt-img-optm-run')?.addEventListener('click', function() {
+                const btn = this;
+                const status = document.getElementById('vlt-img-optm-status');
+                btn.disabled = true;
+                status.textContent = 'Vykdoma...';
+                fetch('<?php echo esc_js(rest_url('vlt-cache/v1/img-optm/run')); ?>', {
+                    method: 'POST',
+                    headers: {'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json'},
+                    body: JSON.stringify({limit: 100})
+                }).then(r => r.json()).then(d => {
+                    if (d.delegated) {
+                        status.textContent = '✅ Perduota LSCWP';
+                    } else {
+                        status.textContent = '✅ Apdorota: ' + d.processed + ', praleista: ' + d.skipped + ', klaidos: ' + d.errors;
+                    }
+                    setTimeout(() => location.reload(), 2000);
+                }).catch(() => { status.textContent = '❌ Klaida'; btn.disabled = false; });
+            });
+            </script>
+            <?php
+        }
+
+        echo '<h3>Nustatymai</h3>';
+        echo '<table class="form-table">';
+        echo '<form method="post">';
+        wp_nonce_field('vlt_cm_settings');
+        echo '<tr><th>Įjungti WebP konvertavimą</th><td><label><input type="checkbox" name="vlt_img_optm_enabled" value="1"' . checked($img_enabled, true, false) . '> Konvertuoti JPEG/PNG į WebP įkeliant</label></td></tr>';
+        echo '<tr><th>Pateikti WebP naršyklėms</th><td><label><input type="checkbox" name="vlt_img_optm_serve_webp" value="1"' . checked($img_webp, true, false) . '> Pakeisti paveikslėlių URL į .webp (jei failas egzistuoja)</label></td></tr>';
+        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" style="width:70px"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
+        echo '</table>';
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
         echo '</form>';
 
