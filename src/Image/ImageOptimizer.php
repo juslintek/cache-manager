@@ -22,10 +22,12 @@ final class ImageOptimizer
         // Hook into new uploads
         add_filter('wp_generate_attachment_metadata', [self::class, 'onUpload'], 10, 2);
 
-        // Serve WebP in content if browser supports it
+        // Serve modern formats in content if browser supports it
         if (get_option('vlt_img_optm_serve_webp')) {
             add_filter('the_content', [self::class, 'rewriteContentImages'], 20);
             add_filter('wp_get_attachment_image_src', [self::class, 'rewriteAttachmentSrc'], 10, 4);
+            add_filter('wp_calculate_image_srcset', [self::class, 'rewriteSrcset'], 10, 5);
+            add_filter('wp_get_attachment_image_attributes', [self::class, 'rewriteImgAttrs'], 10, 3);
         }
     }
 
@@ -60,29 +62,65 @@ final class ImageOptimizer
 
     // ── Content rewriting ────────────────────────────────────────────────────
 
+    /**
+     * Wrap <img> tags in <picture> with AVIF → WebP → original fallback.
+     * Already-wrapped images (inside <picture>) are skipped.
+     */
     public static function rewriteContentImages(string $content): string
     {
+        // Skip if no modern format available at all
         if (!self::browserSupportsWebP()) {
             return $content;
         }
 
         return preg_replace_callback(
             '/<img([^>]+)src=["\']([^"\']+\.(jpe?g|png))["\']([^>]*)>/i',
-            function (array $m) {
-                $webp = self::webpPath($m[2]);
-                if (!$webp) {
-                    return $m[0];
+            function (array $m) use ($content) {
+                $original = $m[0];
+                $url      = $m[2];
+
+                // Skip if already inside a <picture>
+                $pos = strpos($content, $original);
+                if ($pos !== false) {
+                    $before = substr($content, max(0, $pos - 20), 20);
+                    if (str_contains($before, '<picture')) {
+                        return $original;
+                    }
                 }
-                // Wrap in <picture> for graceful fallback
-                return '<picture>'
-                    . '<source srcset="' . esc_attr($webp) . '" type="image/webp">'
-                    . $m[0]
-                    . '</picture>';
+
+                $sources = self::buildSources($url);
+                if (empty($sources)) {
+                    return $original;
+                }
+
+                return '<picture>' . $sources . $original . '</picture>';
             },
             $content
         ) ?? $content;
     }
 
+    /**
+     * Rewrite srcset entries to prefer WebP (AVIF not supported in srcset).
+     */
+    public static function rewriteSrcset(array $sources, array $sizeArray, string $imageSrc, array $imageMeta, int $attachmentId): array
+    {
+        if (!self::browserSupportsWebP()) {
+            return $sources;
+        }
+        foreach ($sources as &$source) {
+            $webp = self::webpPath($source['url']);
+            if ($webp) {
+                $source['url'] = $webp;
+            }
+        }
+        unset($source);
+        return $sources;
+    }
+
+    /**
+     * For wp_get_attachment_image(): swap src to WebP when available.
+     * The <picture> wrapping for attachment images is handled by the_content filter.
+     */
     public static function rewriteAttachmentSrc(array|false $image, int $attachmentId, mixed $size, bool $icon): array|false
     {
         if (!$image || !self::browserSupportsWebP()) {
@@ -93,6 +131,56 @@ final class ImageOptimizer
             $image[0] = $webp;
         }
         return $image;
+    }
+
+    /**
+     * Add srcset with WebP variants to attachment image attributes.
+     */
+    public static function rewriteImgAttrs(array $attr, \WP_Post $attachment, mixed $size): array
+    {
+        if (!self::browserSupportsWebP() || empty($attr['srcset'])) {
+            return $attr;
+        }
+        // Rewrite each URL in srcset to WebP if available
+        $attr['srcset'] = preg_replace_callback(
+            '/([^\s,]+\.(jpe?g|png))(\s+\d+[wx])/i',
+            function (array $m) {
+                $webp = self::webpPath($m[1]);
+                return ($webp ?: $m[1]) . $m[3];
+            },
+            $attr['srcset']
+        ) ?? $attr['srcset'];
+        return $attr;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Build <source> tags: AVIF first (best compression), WebP second.
+     */
+    private static function buildSources(string $url): string
+    {
+        $sources = '';
+        $avif = self::avifPath($url);
+        if ($avif) {
+            $sources .= '<source srcset="' . esc_attr($avif) . '" type="image/avif">';
+        }
+        $webp = self::webpPath($url);
+        if ($webp) {
+            $sources .= '<source srcset="' . esc_attr($webp) . '" type="image/webp">';
+        }
+        return $sources;
+    }
+
+    private static function avifPath(string $url): string
+    {
+        $avifUrl = preg_replace('/\.(jpe?g|png)$/i', '.avif', $url);
+        if (!$avifUrl || $avifUrl === $url) {
+            return '';
+        }
+        $uploadDir = wp_upload_dir();
+        $localPath = str_replace($uploadDir['baseurl'], $uploadDir['basedir'], $avifUrl);
+        return file_exists($localPath) ? $avifUrl : '';
     }
 
     // ── Bulk optimization ────────────────────────────────────────────────────
@@ -166,6 +254,7 @@ final class ImageOptimizer
             'lscwp'     => self::lscwpActive(),
             'gd'        => function_exists('imagewebp'),
             'imagick'   => class_exists('Imagick') && in_array('WEBP', \Imagick::queryFormats(), true),
+            'avif'      => class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true),
         ];
     }
 
@@ -173,45 +262,55 @@ final class ImageOptimizer
 
     private static function convertToWebP(string $sourcePath): bool
     {
+        $quality = (int) get_option('vlt_img_optm_quality', 82);
+        $ok      = false;
+
+        // ── WebP ──────────────────────────────────────────────────────────────
         $webpPath = preg_replace('/\.(jpe?g|png)$/i', '.webp', $sourcePath);
-        if (!$webpPath || file_exists($webpPath)) {
-            return true; // already done
+        if ($webpPath && $webpPath !== $sourcePath && !file_exists($webpPath)) {
+            if (class_exists('Imagick')) {
+                try {
+                    $im = new \Imagick($sourcePath);
+                    $im->setImageFormat('WEBP');
+                    $im->setImageCompressionQuality($quality);
+                    $im->stripImage();
+                    $im->writeImage($webpPath);
+                    $im->destroy();
+                    $ok = true;
+                } catch (\Throwable) {
+                }
+            }
+            if (!$ok && function_exists('imagewebp')) {
+                $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+                $src = match ($ext) {
+                    'jpg', 'jpeg' => @imagecreatefromjpeg($sourcePath),
+                    'png'         => @imagecreatefrompng($sourcePath),
+                    default       => false,
+                };
+                if ($src) {
+                    $ok = imagewebp($src, $webpPath, $quality);
+                    imagedestroy($src);
+                }
+            }
+        } else {
+            $ok = true; // already exists
         }
 
-        $quality = (int) get_option('vlt_img_optm_quality', 82);
-
-        // Try Imagick first (better quality)
-        if (class_exists('Imagick')) {
+        // ── AVIF (Imagick only) ───────────────────────────────────────────────
+        $avifPath = preg_replace('/\.(jpe?g|png)$/i', '.avif', $sourcePath);
+        if ($avifPath && $avifPath !== $sourcePath && !file_exists($avifPath)
+            && class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true)) {
             try {
                 $im = new \Imagick($sourcePath);
-                $im->setImageFormat('WEBP');
-                $im->setImageCompressionQuality($quality);
+                $im->setImageFormat('AVIF');
+                $im->setImageCompressionQuality(max(1, (int) ($quality * 0.7))); // AVIF quality scale differs
                 $im->stripImage();
-                $im->writeImage($webpPath);
+                $im->writeImage($avifPath);
                 $im->destroy();
-                return true;
             } catch (\Throwable) {
             }
         }
 
-        // Fall back to GD
-        if (!function_exists('imagewebp')) {
-            return false;
-        }
-
-        $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
-        $src = match ($ext) {
-            'jpg', 'jpeg' => @imagecreatefromjpeg($sourcePath),
-            'png'         => @imagecreatefrompng($sourcePath),
-            default       => false,
-        };
-
-        if (!$src) {
-            return false;
-        }
-
-        $ok = imagewebp($src, $webpPath, $quality);
-        imagedestroy($src);
         return $ok;
     }
 

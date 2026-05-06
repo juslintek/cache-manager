@@ -167,7 +167,9 @@ final class SettingsPage extends AdminPage
         } else {
             $gd      = $imgStatus['gd'] ? '✅ GD (WebP)' : '❌ GD WebP nepasiekiamas';
             $imagick = $imgStatus['imagick'] ? '✅ Imagick (WebP)' : '❌ Imagick WebP nepasiekiamas';
-            echo '<p>' . $gd . ' &nbsp; ' . $imagick . '</p>';
+            $avif    = ($imgStatus['avif'] ?? false) ? '✅ Imagick (AVIF)' : '❌ AVIF nepasiekiamas';
+            echo '<p>' . $gd . ' &nbsp; ' . $imagick . ' &nbsp; ' . $avif . '</p>';
+            echo '<p><small>Formatas: AVIF (jei palaikomas) → WebP → originalas (kaip atsarginis)</small></p>';
             echo '<p>Iš viso paveikslėlių: <strong>' . $imgStatus['total'] . '</strong> &nbsp; '
                 . 'Optimizuota: <strong>' . $imgStatus['optimized'] . '</strong> &nbsp; '
                 . 'Laukia: <strong>' . $imgStatus['pending'] . '</strong></p>';
