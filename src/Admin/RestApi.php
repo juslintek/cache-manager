@@ -145,6 +145,10 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'imgOptmRun'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/dismiss-notice', [
+            'methods' => 'POST', 'callback' => [self::class, 'dismissNotice'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -533,6 +537,15 @@ final class RestApi
     {
         $limit = max(1, min(500, (int) ($req->get_param('limit') ?? 50)));
         return new \WP_REST_Response(\VLT\CacheManager\Image\ImageOptimizer::runBulk($limit));
+    }
+
+    public static function dismissNotice(\WP_REST_Request $req): \WP_REST_Response
+    {
+        $notice = sanitize_key($req->get_json_params()['notice'] ?? '');
+        if ($notice) {
+            update_option($notice, true);
+        }
+        return new \WP_REST_Response(['ok' => true]);
     }
 
     // ── Tracer ──

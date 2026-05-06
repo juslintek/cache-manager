@@ -87,6 +87,8 @@ final class Plugin
                 add_action('admin_notices', [$self, 'simdjsonNotice']);
             }
 
+            add_action('admin_notices', [$self, 'imgOptmNotice']);
+
             if (!$self->dropin->isOurs()) {
                 add_action('admin_notices', [$self, 'dropinNotice']);
             }
@@ -283,6 +285,91 @@ final class Plugin
             echo '</ul>';
             echo '<p><a href="' . esc_url(admin_url('admin.php?page=vlt-cache-logs&log_filter=purge')) . '">Visi žurnalai →</a></p>';
         }
+    }
+
+    public function imgOptmNotice(): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        if (get_option('vlt_img_optm_notice_dismissed')) {
+            return;
+        }
+
+        $missing  = [];
+        $tips     = [];
+
+        // libvips — best quality/size ratio, fastest
+        $hasVips = class_exists('Vips\Image')
+            || (shell_exec('which vips 2>/dev/null') !== null && trim((string) shell_exec('which vips 2>/dev/null')) !== '');
+        if (!$hasVips) {
+            $missing[] = '<strong>libvips</strong> (geriausias kokybės/dydžio santykis, ~10× greičiau už ImageMagick)';
+            $tips[]    = 'libvips: <code>sudo apt install libvips-tools php-vips</code> arba <code>sudo yum install vips-tools</code>';
+        }
+
+        // Imagick with AVIF support
+        $hasAvif = class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true);
+        if (!$hasAvif) {
+            $missing[] = '<strong>Imagick AVIF</strong> (mažiausi failai — ~50% mažiau nei WebP)';
+            $tips[]    = 'AVIF: <code>sudo apt install libavif-dev</code> + rekompiliuokite ImageMagick su AVIF palaikymu';
+        }
+
+        // GD WebP
+        if (!function_exists('imagewebp')) {
+            $missing[] = '<strong>GD WebP</strong>';
+            $tips[]    = 'GD WebP: <code>sudo apt install php-gd</code> (su WebP palaikymu)';
+        }
+
+        // Check for known WP image optimization plugins
+        $knownPlugins = [
+            'shortpixel-image-optimiser/wp-shortpixel.php'   => 'ShortPixel',
+            'imagify/imagify.php'                             => 'Imagify',
+            'wp-smushit/wp-smush.php'                        => 'Smush',
+            'ewww-image-optimizer/ewww-image-optimizer.php'  => 'EWWW Image Optimizer',
+            'webp-express/webp-express.php'                  => 'WebP Express',
+            'optimole-wp/optimole-wp.php'                    => 'Optimole',
+        ];
+        $activeOptimizers = [];
+        $activePlugins = (array) get_option('active_plugins', []);
+        foreach ($knownPlugins as $slug => $name) {
+            if (in_array($slug, $activePlugins, true)) {
+                $activeOptimizers[] = $name;
+            }
+        }
+
+        // Nothing to warn about
+        if (empty($missing) && empty($activeOptimizers)) {
+            return;
+        }
+
+        echo '<div class="notice notice-info is-dismissible" id="vlt-img-optm-notice"><p>';
+        echo '<strong>Podėlio Valdymas — Paveikslėlių optimizavimas:</strong> ';
+
+        if (!empty($activeOptimizers)) {
+            echo 'Aptikti optimizavimo įskiepiai: <strong>' . implode(', ', $activeOptimizers) . '</strong>. ';
+            echo 'Rekomenduojame naudoti tik vieną — keli įskiepiai gali konfliktuoti. ';
+        }
+
+        if (!empty($missing)) {
+            echo 'Trūksta geresnio optimizavimo įrankių: ' . implode(', ', $missing) . '. ';
+            echo '<details style="margin-top:6px"><summary style="cursor:pointer">Kaip įdiegti ▾</summary><ul style="margin:6px 0 0 16px">';
+            foreach ($tips as $tip) {
+                echo '<li>' . $tip . '</li>';
+            }
+            echo '<li>Rekomenduojama eilė: libvips → Imagick (AVIF) → Imagick (WebP) → GD (WebP)</li>';
+            echo '</ul></details>';
+        }
+
+        echo '</p></div>';
+        echo '<script>
+        document.querySelector("#vlt-img-optm-notice .notice-dismiss")?.addEventListener("click", function() {
+            fetch("' . esc_js(rest_url('vlt-cache/v1/dismiss-notice')) . '", {
+                method: "POST",
+                headers: {"X-WP-Nonce": "' . wp_create_nonce('wp_rest') . '", "Content-Type": "application/json"},
+                body: JSON.stringify({notice: "vlt_img_optm_notice_dismissed"})
+            });
+        });
+        </script>';
     }
 
     public function simdjsonNotice(): void
