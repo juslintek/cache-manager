@@ -83,6 +83,10 @@ final class Plugin
             add_action('admin_init', [$self, 'handleActions']);
             add_action('wp_dashboard_setup', [$self, 'dashboardWidget']);
 
+            if (!function_exists('simdjson_decode')) {
+                add_action('admin_notices', [$self, 'simdjsonNotice']);
+            }
+
             if (!$self->dropin->isOurs()) {
                 add_action('admin_notices', [$self, 'dropinNotice']);
             }
@@ -279,6 +283,26 @@ final class Plugin
             echo '</ul>';
             echo '<p><a href="' . esc_url(admin_url('admin.php?page=vlt-cache-logs&log_filter=purge')) . '">Visi žurnalai →</a></p>';
         }
+    }
+
+    public function simdjsonNotice(): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        $panel = \VLT\CacheManager\Redis\RedisDetector::detectPanel();
+        $instructions = match ($panel) {
+            'cpanel'      => 'WHM → PHP Extensions → simdjson, arba SSH: <code>pecl install simdjson</code>',
+            'plesk'       => 'Plesk → PHP Settings → Extensions → simdjson, arba SSH: <code>pecl install simdjson</code>',
+            'directadmin' => 'CustomBuild → PHP Extensions → simdjson, arba SSH: <code>pecl install simdjson</code>',
+            default       => 'Ubuntu/Debian: <code>sudo apt install php-simdjson</code> arba <code>sudo pecl install simdjson</code> + pridėkite <code>extension=simdjson</code> į php.ini',
+        };
+        echo '<div class="notice notice-warning is-dismissible"><p>';
+        echo '<strong>Podėlio Valdymas:</strong> <code>simdjson</code> PHP plėtinys neįdiegtas. ';
+        echo 'Žurnalų ir pėdsakų skaitymas naudoja lėtesnį <code>json_decode</code>. ';
+        echo 'Įdiegimui: ' . $instructions . '. ';
+        echo 'Po įdiegimo paleiskite iš naujo PHP-FPM: <code>sudo systemctl restart php-fpm</code>';
+        echo '</p></div>';
     }
 
     public function dropinNotice(): void
