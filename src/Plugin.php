@@ -111,6 +111,9 @@ final class Plugin
         // WP-Cron → Redis offload
         \VLT\CacheManager\Async\AsyncQueue::offloadCron();
 
+        // Cron execution monitoring
+        \VLT\CacheManager\Async\CronMonitor::register();
+
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
         }

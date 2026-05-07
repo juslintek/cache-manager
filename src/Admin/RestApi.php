@@ -165,6 +165,14 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'queueRun'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/cron-stream', [
+            'methods' => 'GET', 'callback' => [self::class, 'cronStream'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+        register_rest_route(self::NS, '/cron-stats', [
+            'methods' => 'GET', 'callback' => [self::class, 'cronStats'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -617,6 +625,40 @@ final class RestApi
         \VLT\CacheManager\Async\AsyncQueue::processQueue();
         $after  = \VLT\CacheManager\Async\AsyncQueue::status()['queue_length'];
         return new \WP_REST_Response(['ok' => true, 'processed' => max(0, $before - $after)]);
+    }
+
+    public static function cronStats(): \WP_REST_Response
+    {
+        return new \WP_REST_Response([
+            'log'   => \VLT\CacheManager\Async\CronMonitor::recentLog(50),
+            'stats' => \VLT\CacheManager\Async\CronMonitor::hookStats(),
+        ]);
+    }
+
+    public static function cronStream(): void
+    {
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-store');
+        header('X-Accel-Buffering: no');
+        while (ob_get_level()) ob_end_clean();
+        set_time_limit(0);
+        ignore_user_abort(false);
+
+        $lastTs = (float) ($_GET['since'] ?? 0);
+
+        while (!connection_aborted()) {
+            $entries = \VLT\CacheManager\Async\CronMonitor::recentLog(20, (string) $lastTs);
+            if ($entries) {
+                echo 'data: ' . json_encode($entries) . "\n\n";
+                $lastTs = max(array_column($entries, 'ts'));
+                flush();
+            } else {
+                echo ": heartbeat\n\n";
+                flush();
+            }
+            sleep(1);
+        }
+        exit;
     }
 
     // ── Tracer ──

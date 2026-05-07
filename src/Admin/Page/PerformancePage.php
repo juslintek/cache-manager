@@ -120,43 +120,124 @@ final class PerformancePage extends AdminPage
         });
         </script>';
 
-        // ── WP Cron status ────────────────────────────────────────────────────
-        echo '<h2>WP-Cron užduotys</h2>';
-        $crons = _get_cron_array() ?: [];
-        $total = 0;
+        // ── WP Cron live monitor ──────────────────────────────────────────────
+        echo '<h2>WP-Cron — Gyvas stebėjimas</h2>';
+
+        // Scheduled jobs summary
+        $crons   = _get_cron_array() ?: [];
+        $total   = 0;
         $overdue = 0;
-        $now = time();
+        $now     = time();
+        $scheduled = [];
         foreach ($crons as $ts => $hooks) {
             foreach ($hooks as $hook => $jobs) {
-                $total += count($jobs);
-                if ($ts < $now) {
-                    $overdue += count($jobs);
+                foreach ($jobs as $job) {
+                    $total++;
+                    if ($ts < $now) $overdue++;
+                    $scheduled[] = ['hook' => $hook, 'ts' => $ts, 'schedule' => $job['schedule'] ?? 'once', 'args' => $job['args'] ?? []];
                 }
             }
         }
-        echo '<p>Iš viso: <strong>' . $total . '</strong> užduočių | ';
-        echo 'Vėluoja: <strong style="color:' . ($overdue > 0 ? '#d63638' : '#46b450') . '">' . $overdue . '</strong></p>';
+        usort($scheduled, fn($a, $b) => $a['ts'] <=> $b['ts']);
 
-        if ($total > 0) {
-            echo '<table class="widefat fixed striped" style="max-width:900px"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th><th>Argumentai</th></tr></thead><tbody>';
-            foreach ($crons as $ts => $hooks) {
-                foreach ($hooks as $hook => $jobs) {
-                    foreach ($jobs as $job) {
-                        $diff = $ts - $now;
-                        $timeStr = $diff < 0
-                            ? '<span style="color:#d63638">Vėluoja ' . human_time_diff($ts, $now) . '</span>'
-                            : 'Po ' . human_time_diff($now, $ts);
-                        echo '<tr>';
-                        echo '<td><code>' . esc_html($hook) . '</code></td>';
-                        echo '<td>' . $timeStr . '</td>';
-                        echo '<td>' . esc_html($job['schedule'] ?? 'vienkartinis') . '</td>';
-                        echo '<td><small>' . esc_html(substr(json_encode($job['args'] ?? []), 0, 80)) . '</small></td>';
-                        echo '</tr>';
-                    }
-                }
-            }
-            echo '</tbody></table>';
+        echo '<p>Suplanuota: <strong>' . $total . '</strong> | Vėluoja: <strong style="color:' . ($overdue > 0 ? '#d63638' : '#46b450') . '">' . $overdue . '</strong></p>';
+
+        // Live execution log (SSE)
+        echo '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+        // Left: live log
+        echo '<div>';
+        echo '<h3 style="margin:0 0 8px">Vykdymo žurnalas <span id="vlt-cron-live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ccc;margin-left:4px"></span></h3>';
+        echo '<div id="vlt-cron-log" style="height:300px;overflow-y:auto;background:#1e1e1e;color:#d4d4d4;font-family:monospace;font-size:11px;padding:8px;border-radius:4px"></div>';
+        echo '</div>';
+
+        // Right: per-hook stats
+        echo '<div>';
+        echo '<h3 style="margin:0 0 8px">Statistika pagal hook</h3>';
+        echo '<div id="vlt-cron-stats" style="height:300px;overflow-y:auto"></div>';
+        echo '</div>';
+
+        echo '</div>';
+
+        // Scheduled table
+        echo '<h3>Suplanuotos užduotys</h3>';
+        echo '<table class="widefat fixed striped" style="max-width:900px"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
+        foreach (array_slice($scheduled, 0, 30) as $job) {
+            $diff    = $job['ts'] - $now;
+            $timeStr = $diff < 0 ? '<span style="color:#d63638">Vėluoja ' . human_time_diff($job['ts'], $now) . '</span>' : 'Po ' . human_time_diff($now, $job['ts']);
+            echo '<tr id="cron-row-' . esc_attr($job['hook']) . '">';
+            echo '<td><code>' . esc_html($job['hook']) . '</code></td>';
+            echo '<td>' . $timeStr . '</td>';
+            echo '<td>' . esc_html($job['schedule']) . '</td>';
+            echo '</tr>';
         }
+        echo '</tbody></table>';
+
+        // SSE live update script
+        $streamUrl = esc_js(rest_url('vlt-cache/v1/cron-stream'));
+        $statsUrl  = esc_js(rest_url('vlt-cache/v1/cron-stats'));
+        echo '<script>
+        (function() {
+            const log = document.getElementById("vlt-cron-log");
+            const statsEl = document.getElementById("vlt-cron-stats");
+            const dot = document.getElementById("vlt-cron-live-dot");
+            const nonce = "' . $nonce . '";
+            let lastTs = 0;
+
+            function statusColor(s) {
+                return {running:"#fbbf24",done:"#4ade80",error:"#f87171",queued:"#94a3b8"}[s]||"#d4d4d4";
+            }
+
+            function appendLog(entries) {
+                entries.forEach(e => {
+                    const line = document.createElement("div");
+                    const t = new Date(e.ts * 1000).toLocaleTimeString();
+                    const mem = (e.memory/1048576).toFixed(1) + "MB";
+                    const dur = e.duration ? " " + (e.duration*1000).toFixed(0) + "ms" : "";
+                    line.style.color = statusColor(e.status);
+                    line.textContent = "[" + t + "] " + e.status.toUpperCase().padEnd(7) + " " + e.hook + dur + " (" + mem + ")";
+                    if (e.error) { const err = document.createElement("div"); err.style.color="#f87171"; err.textContent = "  ↳ " + e.error; log.appendChild(err); }
+                    log.insertBefore(line, log.firstChild);
+                    // Highlight schedule row
+                    const row = document.getElementById("cron-row-" + e.hook);
+                    if (row) { row.style.background = e.status === "running" ? "#fef3c7" : e.status === "done" ? "#f0fdf4" : ""; }
+                });
+                if (log.children.length > 100) log.removeChild(log.lastChild);
+            }
+
+            function refreshStats() {
+                fetch("' . $statsUrl . '", {headers:{"X-WP-Nonce":nonce}})
+                .then(r=>r.json()).then(d=>{
+                    if (!d.stats) return;
+                    statsEl.innerHTML = "<table class=\'widefat fixed striped\' style=\'font-size:11px\'><thead><tr><th>Hook</th><th>Paleista</th><th>Klaidos</th><th>Vid. ms</th></tr></thead><tbody>"
+                        + d.stats.map(s=>"<tr><td><code>"+s.hook+"</code></td><td>"+s.runs+"</td><td style=\'color:"+(s.errors>0?"#d63638":"inherit")+"\'>"+s.errors+"</td><td>"+s.avg_ms+"</td></tr>").join("")
+                        + "</tbody></table>";
+                    if (d.log) appendLog(d.log.filter(e=>e.ts>lastTs));
+                });
+            }
+
+            // Initial load
+            refreshStats();
+
+            // SSE stream
+            const es = new EventSource("' . $streamUrl . '?since=" + lastTs + "&_wpnonce=" + nonce);
+            es.onopen = () => { dot.style.background = "#4ade80"; };
+            es.onerror = () => { dot.style.background = "#f87171"; };
+            es.onmessage = (ev) => {
+                try {
+                    const entries = JSON.parse(ev.data);
+                    if (entries.length) {
+                        appendLog(entries);
+                        lastTs = Math.max(...entries.map(e=>e.ts));
+                        refreshStats();
+                    }
+                } catch(e) {}
+            };
+
+            // Refresh stats every 10s even without SSE events
+            setInterval(refreshStats, 10000);
+        })();
+        </script>';
 
         echo '</div>';
     }
