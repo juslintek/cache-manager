@@ -173,6 +173,10 @@ final class RestApi
             'methods' => 'GET', 'callback' => [self::class, 'cronStats'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/spx-toggle', [
+            'methods' => 'POST', 'callback' => [self::class, 'spxToggle'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -632,6 +636,31 @@ final class RestApi
         return new \WP_REST_Response([
             'log'   => \VLT\CacheManager\Async\CronMonitor::recentLog(50),
             'stats' => \VLT\CacheManager\Async\CronMonitor::hookStats(),
+        ]);
+    }
+
+    public static function spxToggle(\WP_REST_Request $req): \WP_REST_Response
+    {
+        if (!extension_loaded('SPX')) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'SPX not installed'], 400);
+        }
+
+        $enable = (bool) ($req->get_json_params()['enable'] ?? false);
+
+        // Find SPX ini file across all PHP versions
+        $updated = [];
+        foreach (glob('/usr/local/php*/lib/php.conf.d/spx.ini') ?: [] as $ini) {
+            $content = @file_get_contents($ini) ?: '';
+            $content = preg_replace('/^spx\.http_enabled\s*=.*/m', 'spx.http_enabled=' . ($enable ? '1' : '0'), $content);
+            if (file_put_contents($ini, $content) !== false) {
+                $updated[] = $ini;
+            }
+        }
+
+        return new \WP_REST_Response([
+            'ok'      => !empty($updated),
+            'enabled' => $enable,
+            'updated' => $updated,
         ]);
     }
 
