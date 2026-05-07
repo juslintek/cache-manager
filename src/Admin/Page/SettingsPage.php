@@ -15,8 +15,9 @@ final class SettingsPage extends AdminPage
     public function render(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_cm_settings')) {
-            update_option('vlt_cm_logging', !empty($_POST['vlt_cm_logging']));
-            update_option('vlt_cm_cf_tracking', !empty($_POST['vlt_cm_cf_tracking']));
+            // Each option saved independently — unchecking one must not affect others
+            update_option('vlt_cm_logging',    isset($_POST['vlt_cm_logging']));
+            update_option('vlt_cm_cf_tracking', isset($_POST['vlt_cm_cf_tracking']));
             update_option('vlt_cm_log_days', max(1, (int) ($_POST['vlt_cm_log_days'] ?? 30)));
             if (!empty($_POST['vlt_cm_log_path'])) {
                 update_option('vlt_cm_log_path', sanitize_text_field($_POST['vlt_cm_log_path']));
@@ -31,10 +32,10 @@ final class SettingsPage extends AdminPage
             update_option('vlt_redis_host', sanitize_text_field($_POST['vlt_redis_host'] ?? ''));
             update_option('vlt_redis_port', max(0, (int) ($_POST['vlt_redis_port'] ?? 0)));
             // LiteSpeed
-            update_option('vlt_litespeed_purge', !empty($_POST['vlt_litespeed_purge']));
+            update_option('vlt_litespeed_purge', isset($_POST['vlt_litespeed_purge']));
             // Image optimization
-            update_option('vlt_img_optm_enabled', !empty($_POST['vlt_img_optm_enabled']));
-            update_option('vlt_img_optm_serve_webp', !empty($_POST['vlt_img_optm_serve_webp']));
+            update_option('vlt_img_optm_enabled', isset($_POST['vlt_img_optm_enabled']));
+            update_option('vlt_img_optm_serve_webp', isset($_POST['vlt_img_optm_serve_webp']));
             update_option('vlt_img_optm_quality', max(1, min(100, (int) ($_POST['vlt_img_optm_quality'] ?? 82))));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
         }
@@ -50,7 +51,9 @@ final class SettingsPage extends AdminPage
         }
 
         $logging   = get_option('vlt_cm_logging', true);
-        $cf_track  = get_option('vlt_cm_cf_tracking', true);
+        // Auto-detect Cloudflare: default off if domain not behind CF
+        $cf_default = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
+        $cf_track  = get_option('vlt_cm_cf_tracking', $cf_default);
         $log_days  = (int) get_option('vlt_cm_log_days', 30);
         $debug_on  = isset($_COOKIE['vlt_debug_cache']);
         $dropin_ok = Plugin::instance()->dropin()->isOurs();
@@ -75,7 +78,23 @@ final class SettingsPage extends AdminPage
         echo '<p class="description">Nustato slapuką vlt_debug_cache šiai sesijai.</p></td></tr>';
 
         echo '<tr><th>Užklausų registravimas</th><td><label><input type="checkbox" name="vlt_cm_logging" value="1"' . checked($logging, true, false) . '> Įjungtas</label></td></tr>';
-        echo '<tr><th>Cloudflare stebėjimas</th><td><label><input type="checkbox" name="vlt_cm_cf_tracking" value="1"' . checked($cf_track, true, false) . '> Įjungtas</label></td></tr>';
+        echo '<tr><th>Cloudflare stebėjimas</th><td>';
+        $cf_behind = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
+        echo '<label><input type="checkbox" name="vlt_cm_cf_tracking" id="vlt_cm_cf_tracking" value="1"' . checked($cf_track, true, false) . '> Įjungtas</label>';
+        if (!$cf_behind) {
+            echo '<p class="description" style="color:#d63638" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
+        }
+        echo '</td></tr>';
+        echo '<script>
+        document.getElementById("vlt_cm_cf_tracking")?.addEventListener("change", function() {
+            var warn = document.getElementById("vlt_cf_warning");
+            if (this.checked && warn) {
+                if (!confirm("J\u016bs\u0173 domenas nenaudoja Cloudflare DNS arba proxy. Cloudflare u\u017eklaus\u0173 nebus \u2014 ar tikrai norite \u012fjungti \u0161\u012f steb\u0117jim\u0105?")) {
+                    this.checked = false;
+                }
+            }
+        });
+        </script>';
         echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" style="width:80px"></td></tr>';
 
         $logPath   = get_option('vlt_cm_log_path', WP_CONTENT_DIR . '/uploads/vlt-cache-logs');
@@ -225,6 +244,41 @@ final class SettingsPage extends AdminPage
         $this->renderLogFiles();
 
         echo '</div>';
+    }
+
+    private static function isDomainBehindCloudflare(string $host): bool
+    {
+        if (!$host) {
+            return false;
+        }
+        // Cloudflare IPv4 ranges (from https://www.cloudflare.com/ips-v4)
+        $cfRanges = [
+            '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+            '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+            '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+            '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+        ];
+
+        $ips = @dns_get_record($host, DNS_A);
+        if (empty($ips)) {
+            return false;
+        }
+
+        foreach ($ips as $record) {
+            $ip = $record['ip'] ?? '';
+            if (!$ip) {
+                continue;
+            }
+            $ipLong = ip2long($ip);
+            foreach ($cfRanges as $range) {
+                [$subnet, $bits] = explode('/', $range);
+                $mask = ~((1 << (32 - (int) $bits)) - 1);
+                if (($ipLong & $mask) === (ip2long($subnet) & $mask)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private function renderLogFiles(): void

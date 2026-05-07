@@ -9,6 +9,7 @@ final class RedisDetector
     /** @return array{connected:bool, method:string, socket:string, host:string, port:int, version:string, panel:string, litespeed:bool, instructions:string} */
     public static function detect(): array
     {
+        $panel  = self::detectPanel();
         $result = [
             'connected'    => false,
             'method'       => '',
@@ -16,73 +17,137 @@ final class RedisDetector
             'host'         => '127.0.0.1',
             'port'         => 6379,
             'version'      => '',
-            'panel'        => self::detectPanel(),
+            'panel'        => $panel,
             'litespeed'    => self::detectLiteSpeed(),
             'instructions' => '',
         ];
 
-        // 1. Try known socket paths
-        foreach (self::socketPaths() as $sock) {
-            if (@file_exists($sock) && self::probeSocket($sock)) {
-                $result['connected'] = true;
-                $result['method']    = 'socket';
-                $result['socket']    = $sock;
-                $result['version']   = self::redisVersion('socket', $sock);
-                return $result;
-            }
+        // Panel-specific socket — most reliable, check first
+        $panelSocket = self::panelSocket($panel);
+        if ($panelSocket && self::probeSocket($panelSocket)) {
+            return self::found($result, 'socket', $panelSocket);
         }
 
-        // 2. Try TCP ports
-        foreach ([6379, 6380, 6381] as $port) {
-            if (self::probePort('127.0.0.1', $port)) {
-                $result['connected'] = true;
-                $result['method']    = 'tcp';
-                $result['host']      = '127.0.0.1';
-                $result['port']      = $port;
-                $result['version']   = self::redisVersion('tcp', '127.0.0.1', $port);
-                return $result;
-            }
+        // Standard TCP (most panels use 127.0.0.1:6379 by default)
+        if (self::probePort('127.0.0.1', 6379)) {
+            return self::foundTcp($result, '127.0.0.1', 6379);
         }
 
-        // 3. Parse redis.conf for clues
-        $conf = self::parseRedisConf();
+        // Panel-specific config file
+        $conf = self::panelConf($panel);
         if ($conf) {
             if (!empty($conf['unixsocket']) && self::probeSocket($conf['unixsocket'])) {
-                $result['connected'] = true;
-                $result['method']    = 'socket';
-                $result['socket']    = $conf['unixsocket'];
-                $result['version']   = self::redisVersion('socket', $conf['unixsocket']);
-                return $result;
+                return self::found($result, 'socket', $conf['unixsocket']);
             }
             if (!empty($conf['port']) && (int) $conf['port'] > 0) {
                 $host = $conf['bind'] ?? '127.0.0.1';
                 $port = (int) $conf['port'];
                 if (self::probePort($host, $port)) {
-                    $result['connected'] = true;
-                    $result['method']    = 'tcp';
-                    $result['host']      = $host;
-                    $result['port']      = $port;
-                    $result['version']   = self::redisVersion('tcp', $host, $port);
-                    return $result;
+                    return self::foundTcp($result, $host, $port);
                 }
             }
         }
 
-        // Not found — build install instructions
-        $result['instructions'] = self::installInstructions($result['panel']);
+        $result['instructions'] = self::installInstructions($panel);
         return $result;
     }
 
-    private static function socketPaths(): array
+    // ── Panel-specific socket paths (from official docs) ─────────────────────
+
+    private static function panelSocket(string $panel): string
     {
-        return [
-            '/var/run/redis/redis.sock',
-            '/var/run/redis/redis-server.sock',
-            '/var/run/redis.sock',
-            '/tmp/redis.sock',
-            '/run/redis/redis.sock',
-            '/usr/local/redis/var/redis.sock',
-        ];
+        // DirectAdmin: per-user socket at /home/{user}/.redis/redis.sock
+        // https://docs.directadmin.com/other-hosting-services/redis/
+        if ($panel === 'directadmin') {
+            $user = self::currentLinuxUser();
+            if ($user) {
+                $sock = "/home/{$user}/.redis/redis.sock";
+                if (@file_exists($sock)) {
+                    return $sock;
+                }
+            }
+            // DA global fallback
+            return '/usr/local/redis/var/run/redis.sock';
+        }
+
+        // cPanel/WHM: Redis Manager stores socket here
+        // https://docs.cpanel.net/whm/plugins/redis-manager/
+        if ($panel === 'cpanel') {
+            return '/var/run/redis/redis.sock';
+        }
+
+        // Plesk: Redis extension uses standard socket
+        if ($panel === 'plesk') {
+            return '/var/run/redis/redis.sock';
+        }
+
+        // HestiaCP / VestaCP: standard Redis install
+        if (in_array($panel, ['hestia', 'vesta'], true)) {
+            return '/var/run/redis/redis.sock';
+        }
+
+        // CyberPanel: uses socket in /var/run
+        if ($panel === 'cyberpanel') {
+            return '/var/run/redis/redis.sock';
+        }
+
+        return '';
+    }
+
+    // ── Panel-specific config file paths ─────────────────────────────────────
+
+    private static function panelConf(string $panel): array
+    {
+        $paths = match ($panel) {
+            'directadmin' => [
+                '/usr/local/redis/etc/redis.conf',
+                '/etc/redis/redis.conf',
+            ],
+            'cpanel'      => ['/etc/redis/redis.conf'],
+            'plesk'       => ['/etc/redis/redis.conf', '/etc/redis.conf'],
+            default       => ['/etc/redis/redis.conf', '/etc/redis.conf'],
+        };
+
+        foreach ($paths as $path) {
+            $conf = self::parseConf($path);
+            if ($conf) {
+                return $conf;
+            }
+        }
+        return [];
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static function currentLinuxUser(): string
+    {
+        // WordPress runs as the hosting user — get from DOCUMENT_ROOT or __FILE__
+        if (defined('ABSPATH')) {
+            // Extract user from path like /home/username/...
+            if (preg_match('#^/home/([^/]+)/#', ABSPATH, $m)) {
+                return $m[1];
+            }
+        }
+        return (string) (function_exists('get_current_user') ? get_current_user() : '');
+    }
+
+    private static function found(array $result, string $method, string $socket): array
+    {
+        $result['connected'] = true;
+        $result['method']    = $method;
+        $result['socket']    = $socket;
+        $result['version']   = self::redisVersion('socket', $socket);
+        return $result;
+    }
+
+    private static function foundTcp(array $result, string $host, int $port): array
+    {
+        $result['connected'] = true;
+        $result['method']    = 'tcp';
+        $result['host']      = $host;
+        $result['port']      = $port;
+        $result['version']   = self::redisVersion('tcp', $host, $port);
+        return $result;
     }
 
     private static function probeSocket(string $path): bool
@@ -92,8 +157,7 @@ final class RedisDetector
         }
         try {
             $r = new \Redis();
-            $ok = @$r->connect($path);
-            if ($ok) {
+            if (@$r->connect($path)) {
                 $r->close();
                 return true;
             }
@@ -109,8 +173,7 @@ final class RedisDetector
         }
         try {
             $r = new \Redis();
-            $ok = @$r->connect($host, $port, 0.5);
-            if ($ok) {
+            if (@$r->connect($host, $port, 0.5)) {
                 $r->close();
                 return true;
             }
@@ -136,53 +199,39 @@ final class RedisDetector
         }
     }
 
-    private static function parseRedisConf(): array
+    private static function parseConf(string $path): array
     {
-        $paths = [
-            '/etc/redis/redis.conf',
-            '/etc/redis.conf',
-            '/usr/local/etc/redis.conf',
-            '/usr/local/redis/etc/redis.conf',
-        ];
-        foreach ($paths as $path) {
-            if (!@is_readable($path)) {
+        if (!@is_readable($path)) {
+            return [];
+        }
+        $conf = [];
+        foreach (@file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') {
                 continue;
             }
-            $conf = [];
-            foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-                $line = trim($line);
-                if ($line === '' || $line[0] === '#') {
-                    continue;
-                }
-                $parts = preg_split('/\s+/', $line, 2);
-                if (count($parts) === 2) {
-                    $conf[strtolower($parts[0])] = $parts[1];
-                }
+            $parts = preg_split('/\s+/', $line, 2);
+            if (count($parts) === 2) {
+                $conf[strtolower($parts[0])] = $parts[1];
             }
-            return $conf;
         }
-        return [];
+        return $conf;
     }
 
     public static function detectPanel(): string
     {
-        if (@file_exists('/usr/local/cpanel/cpanel')) {
-            return 'cpanel';
-        }
-        if (@file_exists('/usr/local/psa/version') || file_exists('/opt/psa/version')) {
-            return 'plesk';
-        }
-        if (@file_exists('/usr/local/directadmin/directadmin')) {
-            return 'directadmin';
-        }
-        if (@file_exists('/usr/local/mgr5/sbin/mgrctl')) {
-            return 'ispmanager';
-        }
-        if (@file_exists('/usr/local/hestia/bin/v-list-users')) {
-            return 'hestia';
-        }
-        if (@file_exists('/usr/local/vesta/bin/v-list-users')) {
-            return 'vesta';
+        $checks = [
+            'cpanel'      => '/usr/local/cpanel/cpanel',
+            'plesk'       => '/usr/local/psa/version',
+            'directadmin' => '/usr/local/directadmin/directadmin',
+            'ispmanager'  => '/usr/local/mgr5/sbin/mgrctl',
+            'hestia'      => '/usr/local/hestia/bin/v-list-users',
+            'vesta'       => '/usr/local/vesta/bin/v-list-users',
+        ];
+        foreach ($checks as $panel => $file) {
+            if (@file_exists($file)) {
+                return $panel;
+            }
         }
         if (@is_dir('/etc/cyberpanel')) {
             return 'cyberpanel';
@@ -192,33 +241,27 @@ final class RedisDetector
 
     public static function detectLiteSpeed(): bool
     {
-        // Check server software header
         $server = $_SERVER['SERVER_SOFTWARE'] ?? '';
         if (stripos($server, 'litespeed') !== false || stripos($server, 'openlitespeed') !== false) {
             return true;
         }
-        // Check for LiteSpeed binaries
         foreach (['/usr/local/lsws/bin/lswsctrl', '/usr/local/lsws/fcgi-bin/lsphp'] as $bin) {
             if (@file_exists($bin)) {
                 return true;
             }
         }
-        // Check if LiteSpeed Cache plugin is active
-        if (defined('LSCWP_V') || class_exists('LiteSpeed_Cache') || class_exists('LiteSpeed\Core')) {
-            return true;
-        }
-        return false;
+        return defined('LSCWP_V') || class_exists('LiteSpeed\Core') || class_exists('LiteSpeed_Cache');
     }
 
     private static function installInstructions(string $panel): string
     {
         return match ($panel) {
-            'cpanel'      => "Redis nerastas.\n\ncPanel/WHM: WHM → Redis Manager → Enable Redis.\nArba: WHM → Terminal → sudo yum install redis && sudo systemctl enable --now redis",
-            'plesk'       => "Redis nerastas.\n\nPlesk: Tools & Settings → Updates → install Redis extension.\nArba: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
-            'directadmin' => "Redis nerastas.\n\nDirectAdmin: CustomBuild → select Redis → build.\nArba: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
+            'cpanel'      => "Redis nerastas.\n\ncPanel/WHM: WHM → Redis Manager → Enable Redis.",
+            'plesk'       => "Redis nerastas.\n\nPlesk: Tools & Settings → Updates → install Redis extension.",
+            'directadmin' => "Redis nerastas.\n\nDirectAdmin: Extra Features → Redis → Enable.\nArba: CustomBuild → redis → build.",
             'hestia'      => "Redis nerastas.\n\nHestiaCP: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
-            'cyberpanel'  => "Redis nerastas.\n\nCyberPanel: Packages → Install Redis.\nArba: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
-            default       => "Redis nerastas.\n\nUbuntu/Debian:\n  sudo apt install redis-server\n  sudo systemctl enable --now redis\n\nCentOS/RHEL:\n  sudo yum install redis\n  sudo systemctl enable --now redis\n\nAlternatyva — Dragonfly (Redis-compatible, greičiau):\n  curl -fsSL https://packages.dragonflydb.io/install.sh | sudo bash\n  sudo systemctl enable --now dragonfly",
+            'cyberpanel'  => "Redis nerastas.\n\nCyberPanel: Packages → Install Redis.",
+            default       => "Redis nerastas.\n\nUbuntu/Debian:\n  sudo apt install redis-server\n  sudo systemctl enable --now redis\n\nCentOS/RHEL:\n  sudo yum install redis\n  sudo systemctl enable --now redis\n\nAlternatyva — Dragonfly:\n  curl -fsSL https://packages.dragonflydb.io/install.sh | sudo bash",
         };
     }
 }
