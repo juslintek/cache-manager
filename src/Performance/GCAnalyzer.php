@@ -133,7 +133,7 @@ final class GCAnalyzer
             }
         }
 
-        return compact('issues', 'stats', 'recommendations') + ['recommendations' => $recs];
+        return compact('issues', 'stats') + ['recommendations' => $recs];
     }
 
     public static function gcStats(): array

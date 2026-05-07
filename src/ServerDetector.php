@@ -102,7 +102,7 @@ final class ServerDetector
         $cacheDir  = self::cacheDir($server, $config);
         $recs      = self::recommendations($server, $config);
 
-        return compact('server', 'version', 'config', 'cacheDir', 'recommendations') + ['recommendations' => $recs];
+        return compact('server', 'version', 'config', 'cacheDir') + ['recommendations' => $recs];
     }
 
     // ── Config parsing ────────────────────────────────────────────────────────
