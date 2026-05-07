@@ -112,16 +112,34 @@ final class SettingsPage extends AdminPage
         // ── Redis connection section ──────────────────────────────────────────
         ?>
         <h2>Redis ryšys</h2>
-        <div id="vlt-redis-detect-wrap" style="margin-bottom:12px">
-            <button type="button" id="vlt-redis-detect-btn" class="button">🔍 Aptikti Redis automatiškai</button>
+        <div style="margin-bottom:12px">
+            <button type="button" id="vlt-redis-detect-btn" class="button button-primary">🔍 Aptikti Redis automatiškai</button>
             <span id="vlt-redis-detect-status" style="margin-left:10px;color:#666"></span>
             <div id="vlt-redis-detect-result" style="margin-top:8px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:none;white-space:pre-wrap;font-family:monospace;font-size:12px"></div>
         </div>
+
+        <?php
+        $mode = $redis_socket ? 'socket' : 'tcp';
+        ?>
+        <div style="margin-bottom:8px">
+            <label style="margin-right:16px">
+                <input type="radio" name="vlt_redis_mode" value="socket" <?php checked($mode, 'socket'); ?> onchange="vltRedisMode(this.value)">
+                Unix Socket <small style="color:#666">(greičiau, rekomenduojama)</small>
+            </label>
+            <label>
+                <input type="radio" name="vlt_redis_mode" value="tcp" <?php checked($mode, 'tcp'); ?> onchange="vltRedisMode(this.value)">
+                TCP Host:Port
+            </label>
+        </div>
+
         <table class="form-table">
-        <tr><th>Unix socket</th><td>
-            <input type="text" name="vlt_redis_socket" id="vlt_redis_socket" value="<?php echo esc_attr($redis_socket); ?>" class="regular-text" placeholder="/var/run/redis/redis.sock">
+        <tbody id="vlt-redis-socket-row" <?php echo $mode === 'tcp' ? 'style="display:none"' : ''; ?>>
+        <tr><th>Unix socket kelias</th><td>
+            <input type="text" name="vlt_redis_socket" id="vlt_redis_socket" value="<?php echo esc_attr($redis_socket); ?>" class="regular-text" placeholder="/home/user/.redis/redis.sock">
             <p class="description">Jei nurodyta — naudojamas socket (greičiau). Palikite tuščią naudoti TCP.</p>
         </td></tr>
+        </tbody>
+        <tbody id="vlt-redis-tcp-row" <?php echo $mode === 'socket' ? 'style="display:none"' : ''; ?>>
         <tr><th>Host</th><td>
             <input type="text" name="vlt_redis_host" id="vlt_redis_host" value="<?php echo esc_attr($redis_host); ?>" class="regular-text" placeholder="127.0.0.1">
         </td></tr>
@@ -129,9 +147,20 @@ final class SettingsPage extends AdminPage
             <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" style="width:100px" placeholder="6379">
             <p class="description">Palikite tuščią — bus naudojamas automatinis aptikimas.</p>
         </td></tr>
+        </tbody>
         </table>
 
         <script>
+        function vltRedisMode(mode) {
+            document.getElementById('vlt-redis-socket-row').style.display = mode === 'socket' ? '' : 'none';
+            document.getElementById('vlt-redis-tcp-row').style.display   = mode === 'tcp'    ? '' : 'none';
+            if (mode === 'socket') {
+                document.getElementById('vlt_redis_host').value = '';
+                document.getElementById('vlt_redis_port').value = '';
+            } else {
+                document.getElementById('vlt_redis_socket').value = '';
+            }
+        }
         document.getElementById('vlt-redis-detect-btn').addEventListener('click', function() {
             const status = document.getElementById('vlt-redis-detect-status');
             const result = document.getElementById('vlt-redis-detect-result');
@@ -143,17 +172,21 @@ final class SettingsPage extends AdminPage
                     status.textContent = d.connected ? '✅ Redis rastas!' : '❌ Redis nerastas';
                     if (d.connected) {
                         if (d.method === 'socket') {
+                            document.querySelector('[name=vlt_redis_mode][value=socket]').checked = true;
+                            vltRedisMode('socket');
                             document.getElementById('vlt_redis_socket').value = d.socket;
-                            document.getElementById('vlt_redis_host').value = '';
-                            document.getElementById('vlt_redis_port').value = '';
                         } else {
-                            document.getElementById('vlt_redis_socket').value = '';
+                            document.querySelector('[name=vlt_redis_mode][value=tcp]').checked = true;
+                            vltRedisMode('tcp');
                             document.getElementById('vlt_redis_host').value = d.host;
                             document.getElementById('vlt_redis_port').value = d.port;
                         }
                         result.style.display = 'block';
                         result.style.borderColor = '#46b450';
-                        result.textContent = 'Metodas: ' + d.method + (d.socket ? '\nSocket: ' + d.socket : '\nHost: ' + d.host + ':' + d.port) + (d.version ? '\nVersija: ' + d.version : '') + '\nServeris: ' + d.panel + (d.litespeed ? '\nLiteSpeed: aptiktas' : '');
+                        result.textContent = 'Metodas: ' + d.method
+                            + (d.socket ? '\nSocket: ' + d.socket : '\nHost: ' + d.host + ':' + d.port)
+                            + (d.version ? '\nVersija: ' + d.version : '')
+                            + '\nServeris: ' + d.panel;
                     } else {
                         result.style.display = 'block';
                         result.style.borderColor = '#dc3232';
