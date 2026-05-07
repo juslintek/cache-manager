@@ -380,6 +380,40 @@ final class TracerPage extends AdminPage
                 </div>
                 <p x-show="!detailTrace.db||!detailTrace.db.length" class="text-gray-400 text-xs">Nėra DB užklausų (SAVEQUERIES išjungtas?)</p>
 
+                <!-- Hook traces -->
+                <div x-show="detailTrace.hooks&&detailTrace.hooks.length" class="mt-4">
+                    <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">
+                        WP Hook sekimas
+                        <span class="font-normal text-gray-400 ml-2" x-text="(detailTrace.hooks||[]).length+' lėtų hook\'ų'"></span>
+                    </h4>
+                    <div x-data="{hf:''}">
+                        <input type="text" class="border border-gray-300 rounded px-2 py-0.5 text-[10px] w-64 mb-2" x-model="hf" placeholder="Filtruoti hook / failą...">
+                        <div class="overflow-auto max-h-[400px]">
+                            <table class="w-full text-[10px] border-collapse">
+                                <thead><tr class="bg-gray-50 text-left">
+                                    <th class="px-2 py-1 font-semibold">Hook</th>
+                                    <th class="px-2 py-1 font-semibold w-16 text-right">ms</th>
+                                    <th class="px-2 py-1 font-semibold">Argumentai</th>
+                                    <th class="px-2 py-1 font-semibold">Kvietėjas</th>
+                                </tr></thead>
+                                <tbody>
+                                <template x-for="(h,hi) in (detailTrace.hooks||[]).filter(h=>!hf||h.hook.includes(hf)||h.caller.includes(hf))" :key="hi">
+                                    <tr class="border-t border-gray-100 hover:bg-gray-50">
+                                        <td class="px-2 py-1 font-mono" x-text="h.hook"></td>
+                                        <td class="px-2 py-1 text-right font-mono" :class="h.ms>100?'text-red-600 font-bold':h.ms>10?'text-yellow-600':'text-gray-600'" x-text="h.ms"></td>
+                                        <td class="px-2 py-1 text-gray-500 max-w-xs truncate" :title="JSON.stringify(h.args)" x-text="(h.args||[]).join(' | ')"></td>
+                                        <td class="px-2 py-1 text-gray-400 font-mono text-[9px]" x-text="h.caller"></td>
+                                    </tr>
+                                </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div x-show="!(detailTrace.hooks&&detailTrace.hooks.length)" class="mt-2 text-xs text-gray-400">
+                    Hook sekimas išjungtas. Įjunkite <em>Nustatymai → Hook argumentų sekimas</em>.
+                </div>
+
                 <!-- Profiler (Excimer) -->
                 <div x-show="detailTrace.profile&&detailTrace.profile.length" class="mt-4">
                     <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">

@@ -27,6 +27,9 @@ final class SettingsPage extends AdminPage
             }
             update_option('vlt_cm_log_max_mb', max(0, (int) ($_POST['vlt_cm_log_max_mb'] ?? 500)));
             update_option('vlt_cm_trace_max_mb', max(0, (int) ($_POST['vlt_cm_trace_max_mb'] ?? 200)));
+            // Hook tracing
+            update_option('vlt_trace_hooks', isset($_POST['vlt_trace_hooks']));
+            update_option('vlt_trace_hook_threshold_ms', max(0.1, (float) ($_POST['vlt_trace_hook_threshold_ms'] ?? 1.0)));
             // Redis manual config
             update_option('vlt_redis_socket', sanitize_text_field($_POST['vlt_redis_socket'] ?? ''));
             update_option('vlt_redis_host', sanitize_text_field($_POST['vlt_redis_host'] ?? ''));
@@ -106,6 +109,17 @@ final class SettingsPage extends AdminPage
         $traceMaxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
         echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" style="width:80px"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
         echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" style="width:80px"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+
+        $traceHooks = get_option('vlt_trace_hooks', false);
+        $traceHookMs = (float) get_option('vlt_trace_hook_threshold_ms', 1.0);
+        echo '<tr><th>Hook argumentų sekimas</th><td>';
+        echo '<label><input type="checkbox" name="vlt_trace_hooks" value="1"' . checked($traceHooks, true, false) . '> Įjungti</label>';
+        echo '<p class="description">Fiksuoja kiekvieno WP hook iškvietimą su argumentais, laiku ir iškvietimo vieta. ⚠ Padidina apkrovą — naudokite tik derinimui.</p>';
+        echo '</td></tr>';
+        echo '<tr><th>Hook sekimo slenkstis (ms)</th><td>';
+        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" style="width:80px"> ms';
+        echo '<p class="description">Fiksuojami tik lėtesni nei nurodytas laikas hook\'ai. Rekomenduojama: 1ms.</p>';
+        echo '</td></tr>';
 
         echo '</table>';
 

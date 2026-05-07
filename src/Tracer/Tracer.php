@@ -13,6 +13,8 @@ final class Tracer
     private float $t0;
     private array $spans = [];
     private array $stack = [];
+    private array $hookStack = [];
+    private array $hookTraces = [];
     private bool $done = false;
     private ?\ExcimerProfiler $profiler = null;
 
@@ -23,13 +25,86 @@ final class Tracer
         self::$i = new self();
         self::$i->id = bin2hex(random_bytes(8));
         self::$i->t0 = hrtime(true);
-        // Start sampling profiler (10ms interval, ~2% overhead)
+
+        // Excimer sampling profiler (10ms interval, ~2% overhead)
         if (class_exists(\ExcimerProfiler::class)) {
             self::$i->profiler = new \ExcimerProfiler();
-            self::$i->profiler->setPeriod(0.01); // 10ms
+            self::$i->profiler->setPeriod(0.01);
             self::$i->profiler->start();
         }
+
+        // Hook argument tracing — capture every WP action/filter with args, timing, caller
+        if (get_option('vlt_trace_hooks', false)) {
+            add_action('all', [self::class, 'traceHookBefore'], -9999);
+            add_action('all', [self::class, 'traceHookAfter'],  PHP_INT_MAX);
+        }
+
         self::begin('request');
+    }
+
+    /** @internal */
+    public static function traceHookBefore(): void
+    {
+        if (!self::$i) return;
+        $hook = current_filter();
+        $args = func_get_args();
+        self::$i->hookStack[$hook] = [
+            'ts'     => hrtime(true),
+            'args'   => self::serializeArgs($args),
+            'caller' => self::shortCaller(),
+        ];
+    }
+
+    /** @internal */
+    public static function traceHookAfter(): void
+    {
+        if (!self::$i) return;
+        $hook = current_filter();
+        if (!isset(self::$i->hookStack[$hook])) return;
+        $entry = self::$i->hookStack[$hook];
+        $ms    = round((hrtime(true) - $entry['ts']) / 1e6, 2);
+        unset(self::$i->hookStack[$hook]);
+
+        // Only record slow hooks (>1ms) or hooks with interesting args
+        $threshold = (float) get_option('vlt_trace_hook_threshold_ms', 1.0);
+        if ($ms < $threshold && empty($entry['args'])) return;
+
+        self::$i->hookTraces[] = [
+            'hook'   => $hook,
+            'ms'     => $ms,
+            'args'   => $entry['args'],
+            'caller' => $entry['caller'],
+        ];
+    }
+
+    private static function serializeArgs(array $args): array
+    {
+        $out = [];
+        foreach (array_slice($args, 0, 3) as $arg) {
+            if (is_scalar($arg)) {
+                $out[] = substr((string) $arg, 0, 200);
+            } elseif (is_array($arg)) {
+                $out[] = '[array:' . count($arg) . '] ' . substr(json_encode(array_slice($arg, 0, 3, true)), 0, 200);
+            } elseif (is_object($arg)) {
+                $out[] = get_class($arg);
+            } else {
+                $out[] = gettype($arg);
+            }
+        }
+        return $out;
+    }
+
+    private static function shortCaller(): string
+    {
+        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
+        foreach ($bt as $frame) {
+            $file = $frame['file'] ?? '';
+            // Skip internal WP hook machinery
+            if (str_contains($file, 'class-wp-hook') || str_contains($file, 'plugin.php')) continue;
+            $rel = str_replace(ABSPATH, '', $file);
+            return $rel . ':' . ($frame['line'] ?? 0);
+        }
+        return '';
     }
 
     public static function instance(): ?self
@@ -168,6 +243,10 @@ final class Tracer
             'db'        => $dq,
             'db_n'      => count($dq),
             'db_ms'     => round($db_ms, 2),
+            'hooks'     => array_slice(
+                array_filter(self::$i->hookTraces, fn($h) => $h['ms'] >= (float) get_option('vlt_trace_hook_threshold_ms', 1.0)),
+                0, 100
+            ),
             'plugins'   => count(wp_get_active_and_valid_plugins()),
             'php'       => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
             'cf_ray'    => $_SERVER['HTTP_CF_RAY'] ?? '',
