@@ -78,8 +78,11 @@ final class LiteSpeedPage extends AdminPage
         // Config file preview — show all relevant configs
         $configFiles = array_filter([
             $info['config']['config_file'] ?? '',
-            '/usr/local/lsws/conf/httpd_config.conf',
             '/etc/openlitespeed/httpd_config.conf',
+            '/etc/openlitespeed/httpd-vhosts.conf',
+            '/usr/local/lsws/conf/httpd_config.conf',
+            '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
+            '/usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf',
         ]);
         $shown = [];
         foreach ($configFiles as $configFile) {

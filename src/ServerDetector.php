@@ -183,22 +183,55 @@ final class ServerDetector
         $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
             || @file_exists('/usr/local/lsws/modules/lscache.so');
 
-        // 4. Cache storage directory exists (OLS default: /usr/local/lsws/sitecache/)
-        $cacheStorageExists = @is_dir('/usr/local/lsws/sitecache')
-            || @is_dir('/tmp/lscache');
+        // 4. Cache storage directory — DA+OLS: /home/$user/lscache, OLS default: /usr/local/lsws/sitecache
+        $user = '';
+        if (defined('ABSPATH') && preg_match('#^/home/([^/]+)/#', ABSPATH, $m)) {
+            $user = $m[1];
+        }
+        $cacheStoragePath   = '';
+        $cacheStorageExists = false;
+        foreach (array_filter([
+            $user ? "/home/{$user}/lscache" : '',
+            '/usr/local/lsws/sitecache',
+            '/tmp/lscache',
+        ]) as $path) {
+            if (@is_dir($path)) {
+                $cacheStoragePath   = $path;
+                $cacheStorageExists = true;
+                break;
+            }
+        }
 
-        // 5. Config file check
-        $mainPaths = ['/usr/local/lsws/conf/httpd_config.conf', '/etc/openlitespeed/httpd_config.conf'];
+        // 5. Config file check — DA OLS uses /etc/openlitespeed/httpd-vhosts.conf
+        $mainPaths = [
+            '/etc/openlitespeed/httpd_config.conf',
+            '/etc/openlitespeed/httpd-vhosts.conf',
+            '/usr/local/lsws/conf/httpd_config.conf',
+        ];
         $content = '';
         $configFile = '';
         foreach ($mainPaths as $p) {
             if (@is_readable($p)) {
-                $content = @file_get_contents($p) ?: '';
+                $content    = @file_get_contents($p) ?: '';
                 $configFile = $p;
                 break;
             }
         }
         $lscacheConf = str_contains($content, 'lscache') || str_contains($content, 'LSCache');
+
+        // DA OLS template files — CacheRoot directive enables per-user lscache
+        if (!$lscacheConf) {
+            foreach ([
+                '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
+                '/usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf',
+            ] as $tp) {
+                $tc = @file_get_contents($tp) ?: '';
+                if (str_contains($tc, 'lscache') || str_contains($tc, 'CacheRoot') || str_contains($tc, 'LSCache')) {
+                    $lscacheConf = true;
+                    break;
+                }
+            }
+        }
 
         // Check vhost configs
         if (!$lscacheConf) {
@@ -222,7 +255,7 @@ final class ServerDetector
             'lscache_so'           => $lscacheSo,
             'lscache_conf'         => $lscacheConf,
             'lscache_storage'      => $cacheStorageExists,
-            'lscache_storage_path' => @is_dir('/usr/local/lsws/sitecache') ? '/usr/local/lsws/sitecache' : '/tmp/lscache',
+            'lscache_storage_path' => $cacheStoragePath,
             'config_file'          => $configFile,
             'workers'              => self::extractValue($content, 'maxConnections'),
         ];
