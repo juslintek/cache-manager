@@ -301,7 +301,7 @@ final class Plugin
 
         // libvips — best quality/size ratio, fastest
         $hasVips = class_exists('Vips\Image')
-            || (function_exists('shell_exec') && trim((string) @shell_exec('which vips 2>/dev/null')) !== '');
+            || self::commandExists('vips');
         if (!$hasVips) {
             $missing[] = '<strong>libvips</strong> (geriausias kokybės/dydžio santykis, ~10× greičiau už ImageMagick)';
             $tips[]    = 'libvips: <code>sudo apt install libvips-tools php-vips</code> arba <code>sudo yum install vips-tools</code>';
@@ -370,6 +370,16 @@ final class Plugin
             });
         });
         </script>';
+    }
+
+    private static function commandExists(string $cmd): bool
+    {
+        foreach (explode(':', getenv('PATH') ?: '/usr/bin:/usr/local/bin:/bin') as $dir) {
+            if (@is_executable(rtrim($dir, '/') . '/' . $cmd)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function simdjsonNotice(): void
