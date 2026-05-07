@@ -301,7 +301,7 @@ final class Plugin
 
         // libvips — best quality/size ratio, fastest
         $hasVips = class_exists('Vips\Image')
-            || (shell_exec('which vips 2>/dev/null') !== null && trim((string) shell_exec('which vips 2>/dev/null')) !== '');
+            || (function_exists('shell_exec') && trim((string) @shell_exec('which vips 2>/dev/null')) !== '');
         if (!$hasVips) {
             $missing[] = '<strong>libvips</strong> (geriausias kokybės/dydžio santykis, ~10× greičiau už ImageMagick)';
             $tips[]    = 'libvips: <code>sudo apt install libvips-tools php-vips</code> arba <code>sudo yum install vips-tools</code>';
