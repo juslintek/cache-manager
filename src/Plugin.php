@@ -12,6 +12,7 @@ use VLT\CacheManager\Admin\Page\LiteSpeedPage;
 use VLT\CacheManager\Admin\Page\LogsPage;
 use VLT\CacheManager\Admin\Page\NginxExplorerPage;
 use VLT\CacheManager\Admin\Page\OpcacheExplorerPage;
+use VLT\CacheManager\Admin\Page\PerformancePage;
 use VLT\CacheManager\Admin\Page\RedisExplorerPage;
 use VLT\CacheManager\Admin\Page\SettingsPage;
 use VLT\CacheManager\Admin\Page\TracerPage;
@@ -107,6 +108,13 @@ final class Plugin
             \VLT\CacheManager\Cache\LiteSpeedCache::register();
         }
 
+        // Async queue worker endpoint
+        add_action('wp_ajax_nopriv_vlt_async_worker', [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
+        add_action('wp_ajax_vlt_async_worker',        [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
+
+        // WP-Cron → Redis offload
+        \VLT\CacheManager\Async\AsyncQueue::offloadCron();
+
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
         }
@@ -179,6 +187,7 @@ final class Plugin
         $pages[] = new OpcacheExplorerPage();
         $pages[] = new RedisExplorerPage();
         $pages[] = new TracerPage();
+        $pages[] = new PerformancePage();
         $pages[] = new SettingsPage();
 
         add_menu_page('Podėlio Valdymas', 'Podėlio Valdymas', 'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80);

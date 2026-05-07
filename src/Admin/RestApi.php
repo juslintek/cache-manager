@@ -157,6 +157,14 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'configSave'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/gc-fix', [
+            'methods' => 'POST', 'callback' => [self::class, 'gcFix'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+        register_rest_route(self::NS, '/queue-run', [
+            'methods' => 'POST', 'callback' => [self::class, 'queueRun'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -595,6 +603,20 @@ final class RestApi
         @wp_mkdir_p(dirname($path));
         $ok = file_put_contents($path, $content);
         return new \WP_REST_Response(['ok' => $ok !== false]);
+    }
+
+    public static function gcFix(): \WP_REST_Response
+    {
+        $applied = \VLT\CacheManager\Performance\GCAnalyzer::applyAutoFixes();
+        return new \WP_REST_Response(['ok' => true, 'applied' => $applied]);
+    }
+
+    public static function queueRun(): \WP_REST_Response
+    {
+        $before = \VLT\CacheManager\Async\AsyncQueue::status()['queue_length'];
+        \VLT\CacheManager\Async\AsyncQueue::processQueue();
+        $after  = \VLT\CacheManager\Async\AsyncQueue::status()['queue_length'];
+        return new \WP_REST_Response(['ok' => true, 'processed' => max(0, $before - $after)]);
     }
 
     // ── Tracer ──
