@@ -308,7 +308,7 @@ final class Plugin
             return;
         }
 
-        $hasVips    = class_exists('Vips\Image') || self::commandExists('vips');
+        $hasVips    = extension_loaded('vips') || class_exists('Vips\Image') || self::commandExists('vips');
         $hasAvif    = class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true);
         $hasWebp    = class_exists('Imagick') && in_array('WEBP', \Imagick::queryFormats(), true);
         $hasGdWebp  = function_exists('imagewebp');
