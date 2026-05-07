@@ -149,6 +149,10 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'dismissNotice'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/server-detect', [
+            'methods' => 'POST', 'callback' => [self::class, 'serverDetect'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -546,6 +550,11 @@ final class RestApi
             update_option($notice, true);
         }
         return new \WP_REST_Response(['ok' => true]);
+    }
+
+    public static function serverDetect(): \WP_REST_Response
+    {
+        return new \WP_REST_Response(\VLT\CacheManager\ServerDetector::runAndStore());
     }
 
     // ── Tracer ──

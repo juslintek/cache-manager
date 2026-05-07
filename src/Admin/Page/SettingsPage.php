@@ -270,8 +270,24 @@ final class SettingsPage extends AdminPage
 
         echo '<h2>Veiksmai</h2><p>';
         echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?page=vlt-cache-settings&action=vlt_download_logs'), 'vlt_download_logs')) . '" class="button">Atsisiųsti žurnalus (ZIP)</a> ';
-        echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_install_dropin'), 'vlt_install_dropin')) . '" class="button">' . ($dropin_ok ? 'Perdiegti object-cache.php' : 'Įdiegti object-cache.php') . '</a>';
+        echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_install_dropin'), 'vlt_install_dropin')) . '" class="button">' . ($dropin_ok ? 'Perdiegti object-cache.php' : 'Įdiegti object-cache.php') . '</a> ';
+        $srv = \VLT\CacheManager\ServerDetector::detect();
+        echo '<button type="button" id="vlt-server-redetect" class="button">🔍 Iš naujo aptikti serverį (' . esc_html($srv['server']) . ')</button>';
+        echo '<span id="vlt-server-redetect-status" style="margin-left:8px;color:#666"></span>';
         echo '</p>';
+        echo '<script>
+        document.getElementById("vlt-server-redetect").addEventListener("click", function() {
+            const s = document.getElementById("vlt-server-redetect-status");
+            this.disabled = true; s.textContent = "Aptinkama...";
+            fetch("' . esc_js(rest_url('vlt-cache/v1/server-detect')) . '", {
+                method: "POST",
+                headers: {"X-WP-Nonce": "' . wp_create_nonce('wp_rest') . '"}
+            }).then(r => r.json()).then(d => {
+                s.textContent = "✅ Aptikta: " + d.server + (d.version ? " v" + d.version : "");
+                setTimeout(() => location.reload(), 1500);
+            }).catch(() => { s.textContent = "❌ Klaida"; this.disabled = false; });
+        });
+        </script>';
 
         // Log files section
         $this->renderLogFiles();

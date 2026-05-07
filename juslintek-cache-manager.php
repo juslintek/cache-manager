@@ -62,3 +62,8 @@ add_action('shutdown', [\VLT\CacheManager\Tracer\Tracer::class, 'finish'], 0);
 
 // Boot the plugin
 add_action('plugins_loaded', [\VLT\CacheManager\Plugin::class, 'boot']);
+
+// Run server detection on activation (stored in wp_options, no overhead after)
+register_activation_hook(__FILE__, function () {
+    \VLT\CacheManager\ServerDetector::runAndStore();
+});

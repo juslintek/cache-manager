@@ -19,27 +19,34 @@ final class ServerDetector
 
     private static ?array $cache = null;
 
+    private const OPTION = 'vlt_server_info';
+
     /** @return array{server:string, version:string, config:array, cache_dir:string, recommendations:string[]} */
     public static function detect(): array
     {
         if (self::$cache !== null) {
             return self::$cache;
         }
-
-        $cached = get_transient('vlt_server_detect');
-        if ($cached !== false) {
-            return self::$cache = $cached;
+        $stored = get_option(self::OPTION);
+        if ($stored) {
+            return self::$cache = $stored;
         }
+        // First run (plugin just activated or option missing)
+        return self::runAndStore();
+    }
 
+    /** Run detection and persist result. Called on activation and manual refresh. */
+    public static function runAndStore(): array
+    {
         $result = self::run();
-        set_transient('vlt_server_detect', $result, HOUR_IN_SECONDS);
+        update_option(self::OPTION, $result, false); // autoload=false — no overhead on every request
         return self::$cache = $result;
     }
 
     public static function flush(): void
     {
         self::$cache = null;
-        delete_transient('vlt_server_detect');
+        delete_option(self::OPTION);
     }
 
     private static function run(): array
