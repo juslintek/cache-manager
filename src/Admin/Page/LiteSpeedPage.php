@@ -26,7 +26,16 @@ final class LiteSpeedPage extends AdminPage
         echo '<table class="widefat fixed striped" style="max-width:700px;margin:20px 0"><tbody>';
         echo '<tr><td><strong>Serveris</strong></td><td>' . esc_html($label) . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td></tr>';
         echo '<tr><td><strong>Konfigūracijos failas</strong></td><td><code>' . esc_html($info['config']['config_file'] ?? '—') . '</code></td></tr>';
-        echo '<tr><td><strong>LSCache modulis</strong></td><td>' . (($info['config']['lscache'] ?? false) ? '<span style="color:#46b450">✅ Įjungtas</span>' : '<span style="color:#d63638">❌ Išjungtas</span>') . '</td></tr>';
+        echo '<tr><td><strong>LSCache modulis</strong></td><td>';
+        $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
+        if ($info['config']['lscache'] ?? false) {
+            echo '<span style="color:#46b450">✅ Įjungtas</span>';
+        } elseif ($lscacheSo) {
+            echo '<span style="color:#dba617">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
+        } else {
+            echo '<span style="color:#d63638">❌ Nerastas — įjunkite LSCache modulį</span>';
+        }
+        echo '</td></tr>';
         echo '<tr><td><strong>LSCWP įskiepis</strong></td><td>' . (defined('LSCWP_V') || class_exists('LiteSpeed\Core') ? '<span style="color:#46b450">✅ Aktyvus</span>' : '<span style="color:#d63638">❌ Neaktyvus</span>') . '</td></tr>';
         echo '</tbody></table>';
 
@@ -55,13 +64,36 @@ final class LiteSpeedPage extends AdminPage
             echo '<p><a href="' . esc_url(admin_url('admin.php?page=litespeed')) . '" class="button">Atidaryti LSCWP nustatymus →</a></p>';
         }
 
-        // Config file preview
-        $configFile = $info['config']['config_file'] ?? '';
-        if ($configFile && @is_readable($configFile)) {
-            echo '<h2>Konfigūracijos failas</h2>';
+        // Config file preview — show all relevant configs
+        $configFiles = array_filter([
+            $info['config']['config_file'] ?? '',
+            '/usr/local/lsws/conf/httpd_config.conf',
+            '/etc/openlitespeed/httpd_config.conf',
+        ]);
+        $shown = [];
+        foreach ($configFiles as $configFile) {
+            if (!$configFile || isset($shown[$configFile]) || !@is_readable($configFile)) {
+                continue;
+            }
+            $shown[$configFile] = true;
+            echo '<h2>Konfigūracijos failas: <code>' . esc_html($configFile) . '</code></h2>';
             echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;overflow:auto;max-height:400px;font-size:12px">';
-            echo esc_html(substr(@file_get_contents($configFile) ?: '', 0, 50000));
+            echo esc_html(substr(@file_get_contents($configFile) ?: '(nepasiekiamas)', 0, 50000));
             echo '</pre>';
+        }
+
+        // Show vhost configs
+        $vhostDirs = ['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'];
+        foreach ($vhostDirs as $dir) {
+            foreach (@glob($dir . '*/vhconf.conf') ?: [] as $vhconf) {
+                if (!@is_readable($vhconf)) {
+                    continue;
+                }
+                echo '<h2>VHost: <code>' . esc_html($vhconf) . '</code></h2>';
+                echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;overflow:auto;max-height:300px;font-size:12px">';
+                echo esc_html(substr(@file_get_contents($vhconf) ?: '', 0, 30000));
+                echo '</pre>';
+            }
         }
 
         echo '</div>';

@@ -157,19 +157,53 @@ final class ServerDetector
 
     private static function parseOlsConfig(): array
     {
-        $paths = ['/usr/local/lsws/conf/httpd_config.conf', '/etc/openlitespeed/httpd_config.conf'];
-        foreach ($paths as $p) {
-            if (!@is_readable($p)) {
-                continue;
+        $mainPaths = ['/usr/local/lsws/conf/httpd_config.conf', '/etc/openlitespeed/httpd_config.conf'];
+        $content = '';
+        $configFile = '';
+        foreach ($mainPaths as $p) {
+            if (@is_readable($p)) {
+                $content = @file_get_contents($p) ?: '';
+                $configFile = $p;
+                break;
             }
-            $content = @file_get_contents($p) ?: '';
-            return [
-                'lscache'     => str_contains($content, 'lscache') || str_contains($content, 'LSCache'),
-                'config_file' => $p,
-                'workers'     => self::extractValue($content, 'maxConnections'),
-            ];
         }
-        return ['config_file' => ''];
+
+        // LSCache is enabled via the lscache module — check module dir and vhost configs
+        $lscacheModule = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
+            || @file_exists('/usr/local/lsws/modules/lscache.so')
+            || str_contains($content, 'lscache')
+            || str_contains($content, 'LSCache');
+
+        // Also check vhost configs for lscache enablement
+        if (!$lscacheModule) {
+            $vhostDirs = ['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'];
+            foreach ($vhostDirs as $dir) {
+                foreach (@glob($dir . '*/vhconf.conf') ?: [] as $vhconf) {
+                    $vc = @file_get_contents($vhconf) ?: '';
+                    if (str_contains($vc, 'lscache') || str_contains($vc, 'LSCache')) {
+                        $lscacheModule = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        // Check DA-style OLS config
+        if (!$lscacheModule) {
+            foreach (@glob('/etc/openlitespeed/conf.d/*.conf') ?: [] as $conf) {
+                $c = @file_get_contents($conf) ?: '';
+                if (str_contains($c, 'lscache') || str_contains($c, 'LSCache')) {
+                    $lscacheModule = true;
+                    break;
+                }
+            }
+        }
+
+        return [
+            'lscache'     => $lscacheModule,
+            'config_file' => $configFile,
+            'workers'     => self::extractValue($content, 'maxConnections'),
+        ];
     }
 
     private static function parseApacheConfig(): array

@@ -199,10 +199,12 @@ final class Plugin
             'title' => "Podėlio Valdymas (H:$hits M:$misses)",
             'href'  => admin_url('admin.php?page=vlt-cache'),
         ]);
+        $isLS = \VLT\CacheManager\ServerDetector::isLiteSpeed();
         $items = [
             'purge-all'     => ['Valyti viską', 'all'],
-            'purge-nginx'   => ['Valyti Nginx', 'nginx'],
+            'purge-server'  => [$isLS ? 'Valyti LiteSpeed' : 'Valyti Nginx', $isLS ? 'litespeed' : 'nginx'],
             'purge-opcache' => ['Valyti OPcache', 'opcache'],
+            'purge-redis'   => ['Valyti Redis', 'redis'],
             'debug-toggle'  => [isset($_COOKIE['vlt_debug_cache']) ? 'Išjungti debug' : 'Įjungti debug', 'debug'],
         ];
         foreach ($items as $id => $item) {
