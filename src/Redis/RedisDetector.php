@@ -70,11 +70,9 @@ final class RedisDetector
     private static function standardSockets(string $panel): array
     {
         return match ($panel) {
-            'cpanel'  => ['/var/run/redis/redis.sock'],
-            'plesk'   => ['/var/run/redis/redis.sock'],
-            'hestia'  => ['/var/run/redis/redis.sock'],
-            'vesta'   => ['/var/run/redis/redis.sock'],
-            default   => ['/var/run/redis/redis.sock', '/tmp/redis.sock'],
+            'cpanel', 'plesk', 'hestia', 'vesta', 'interworx' => ['/var/run/redis/redis.sock'],
+            'cyberpanel'  => ['/var/run/redis/redis.sock', '/tmp/redis.sock'],
+            default       => ['/var/run/redis/redis.sock', '/tmp/redis.sock'],
         };
     }
 
@@ -154,22 +152,63 @@ final class RedisDetector
 
     public static function detectPanel(): string
     {
-        $checks = [
-            'cpanel'      => '/usr/local/cpanel/cpanel',
-            'plesk'       => '/usr/local/psa/version',
-            'directadmin' => '/usr/local/directadmin/directadmin',
-            'ispmanager'  => '/usr/local/mgr5/sbin/mgrctl',
-            'hestia'      => '/usr/local/hestia/bin/v-list-users',
-            'vesta'       => '/usr/local/vesta/bin/v-list-users',
+        // 1. Environment variables (most reliable, no open_basedir issues)
+        $serverSoftware = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
+        if (isset($_SERVER['DIRECTADMIN']) || str_contains($serverSoftware, 'directadmin')) {
+            return 'directadmin';
+        }
+
+        // 2. Port check (no filesystem, works within open_basedir)
+        // DirectAdmin: 2222, cPanel: 2083/2087, Plesk: 8443/8880
+        $ports = [
+            'directadmin' => [2222],
+            'cpanel'      => [2083, 2087],
+            'plesk'       => [8443, 8880],
+            'hestia'      => [8083],
+            'cyberpanel'  => [8090],
+            'ispmanager'  => [1500],
         ];
-        foreach ($checks as $panel => $file) {
-            if (@file_exists($file)) {
-                return $panel;
+        foreach ($ports as $panel => $panelPorts) {
+            foreach ($panelPorts as $port) {
+                $conn = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.3);
+                if (is_resource($conn)) {
+                    fclose($conn);
+                    return $panel;
+                }
             }
         }
-        if (@is_dir('/etc/cyberpanel')) {
-            return 'cyberpanel';
+
+        // 3. Filesystem checks (may be blocked by open_basedir, but try)
+        $fsPanels = [
+            'cpanel'      => ['/usr/local/cpanel', '/etc/cpanel'],
+            'directadmin' => ['/usr/local/directadmin', '/etc/directadmin'],
+            'plesk'       => ['/usr/local/psa', '/opt/psa'],
+            'hestia'      => ['/usr/local/hestia'],
+            'vesta'       => ['/usr/local/vesta'],
+            'ispmanager'  => ['/usr/local/mgr5'],
+            'cyberpanel'  => ['/etc/cyberpanel', '/usr/local/CyberCP'],
+            'interworx'   => ['/usr/local/interworx'],
+            'froxlor'     => ['/var/www/froxlor'],
+        ];
+        foreach ($fsPanels as $panel => $paths) {
+            foreach ($paths as $path) {
+                if (@is_dir($path) || @file_exists($path)) {
+                    return $panel;
+                }
+            }
         }
+
+        // 4. ABSPATH-relative check (always within open_basedir)
+        // DA: /home/user/domains/... — path structure is DA-specific
+        if (defined('ABSPATH') && preg_match('#^/home/[^/]+/domains/#', ABSPATH)) {
+            // Confirm with port as secondary signal
+            $conn = @fsockopen('127.0.0.1', 2222, $errno, $errstr, 0.3);
+            if (is_resource($conn)) {
+                fclose($conn);
+                return 'directadmin';
+            }
+        }
+
         return 'linux';
     }
 
@@ -194,7 +233,10 @@ final class RedisDetector
             'plesk'       => "Redis nerastas.\n\nPlesk: Tools & Settings → Updates → install Redis extension.",
             'directadmin' => "Redis nerastas.\n\nDirectAdmin: Extra Features → Redis → Enable.",
             'hestia'      => "Redis nerastas.\n\nHestiaCP: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
+            'vesta'       => "Redis nerastas.\n\nVestaCP: SSH → sudo apt install redis-server && sudo systemctl enable --now redis",
             'cyberpanel'  => "Redis nerastas.\n\nCyberPanel: Packages → Install Redis.",
+            'ispmanager'  => "Redis nerastas.\n\nISPmanager: Software → Redis → Install.",
+            'interworx'   => "Redis nerastas.\n\nInterWorx: SSH → sudo yum install redis && sudo systemctl enable --now redis",
             default       => "Redis nerastas.\n\nUbuntu/Debian:\n  sudo apt install redis-server\n  sudo systemctl enable --now redis\n\nCentOS/RHEL:\n  sudo yum install redis\n  sudo systemctl enable --now redis\n\nAlternatyva — Dragonfly:\n  curl -fsSL https://packages.dragonflydb.io/install.sh | sudo bash",
         };
     }
