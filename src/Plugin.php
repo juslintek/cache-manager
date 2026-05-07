@@ -312,82 +312,96 @@ final class Plugin
         if (!current_user_can('manage_options')) {
             return;
         }
+
+        $hasVips    = class_exists('Vips\Image') || self::commandExists('vips');
+        $hasAvif    = class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true);
+        $hasWebp    = class_exists('Imagick') && in_array('WEBP', \Imagick::queryFormats(), true);
+        $hasGdWebp  = function_exists('imagewebp');
+        $allOptimal = $hasVips && $hasAvif && ($hasWebp || $hasGdWebp);
+
+        // If everything is now installed, clear the dismissed flag so success notice shows once
+        if ($allOptimal && get_option('vlt_img_optm_notice_dismissed')) {
+            delete_option('vlt_img_optm_notice_dismissed');
+        }
+
         if (get_option('vlt_img_optm_notice_dismissed')) {
             return;
         }
 
-        $missing  = [];
-        $tips     = [];
+        $nonce = wp_create_nonce('wp_rest');
+        $url   = esc_js(rest_url('vlt-cache/v1/dismiss-notice'));
 
-        // libvips — best quality/size ratio, fastest
-        $hasVips = class_exists('Vips\Image')
-            || self::commandExists('vips');
+        if ($allOptimal) {
+            // Green success — auto-dismiss after 4s
+            echo '<div class="notice notice-success is-dismissible" id="vlt-img-optm-notice"><p>';
+            echo '✅ <strong>Paveikslėlių optimizavimas:</strong> ';
+            echo 'libvips ' . ($hasVips ? '✅' : '❌') . ' &nbsp; ';
+            echo 'AVIF ' . ($hasAvif ? '✅' : '❌') . ' &nbsp; ';
+            echo 'WebP ' . ($hasWebp || $hasGdWebp ? '✅' : '❌') . ' — ';
+            echo 'Visi įrankiai įdiegti. Optimalus našumas.';
+            echo '</p></div>';
+            echo '<script>
+            setTimeout(function() {
+                var n = document.getElementById("vlt-img-optm-notice");
+                if (n) n.style.display = "none";
+                fetch("' . $url . '", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
+            }, 4000);
+            </script>';
+            return;
+        }
+
+        // Build missing list
+        $missing = [];
+        $tips    = [];
         if (!$hasVips) {
-            $missing[] = '<strong>libvips</strong> (geriausias kokybės/dydžio santykis, ~10× greičiau už ImageMagick)';
-            $tips[]    = 'libvips: <code>sudo apt install libvips-tools php-vips</code> arba <code>sudo yum install vips-tools</code>';
+            $missing[] = 'libvips <small>(~10× greičiau už ImageMagick)</small>';
+            $tips[]    = '<code>sudo apt install libvips-tools php-vips</code>';
         }
-
-        // Imagick with AVIF support
-        $hasAvif = class_exists('Imagick') && in_array('AVIF', \Imagick::queryFormats(), true);
         if (!$hasAvif) {
-            $missing[] = '<strong>Imagick AVIF</strong> (mažiausi failai — ~50% mažiau nei WebP)';
-            $tips[]    = 'AVIF: <code>sudo apt install libavif-dev</code> + rekompiliuokite ImageMagick su AVIF palaikymu';
+            $missing[] = 'Imagick AVIF <small>(~50% mažiau nei WebP)</small>';
+            $tips[]    = 'Rekompiliuokite ImageMagick su libavif: <code>sudo dnf install --enablerepo=remi vips-devel</code>';
+        }
+        if (!$hasWebp && !$hasGdWebp) {
+            $missing[] = 'WebP palaikymas (Imagick arba GD)';
+            $tips[]    = '<code>sudo apt install php-gd</code> arba <code>pecl install imagick</code>';
         }
 
-        // GD WebP
-        if (!function_exists('imagewebp')) {
-            $missing[] = '<strong>GD WebP</strong>';
-            $tips[]    = 'GD WebP: <code>sudo apt install php-gd</code> (su WebP palaikymu)';
-        }
-
-        // Check for known WP image optimization plugins
-        $knownPlugins = [
-            'shortpixel-image-optimiser/wp-shortpixel.php'   => 'ShortPixel',
-            'imagify/imagify.php'                             => 'Imagify',
-            'wp-smushit/wp-smush.php'                        => 'Smush',
-            'ewww-image-optimizer/ewww-image-optimizer.php'  => 'EWWW Image Optimizer',
-            'webp-express/webp-express.php'                  => 'WebP Express',
-            'optimole-wp/optimole-wp.php'                    => 'Optimole',
-        ];
+        // Conflicting plugins
         $activeOptimizers = [];
-        $activePlugins = (array) get_option('active_plugins', []);
-        foreach ($knownPlugins as $slug => $name) {
-            if (in_array($slug, $activePlugins, true)) {
+        foreach ([
+            'shortpixel-image-optimiser/wp-shortpixel.php' => 'ShortPixel',
+            'imagify/imagify.php'                           => 'Imagify',
+            'wp-smushit/wp-smush.php'                      => 'Smush',
+            'ewww-image-optimizer/ewww-image-optimizer.php' => 'EWWW',
+            'webp-express/webp-express.php'                 => 'WebP Express',
+            'optimole-wp/optimole-wp.php'                   => 'Optimole',
+        ] as $slug => $name) {
+            if (in_array($slug, (array) get_option('active_plugins', []), true)) {
                 $activeOptimizers[] = $name;
             }
         }
 
-        // Nothing to warn about
         if (empty($missing) && empty($activeOptimizers)) {
             return;
         }
 
-        echo '<div class="notice notice-info is-dismissible" id="vlt-img-optm-notice"><p>';
-        echo '<strong>Podėlio Valdymas — Paveikslėlių optimizavimas:</strong> ';
-
+        echo '<div class="notice notice-warning is-dismissible" id="vlt-img-optm-notice"><p>';
+        echo '<strong>Paveikslėlių optimizavimas:</strong> ';
         if (!empty($activeOptimizers)) {
-            echo 'Aptikti optimizavimo įskiepiai: <strong>' . implode(', ', $activeOptimizers) . '</strong>. ';
-            echo 'Rekomenduojame naudoti tik vieną — keli įskiepiai gali konfliktuoti. ';
+            echo 'Aktyvūs keli optimizavimo įskiepiai: <strong>' . implode(', ', $activeOptimizers) . '</strong> — gali konfliktuoti. ';
         }
-
         if (!empty($missing)) {
-            echo 'Trūksta geresnio optimizavimo įrankių: ' . implode(', ', $missing) . '. ';
-            echo '<details style="margin-top:6px"><summary style="cursor:pointer">Kaip įdiegti ▾</summary><ul style="margin:6px 0 0 16px">';
+            echo 'Trūksta: ' . implode(', ', $missing) . '. ';
+            echo '<details style="margin-top:4px"><summary style="cursor:pointer">Kaip įdiegti ▾</summary><ul style="margin:4px 0 0 16px">';
             foreach ($tips as $tip) {
                 echo '<li>' . $tip . '</li>';
             }
-            echo '<li>Rekomenduojama eilė: libvips → Imagick (AVIF) → Imagick (WebP) → GD (WebP)</li>';
             echo '</ul></details>';
         }
-
         echo '</p></div>';
         echo '<script>
         document.querySelector("#vlt-img-optm-notice .notice-dismiss")?.addEventListener("click", function() {
-            fetch("' . esc_js(rest_url('vlt-cache/v1/dismiss-notice')) . '", {
-                method: "POST",
-                headers: {"X-WP-Nonce": "' . wp_create_nonce('wp_rest') . '", "Content-Type": "application/json"},
-                body: JSON.stringify({notice: "vlt_img_optm_notice_dismissed"})
-            });
+            fetch("' . $url . '", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
         });
         </script>';
     }
