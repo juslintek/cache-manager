@@ -23,7 +23,7 @@ final class RedisDetector
 
         // 1. Try known socket paths
         foreach (self::socketPaths() as $sock) {
-            if (file_exists($sock) && self::probeSocket($sock)) {
+            if (@file_exists($sock) && self::probeSocket($sock)) {
                 $result['connected'] = true;
                 $result['method']    = 'socket';
                 $result['socket']    = $sock;
@@ -81,11 +81,6 @@ final class RedisDetector
             '/var/run/redis.sock',
             '/tmp/redis.sock',
             '/run/redis/redis.sock',
-            // cPanel/WHM
-            '/var/run/redis/redis-server.sock',
-            // Plesk
-            '/var/run/redis/redis.sock',
-            // DirectAdmin
             '/usr/local/redis/var/redis.sock',
         ];
     }
@@ -150,7 +145,7 @@ final class RedisDetector
             '/usr/local/redis/etc/redis.conf',
         ];
         foreach ($paths as $path) {
-            if (!is_readable($path)) {
+            if (!@is_readable($path)) {
                 continue;
             }
             $conf = [];
@@ -169,27 +164,27 @@ final class RedisDetector
         return [];
     }
 
-    private static function detectPanel(): string
+    public static function detectPanel(): string
     {
-        if (file_exists('/usr/local/cpanel/cpanel')) {
+        if (@file_exists('/usr/local/cpanel/cpanel')) {
             return 'cpanel';
         }
-        if (file_exists('/usr/local/psa/version') || file_exists('/opt/psa/version')) {
+        if (@file_exists('/usr/local/psa/version') || file_exists('/opt/psa/version')) {
             return 'plesk';
         }
-        if (file_exists('/usr/local/directadmin/directadmin')) {
+        if (@file_exists('/usr/local/directadmin/directadmin')) {
             return 'directadmin';
         }
-        if (file_exists('/usr/local/mgr5/sbin/mgrctl')) {
+        if (@file_exists('/usr/local/mgr5/sbin/mgrctl')) {
             return 'ispmanager';
         }
-        if (file_exists('/usr/local/hestia/bin/v-list-users')) {
+        if (@file_exists('/usr/local/hestia/bin/v-list-users')) {
             return 'hestia';
         }
-        if (file_exists('/usr/local/vesta/bin/v-list-users')) {
+        if (@file_exists('/usr/local/vesta/bin/v-list-users')) {
             return 'vesta';
         }
-        if (is_dir('/etc/cyberpanel')) {
+        if (@is_dir('/etc/cyberpanel')) {
             return 'cyberpanel';
         }
         return 'linux';
@@ -204,7 +199,7 @@ final class RedisDetector
         }
         // Check for LiteSpeed binaries
         foreach (['/usr/local/lsws/bin/lswsctrl', '/usr/local/lsws/fcgi-bin/lsphp'] as $bin) {
-            if (file_exists($bin)) {
+            if (@file_exists($bin)) {
                 return true;
             }
         }
