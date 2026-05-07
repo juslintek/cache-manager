@@ -60,15 +60,11 @@ final class Plugin
             ...( get_option('vlt_litespeed_purge') || \VLT\CacheManager\ServerDetector::isLiteSpeed() ? [new LiteSpeedStrategy()] : [] )
         );
 
+        // Targeted cache invalidation — hooks into every content change event
+        (new \VLT\CacheManager\Cache\CacheInvalidator($self->purge))->register();
+
         add_action('init', [$self->logger, 'logCfRequest']);
         add_action('shutdown', [$self, 'onShutdown']);
-        add_action('save_post', [$self, 'onPostChange']);
-        add_action('delete_post', [$self, 'onPostChange']);
-        add_action('trashed_post', [$self, 'onPostChange']);
-        add_action('switch_theme', [$self->purge, 'purgeAll']);
-        add_action('customize_save_after', [$self->purge, 'purgeAll']);
-        add_action('upgrader_process_complete', [$self, 'onUpgrade'], 10, 2);
-        add_action('elementor/core/files/clear_cache', fn() => $self->purge->purge('nginx'));
 
         add_action('vlt_cm_log_rotate', [$self->logger, 'rotateLogs']);
         if (!wp_next_scheduled('vlt_cm_log_rotate')) {
@@ -118,26 +114,6 @@ final class Plugin
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
         }
-    }
-
-    public function onPostChange(int $id): void
-    {
-        if (wp_is_post_revision($id) || wp_is_post_autosave($id)) {
-            return;
-        }
-        // Purge the active server's page cache
-        if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
-            $this->purge->purge('litespeed');
-        } else {
-            $this->purge->purge('nginx');
-        }
-    }
-
-    public function onUpgrade($upgrader, $options): void
-    {
-        $this->purge->purge('opcache');
-        $this->purge->purge('nginx');
-        $this->purge->purge('elementor');
     }
 
     public function onShutdown(): void

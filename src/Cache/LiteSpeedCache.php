@@ -141,6 +141,16 @@ final class LiteSpeedCache
         self::sendPurgeHeader('*');
     }
 
+    public static function purgeTag(string $tag): void
+    {
+        self::sendPurgeHeader('tag=' . $tag);
+    }
+
+    public static function purgeUrl(string $url): void
+    {
+        self::sendPurgeHeader('url=' . $url);
+    }
+
     private static function sendPurgeHeader(string $tags): void
     {
         if (!headers_sent()) {
