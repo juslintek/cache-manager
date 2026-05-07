@@ -162,31 +162,31 @@ final class TracerPage extends AdminPage
                 <!-- Overview -->
                 <div>
                     <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">Apžvalga</h4>
-                    <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-xs">
-                        <dt class="text-gray-500 font-medium">Trace ID</dt><dd x-text="detailTrace.id"></dd>
-                        <dt class="text-gray-500 font-medium">Laikas</dt><dd x-text="detailTrace.ts"></dd>
-                        <dt class="text-gray-500 font-medium">Metodas</dt><dd x-text="detailTrace.method"></dd>
+                    <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs">
+                        <dt class="text-gray-500 font-medium">Trace ID</dt><dd class="break-all min-w-0" x-text="detailTrace.id"></dd>
+                        <dt class="text-gray-500 font-medium">Laikas</dt><dd class="break-all min-w-0" x-text="detailTrace.ts"></dd>
+                        <dt class="text-gray-500 font-medium">Metodas</dt><dd class="break-all min-w-0" x-text="detailTrace.method"></dd>
                         <dt class="text-gray-500 font-medium">URI</dt><dd class="break-all" x-text="detailTrace.uri"></dd>
-                        <dt class="text-gray-500 font-medium">Statusas</dt><dd x-text="detailTrace.status"></dd>
+                        <dt class="text-gray-500 font-medium">Statusas</dt><dd class="break-all min-w-0" x-text="detailTrace.status"></dd>
                         <dt class="text-gray-500 font-medium">Trukmė</dt><dd class="font-mono font-semibold" :class="detailTrace.total_ms>1000?'text-red-600':detailTrace.total_ms>300?'text-yellow-600':'text-green-600'" x-text="detailTrace.total_ms+'ms'"></dd>
-                        <dt class="text-gray-500 font-medium">DB užklausos</dt><dd x-text="detailTrace.db_n+' ('+detailTrace.db_ms+'ms)'"></dd>
+                        <dt class="text-gray-500 font-medium">DB užklausos</dt><dd class="break-all min-w-0" x-text="detailTrace.db_n+' ('+detailTrace.db_ms+'ms)'"></dd>
                         <dt class="text-gray-500 font-medium">Atmintis</dt><dd x-text="sz(detailTrace.mem)"></dd>
-                        <dt class="text-gray-500 font-medium">IP</dt><dd x-text="detailTrace.ip"></dd>
-                        <dt class="text-gray-500 font-medium">PHP</dt><dd x-text="detailTrace.php"></dd>
-                        <dt class="text-gray-500 font-medium">Tema</dt><dd x-text="detailTrace.tpl"></dd>
-                        <dt class="text-gray-500 font-medium">Įskiepiai</dt><dd x-text="detailTrace.plugins"></dd>
-                        <dt class="text-gray-500 font-medium">CF-RAY</dt><dd x-text="detailTrace.cf_ray||'—'"></dd>
-                        <dt class="text-gray-500 font-medium">Šalis</dt><dd x-text="detailTrace.cf_co||'—'"></dd>
+                        <dt class="text-gray-500 font-medium">IP</dt><dd class="break-all min-w-0" x-text="detailTrace.ip"></dd>
+                        <dt class="text-gray-500 font-medium">PHP</dt><dd class="break-all min-w-0" x-text="detailTrace.php"></dd>
+                        <dt class="text-gray-500 font-medium">Tema</dt><dd class="break-all min-w-0" x-text="detailTrace.tpl"></dd>
+                        <dt class="text-gray-500 font-medium">Įskiepiai</dt><dd class="break-all min-w-0" x-text="detailTrace.plugins"></dd>
+                        <dt class="text-gray-500 font-medium">CF-RAY</dt><dd class="break-all min-w-0" x-text="detailTrace.cf_ray||'—'"></dd>
+                        <dt class="text-gray-500 font-medium">Šalis</dt><dd class="break-all min-w-0" x-text="detailTrace.cf_co||'—'"></dd>
                     </dl>
                 </div>
 
                 <!-- User -->
                 <div x-show="detailTrace.user">
                     <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">Vartotojas</h4>
-                    <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-xs">
-                        <dt class="text-gray-500 font-medium">ID</dt><dd x-text="detailTrace.user"></dd>
-                        <dt class="text-gray-500 font-medium">Vardas</dt><dd x-text="detailTrace.user_name||'—'"></dd>
-                        <dt class="text-gray-500 font-medium">El. paštas</dt><dd x-text="detailTrace.user_email||'—'"></dd>
+                    <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs">
+                        <dt class="text-gray-500 font-medium">ID</dt><dd class="break-all min-w-0" x-text="detailTrace.user"></dd>
+                        <dt class="text-gray-500 font-medium">Vardas</dt><dd class="break-all min-w-0" x-text="detailTrace.user_name||'—'"></dd>
+                        <dt class="text-gray-500 font-medium">El. paštas</dt><dd class="break-all min-w-0" x-text="detailTrace.user_email||'—'"></dd>
                         <dt class="text-gray-500 font-medium">Rolės</dt><dd x-text="(detailTrace.user_roles||[]).join(', ')||'—'"></dd>
                     </dl>
                 </div>
@@ -196,11 +196,11 @@ final class TracerPage extends AdminPage
                     <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">Užklausa (Request)</h4>
                     <template x-if="detailTrace.req_get&&Object.keys(detailTrace.req_get).length">
                         <div class="mb-2"><span class="text-xs font-semibold">GET parametrai:</span>
-                        <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-xs mt-1"><template x-for="k in Object.keys(detailTrace.req_get)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd><code class="text-[10px] bg-gray-100 px-1 rounded" x-text="detailTrace.req_get[k]"></code></dd></template></dl></div>
+                        <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs mt-1"><template x-for="k in Object.keys(detailTrace.req_get)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd><code class="text-[10px] bg-gray-100 px-1 rounded" x-text="detailTrace.req_get[k]"></code></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_post&&Object.keys(detailTrace.req_post).length">
                         <div class="mb-2"><span class="text-xs font-semibold">POST parametrai:</span>
-                        <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-xs mt-1"><template x-for="k in Object.keys(detailTrace.req_post)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd><code class="text-[10px] bg-gray-100 px-1 rounded break-all" x-text="typeof detailTrace.req_post[k]==='object'?JSON.stringify(detailTrace.req_post[k]):detailTrace.req_post[k]"></code></dd></template></dl></div>
+                        <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-xs mt-1"><template x-for="k in Object.keys(detailTrace.req_post)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd><code class="text-[10px] bg-gray-100 px-1 rounded break-all" x-text="typeof detailTrace.req_post[k]==='object'?JSON.stringify(detailTrace.req_post[k]):detailTrace.req_post[k]"></code></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_body">
                         <div class="mb-2"><span class="text-xs font-semibold">Body:</span>
@@ -208,19 +208,19 @@ final class TracerPage extends AdminPage
                     </template>
                     <template x-if="detailTrace.req_headers&&Object.keys(detailTrace.req_headers).length">
                         <div class="mb-2"><span class="text-xs font-semibold">Antraštės:</span>
-                        <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-[10px] mt-1"><template x-for="k in Object.keys(detailTrace.req_headers)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd class="break-all" x-text="detailTrace.req_headers[k]"></dd></template></dl></div>
+                        <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[10px] mt-1"><template x-for="k in Object.keys(detailTrace.req_headers)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd class="break-all" x-text="detailTrace.req_headers[k]"></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_cookies&&Object.keys(detailTrace.req_cookies).length">
                         <div><span class="text-xs font-semibold">Slapukai:</span>
-                        <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-[10px] mt-1"><template x-for="k in Object.keys(detailTrace.req_cookies)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd class="break-all" x-text="detailTrace.req_cookies[k]"></dd></template></dl></div>
+                        <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[10px] mt-1"><template x-for="k in Object.keys(detailTrace.req_cookies)" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd class="break-all" x-text="detailTrace.req_cookies[k]"></dd></template></dl></div>
                     </template>
                 </div>
 
                 <!-- Response -->
                 <div x-show="detailTrace.resp_headers&&Object.keys(detailTrace.resp_headers).length">
                     <h4 class="text-xs font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-2">Atsakymas (Response)</h4>
-                    <dl class="grid grid-cols-[160px_1fr] gap-x-3 gap-y-0.5 text-[10px]">
-                        <dt class="text-gray-500 font-medium">Statusas</dt><dd x-text="detailTrace.resp_code||detailTrace.status"></dd>
+                    <dl class="grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-[10px]">
+                        <dt class="text-gray-500 font-medium">Statusas</dt><dd class="break-all min-w-0" x-text="detailTrace.resp_code||detailTrace.status"></dd>
                         <template x-for="k in Object.keys(detailTrace.resp_headers||{})" :key="k"><dt class="text-gray-500" x-text="k"></dt><dd class="break-all" x-text="detailTrace.resp_headers[k]"></dd></template>
                     </dl>
                 </div>
