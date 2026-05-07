@@ -214,16 +214,7 @@ final class RedisDetector
 
     public static function detectLiteSpeed(): bool
     {
-        $server = $_SERVER['SERVER_SOFTWARE'] ?? '';
-        if (stripos($server, 'litespeed') !== false || stripos($server, 'openlitespeed') !== false) {
-            return true;
-        }
-        foreach (['/usr/local/lsws/bin/lswsctrl', '/usr/local/lsws/fcgi-bin/lsphp'] as $bin) {
-            if (@file_exists($bin)) {
-                return true;
-            }
-        }
-        return defined('LSCWP_V') || class_exists('LiteSpeed\Core') || class_exists('LiteSpeed_Cache');
+        return \VLT\CacheManager\ServerDetector::isLiteSpeed();
     }
 
     private static function installInstructions(string $panel): string

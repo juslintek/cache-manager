@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace VLT\CacheManager;
 
 use VLT\CacheManager\Admin\AdminAjax;
+use VLT\CacheManager\Admin\Page\ApachePage;
 use VLT\CacheManager\Admin\Page\CloudflarePage;
 use VLT\CacheManager\Admin\Page\DashboardPage;
+use VLT\CacheManager\Admin\Page\LiteSpeedPage;
 use VLT\CacheManager\Admin\Page\LogsPage;
 use VLT\CacheManager\Admin\Page\NginxExplorerPage;
 use VLT\CacheManager\Admin\Page\OpcacheExplorerPage;
@@ -54,7 +56,7 @@ final class Plugin
             new OpcacheStrategy(),
             new RedisStrategy(),
             new ElementorStrategy(),
-            ...( get_option('vlt_litespeed_purge') ? [new LiteSpeedStrategy()] : [] )
+            ...( get_option('vlt_litespeed_purge') || \VLT\CacheManager\ServerDetector::isLiteSpeed() ? [new LiteSpeedStrategy()] : [] )
         );
 
         add_action('init', [$self->logger, 'logCfRequest']);
@@ -110,7 +112,12 @@ final class Plugin
         if (wp_is_post_revision($id) || wp_is_post_autosave($id)) {
             return;
         }
-        $this->purge->purge('nginx');
+        // Purge the active server's page cache
+        if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
+            $this->purge->purge('litespeed');
+        } else {
+            $this->purge->purge('nginx');
+        }
     }
 
     public function onUpgrade($upgrader, $options): void
@@ -145,16 +152,29 @@ final class Plugin
 
     public function registerMenu(): void
     {
-        $pages = [
-            new DashboardPage(),
-            new LogsPage(),
-            new CloudflarePage(),
-            new NginxExplorerPage(),
-            new OpcacheExplorerPage(),
-            new RedisExplorerPage(),
-            new TracerPage(),
-            new SettingsPage(),
-        ];
+        $server = \VLT\CacheManager\ServerDetector::detect()['server'];
+        $isLS   = in_array($server, [\VLT\CacheManager\ServerDetector::LITESPEED, \VLT\CacheManager\ServerDetector::OLS], true);
+        $isNginx  = $server === \VLT\CacheManager\ServerDetector::NGINX;
+        $isApache = $server === \VLT\CacheManager\ServerDetector::APACHE;
+
+        $pages = [new DashboardPage(), new LogsPage(), new CloudflarePage()];
+
+        // Show server-specific page, hide others
+        if ($isLS) {
+            $pages[] = new LiteSpeedPage();
+        } elseif ($isNginx) {
+            $pages[] = new NginxExplorerPage();
+        } elseif ($isApache) {
+            $pages[] = new ApachePage();
+        } else {
+            // Unknown — show all
+            $pages[] = new NginxExplorerPage();
+        }
+
+        $pages[] = new OpcacheExplorerPage();
+        $pages[] = new RedisExplorerPage();
+        $pages[] = new TracerPage();
+        $pages[] = new SettingsPage();
 
         add_menu_page('Podėlio Valdymas', 'Podėlio Valdymas', 'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80);
         add_submenu_page('vlt-cache', 'Suvestinė', 'Suvestinė', 'manage_options', 'vlt-cache', [$pages[0], 'render']);
