@@ -102,6 +102,11 @@ final class Plugin
         // Image optimization
         \VLT\CacheManager\Image\ImageOptimizer::register();
 
+        // Native LiteSpeed cache control (sends X-LiteSpeed-Cache-Control headers)
+        if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
+            \VLT\CacheManager\Cache\LiteSpeedCache::register();
+        }
+
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
         }

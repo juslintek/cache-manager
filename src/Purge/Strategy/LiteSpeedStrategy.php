@@ -15,29 +15,14 @@ final class LiteSpeedStrategy implements PurgeStrategyInterface
 
     public function purge(): void
     {
-        // LiteSpeed Cache plugin hook (LSCWP)
+        // Use our native cache control first
+        \VLT\CacheManager\Cache\LiteSpeedCache::purgeAll();
+
+        // Also trigger LSCWP if active (belt and suspenders)
         if (has_action('litespeed_purge_all')) {
             do_action('litespeed_purge_all');
-            return;
-        }
-
-        // Direct LSCWP API
-        if (class_exists('\LiteSpeed\Purge')) {
+        } elseif (class_exists('\LiteSpeed\Purge')) {
             \LiteSpeed\Purge::purge_all();
-            return;
         }
-
-        // Legacy LiteSpeed Cache class
-        if (class_exists('LiteSpeed_Cache_API')) {
-            \LiteSpeed_Cache_API::purge_all();
-            return;
-        }
-
-        // OpenLiteSpeed: send purge header via loopback request
-        wp_remote_get(home_url('/'), [
-            'timeout'   => 5,
-            'headers'   => ['X-LiteSpeed-Purge' => '*'],
-            'sslverify' => false,
-        ]);
     }
 }

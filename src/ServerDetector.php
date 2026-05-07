@@ -308,10 +308,6 @@ final class ServerDetector
             if (empty($config['lscache'])) {
                 $recs[] = 'Įjunkite LSCache modulį — tai pagrindinis LiteSpeed talpyklos mechanizmas.';
             }
-            if (!defined('LSCWP_V') && !class_exists('LiteSpeed\Core')) {
-                $recs[] = 'Įdiekite LiteSpeed Cache WordPress įskiepį — jis automatiškai konfigūruoja LSCache.';
-            }
-            $recs[] = 'Įjunkite QUIC/HTTP3 palaikymą LiteSpeed konfigūracijoje.';
         }
 
         if ($server === self::NGINX) {
