@@ -21,52 +21,15 @@ final class TracerPage extends AdminPage
 
         // ── Extension status notices ──────────────────────────────────────────
         $hasExcimer = class_exists('ExcimerProfiler');
-        $hasSpx     = extension_loaded('SPX');
 
-        if (!$hasExcimer && !$hasSpx) {
-            echo '<div class="notice notice-error"><p>';
-            echo '<strong>Tracer:</strong> Nei <code>excimer</code>, nei <code>spx</code> PHP plėtiniai neįdiegti. ';
+        if (!$hasExcimer) {
+            echo '<div class="notice notice-warning inline"><p>';
+            echo '<strong>Tracer:</strong> <code>excimer</code> PHP plėtinys neįdiegtas. ';
             echo 'Tracer veikia be profiliavimo — tik laiko žymės. ';
-            echo 'Įdiekite <code>excimer</code> (<code>pecl install excimer</code>) arba ';
-            echo '<a href="https://github.com/NoiseByNorthwest/php-spx" target="_blank">php-spx</a> geresniam profiliavimui.';
+            echo 'Įdiekite: <code>pecl install excimer</code>';
             echo '</p></div>';
-        } elseif ($hasExcimer) {
+        } else {
             echo '<div class="notice notice-success inline"><p>✅ <strong>Excimer</strong> įdiegtas — tikslus mėginių profiliavimas aktyvus (~2% apkrova).</p></div>';
-        }
-
-        if ($hasSpx) {
-            $spxKey = trim(ini_get('spx.http_key') ?: '');
-            $spxEnabled = (bool) ini_get('spx.http_enabled');
-            echo '<div class="notice notice-' . ($spxEnabled ? 'warning' : 'info') . ' inline"><p>';
-            echo '🔬 <strong>php-spx</strong> įdiegtas';
-            if ($spxEnabled) {
-                echo ' — <span style="color:#d63638">HTTP profiliavimas ĮJUNGTAS</span> (saugumui išjunkite kai nenaudojate)';
-            } else {
-                echo ' — HTTP profiliavimas išjungtas (saugus)';
-            }
-            if ($spxKey) {
-                $spxUrl = home_url('/?SPX_KEY=' . urlencode($spxKey) . '&SPX_UI_URI=/');
-                echo ' | <a href="' . esc_url($spxUrl) . '" target="_blank">Atidaryti SPX UI →</a>';
-            }
-            echo ' | <button type="button" id="vlt-spx-toggle" class="button button-small">'
-                . ($spxEnabled ? '🔴 Išjungti SPX HTTP' : '🟢 Įjungti SPX HTTP') . '</button>';
-            echo '<span id="vlt-spx-status" style="margin-left:8px;font-size:12px;color:#666"></span>';
-            echo '</p></div>';
-            echo '<script>
-            document.getElementById("vlt-spx-toggle")?.addEventListener("click", function() {
-                const s = document.getElementById("vlt-spx-status");
-                const enable = this.textContent.includes("Įjungti");
-                this.disabled = true; s.textContent = "...";
-                fetch("' . esc_js(rest_url('vlt-cache/v1/spx-toggle')) . '", {
-                    method: "POST",
-                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
-                    body: JSON.stringify({enable: enable})
-                }).then(r=>r.json()).then(d=>{
-                    s.textContent = d.ok ? "✅ Atnaujinta — perkraukite puslapį" : "❌ " + (d.error||"Klaida");
-                    if (d.ok) setTimeout(()=>location.reload(), 1500);
-                }).catch(()=>{s.textContent="❌ Klaida"; this.disabled=false;});
-            });
-            </script>';
         }
         ?>
         <script src="https://cdn.tailwindcss.com"></script>
