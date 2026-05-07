@@ -445,8 +445,8 @@ final class Plugin
     {
         $info = ['connected' => false, 'memory' => '—', 'keys' => 0];
         try {
-            $r = new \Redis();
-            if ($r->connect('127.0.0.1', 6379, 1.0)) {
+            $r = \VLT\CacheManager\Redis\RedisFactory::create(1.0);
+            if ($r) {
                 $info['connected'] = true;
                 $ri = $r->info();
                 $info['memory'] = $ri['used_memory_human'] ?? '—';
