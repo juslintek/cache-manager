@@ -29,13 +29,24 @@ final class LiteSpeedPage extends AdminPage
         echo '<tr><td><strong>LSCache modulis</strong></td><td>';
         $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
         if ($info['config']['lscache'] ?? false) {
-            echo '<span style="color:#46b450">✅ Įjungtas</span>';
+            echo '<span style="color:#46b450">✅ Aktyvus</span>';
+            // Show which signals confirmed it
+            $signals = [];
+            if ($info['config']['lscache_php_api'] ?? false) $signals[] = 'PHP API';
+            if ($info['config']['lscache_headers'] ?? false)  $signals[] = 'HTTP antraštės';
+            if ($info['config']['lscache_so'] ?? false)       $signals[] = 'modulis (.so)';
+            if ($info['config']['lscache_conf'] ?? false)     $signals[] = 'konfigūracija';
+            if ($info['config']['lscache_storage'] ?? false)  $signals[] = 'talpyklos katalogas';
+            if ($signals) echo ' <small style="color:#666">(' . implode(', ', $signals) . ')</small>';
         } elseif ($lscacheSo) {
             echo '<span style="color:#dba617">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
         } else {
             echo '<span style="color:#d63638">❌ Nerastas — įjunkite LSCache modulį</span>';
         }
         echo '</td></tr>';
+        if (!empty($info['config']['lscache_storage_path'])) {
+            echo '<tr><td><strong>Talpyklos katalogas</strong></td><td><code>' . esc_html($info['config']['lscache_storage_path']) . '</code></td></tr>';
+        }
         echo '<tr><td><strong>LSCWP įskiepis</strong></td><td>' . (defined('LSCWP_V') || class_exists('LiteSpeed\Core') ? '<span style="color:#46b450">✅ Aktyvus</span>' : '<span style="color:#d63638">❌ Neaktyvus</span>') . '</td></tr>';
         echo '</tbody></table>';
 

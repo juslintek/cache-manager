@@ -157,6 +157,37 @@ final class ServerDetector
 
     private static function parseOlsConfig(): array
     {
+        // 1. PHP function check — highest reliability (LSCache PHP API available)
+        $lscachePhpApi = function_exists('litespeed_finish_request')
+            || function_exists('litespeed_purge_all')
+            || defined('LSCWP_V')
+            || class_exists('LiteSpeed\Core');
+
+        // 2. Response headers — X-LiteSpeed-Cache or X-LiteSpeed-Cache-Control present
+        $lscacheHeaders = false;
+        foreach (headers_list() as $h) {
+            if (stripos($h, 'X-LiteSpeed-Cache') !== false) {
+                $lscacheHeaders = true;
+                break;
+            }
+        }
+        // Also check incoming request headers (set by OLS when serving cached response)
+        foreach ($_SERVER as $k => $v) {
+            if (stripos($k, 'HTTP_X_LITESPEED') !== false) {
+                $lscacheHeaders = true;
+                break;
+            }
+        }
+
+        // 3. Module .so file
+        $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
+            || @file_exists('/usr/local/lsws/modules/lscache.so');
+
+        // 4. Cache storage directory exists (OLS default: /usr/local/lsws/sitecache/)
+        $cacheStorageExists = @is_dir('/usr/local/lsws/sitecache')
+            || @is_dir('/tmp/lscache');
+
+        // 5. Config file check
         $mainPaths = ['/usr/local/lsws/conf/httpd_config.conf', '/etc/openlitespeed/httpd_config.conf'];
         $content = '';
         $configFile = '';
@@ -167,42 +198,33 @@ final class ServerDetector
                 break;
             }
         }
+        $lscacheConf = str_contains($content, 'lscache') || str_contains($content, 'LSCache');
 
-        // LSCache is enabled via the lscache module — check module dir and vhost configs
-        $lscacheModule = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
-            || @file_exists('/usr/local/lsws/modules/lscache.so')
-            || str_contains($content, 'lscache')
-            || str_contains($content, 'LSCache');
-
-        // Also check vhost configs for lscache enablement
-        if (!$lscacheModule) {
-            $vhostDirs = ['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'];
-            foreach ($vhostDirs as $dir) {
+        // Check vhost configs
+        if (!$lscacheConf) {
+            foreach (['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'] as $dir) {
                 foreach (@glob($dir . '*/vhconf.conf') ?: [] as $vhconf) {
                     $vc = @file_get_contents($vhconf) ?: '';
                     if (str_contains($vc, 'lscache') || str_contains($vc, 'LSCache')) {
-                        $lscacheModule = true;
+                        $lscacheConf = true;
                         break 2;
                     }
                 }
             }
         }
 
-        // Check DA-style OLS config
-        if (!$lscacheModule) {
-            foreach (@glob('/etc/openlitespeed/conf.d/*.conf') ?: [] as $conf) {
-                $c = @file_get_contents($conf) ?: '';
-                if (str_contains($c, 'lscache') || str_contains($c, 'LSCache')) {
-                    $lscacheModule = true;
-                    break;
-                }
-            }
-        }
+        $lscacheActive = $lscachePhpApi || $lscacheHeaders || $lscacheSo || $lscacheConf || $cacheStorageExists;
 
         return [
-            'lscache'     => $lscacheModule,
-            'config_file' => $configFile,
-            'workers'     => self::extractValue($content, 'maxConnections'),
+            'lscache'              => $lscacheActive,
+            'lscache_php_api'      => $lscachePhpApi,
+            'lscache_headers'      => $lscacheHeaders,
+            'lscache_so'           => $lscacheSo,
+            'lscache_conf'         => $lscacheConf,
+            'lscache_storage'      => $cacheStorageExists,
+            'lscache_storage_path' => @is_dir('/usr/local/lsws/sitecache') ? '/usr/local/lsws/sitecache' : '/tmp/lscache',
+            'config_file'          => $configFile,
+            'workers'              => self::extractValue($content, 'maxConnections'),
         ];
     }
 
