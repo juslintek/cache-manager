@@ -202,24 +202,69 @@ final class ServerDetector
             }
         }
 
-        // 5. Config file check — DA OLS uses /etc/openlitespeed/httpd-vhosts.conf
-        $mainPaths = [
-            '/etc/openlitespeed/httpd_config.conf',
-            '/etc/openlitespeed/httpd-vhosts.conf',
-            '/usr/local/lsws/conf/httpd_config.conf',
+        // Config hierarchy — DA OLS structure
+        // Main: /etc/openlitespeed/httpd_config.conf (symlink to /usr/local/lsws/conf/httpd_config.conf)
+        // LSCache: /etc/openlitespeed/httpd-lscache.conf (included by main)
+        // Vhosts: /etc/openlitespeed/httpd-vhosts.conf + directadmin-vhosts.conf
+        // DA template (master): /usr/local/directadmin/data/templates/openlitespeed_vhost.conf
+        // DA template (custom): /usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf
+        $configHierarchy = [
+            [
+                'path'  => '/etc/openlitespeed/httpd_config.conf',
+                'role'  => 'main',
+                'label' => 'Pagrindinis OLS konfigūracijos failas',
+                'note'  => 'Įtraukia visus kitus failus. Generuojamas DirectAdmin.',
+            ],
+            [
+                'path'  => '/etc/openlitespeed/httpd-lscache.conf',
+                'role'  => 'lscache',
+                'label' => 'LSCache konfigūracija',
+                'note'  => 'Valdo LSCache modulio nustatymus. Įtraukiamas iš pagrindinio failo.',
+            ],
+            [
+                'path'  => '/etc/openlitespeed/httpd-vhosts.conf',
+                'role'  => 'vhosts',
+                'label' => 'Virtualių hostų konfigūracija',
+                'note'  => 'Visi domenai. Generuojamas DirectAdmin pagal šablonus.',
+            ],
+            [
+                'path'  => '/etc/openlitespeed/directadmin-vhosts.conf',
+                'role'  => 'vhosts-da',
+                'label' => 'DirectAdmin virtualių hostų konfigūracija',
+                'note'  => 'DA-specifiniai virtualūs hostai.',
+            ],
+            [
+                'path'  => '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
+                'role'  => 'template-master',
+                'label' => 'DA šablonas (pagrindinis)',
+                'note'  => 'Šablonas, pagal kurį DA generuoja httpd-vhosts.conf. Nekeiskite tiesiogiai — naudokite custom/ kopiją.',
+            ],
+            [
+                'path'  => '/usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf',
+                'role'  => 'template-custom',
+                'label' => 'DA šablonas (custom perrašymas)',
+                'note'  => 'Jūsų pakeitimai šiam failui perrašo pagrindinį šabloną. Sukurkite šį failą norėdami keisti vhost konfigūraciją.',
+            ],
         ];
-        $content = '';
-        $configFile = '';
-        foreach ($mainPaths as $p) {
-            if (@is_readable($p)) {
-                $content    = @file_get_contents($p) ?: '';
-                $configFile = $p;
-                break;
-            }
-        }
-        $lscacheConf = str_contains($content, 'lscache') || str_contains($content, 'LSCache');
 
-        // DA OLS template files — CacheRoot directive enables per-user lscache
+        // Enrich with readable/writable flags
+        foreach ($configHierarchy as &$entry) {
+            $entry['readable'] = @is_readable($entry['path']);
+            $entry['writable'] = @is_writable($entry['path']);
+            $entry['exists']   = @file_exists($entry['path']);
+        }
+        unset($entry);
+
+        // Primary config file for backward compat
+        $configFile = '/etc/openlitespeed/httpd_config.conf';
+        $content    = @file_get_contents($configFile) ?: '';
+
+        // LSCache check from dedicated file
+        $lscacheContent = @file_get_contents('/etc/openlitespeed/httpd-lscache.conf') ?: '';
+        $lscacheConf    = str_contains($content, 'lscache') || str_contains($content, 'LSCache')
+            || str_contains($lscacheContent, 'lscache') || str_contains($lscacheContent, 'LSCache');
+
+        // DA template check
         if (!$lscacheConf) {
             foreach ([
                 '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
@@ -229,19 +274,6 @@ final class ServerDetector
                 if (str_contains($tc, 'lscache') || str_contains($tc, 'CacheRoot') || str_contains($tc, 'LSCache')) {
                     $lscacheConf = true;
                     break;
-                }
-            }
-        }
-
-        // Check vhost configs
-        if (!$lscacheConf) {
-            foreach (['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'] as $dir) {
-                foreach (@glob($dir . '*/vhconf.conf') ?: [] as $vhconf) {
-                    $vc = @file_get_contents($vhconf) ?: '';
-                    if (str_contains($vc, 'lscache') || str_contains($vc, 'LSCache')) {
-                        $lscacheConf = true;
-                        break 2;
-                    }
                 }
             }
         }
@@ -257,6 +289,7 @@ final class ServerDetector
             'lscache_storage'      => $cacheStorageExists,
             'lscache_storage_path' => $cacheStoragePath,
             'config_file'          => $configFile,
+            'config_hierarchy'     => $configHierarchy,
             'workers'              => self::extractValue($content, 'maxConnections'),
         ];
     }

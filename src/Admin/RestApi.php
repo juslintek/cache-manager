@@ -153,6 +153,10 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'serverDetect'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/config-save', [
+            'methods' => 'POST', 'callback' => [self::class, 'configSave'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Tracer
         register_rest_route(self::NS, '/tracer/stream', [
@@ -555,6 +559,42 @@ final class RestApi
     public static function serverDetect(): \WP_REST_Response
     {
         return new \WP_REST_Response(\VLT\CacheManager\ServerDetector::runAndStore());
+    }
+
+    public static function configSave(\WP_REST_Request $req): \WP_REST_Response
+    {
+        $path    = $req->get_json_params()['path'] ?? '';
+        $content = $req->get_json_params()['content'] ?? '';
+
+        if (!$path || !$content) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'Missing path or content'], 400);
+        }
+
+        // Security: only allow known OLS/DA config paths
+        $allowed = [
+            '/etc/openlitespeed/',
+            '/usr/local/directadmin/data/templates/custom/',
+            '/usr/local/lsws/conf/',
+        ];
+        $allowed_path = false;
+        foreach ($allowed as $prefix) {
+            if (str_starts_with(realpath($path) ?: $path, $prefix)) {
+                $allowed_path = true;
+                break;
+            }
+        }
+        if (!$allowed_path) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'Path not allowed'], 403);
+        }
+
+        if (!@is_writable($path) && @file_exists($path)) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'File not writable'], 403);
+        }
+
+        // Create parent dir if needed (for custom/ template)
+        @wp_mkdir_p(dirname($path));
+        $ok = file_put_contents($path, $content);
+        return new \WP_REST_Response(['ok' => $ok !== false]);
     }
 
     // ── Tracer ──

@@ -116,36 +116,98 @@ final class LiteSpeedPage extends AdminPage
         echo Plugin::purgeButton('all', 'Valyti viską');
         echo '</p>';
 
-        // ── Config file dump ──────────────────────────────────────────────────
-        $configFiles = array_unique(array_filter([
-            $info['config']['config_file'] ?? '',
-            '/etc/openlitespeed/httpd_config.conf',
-            '/etc/openlitespeed/httpd-vhosts.conf',
-            '/usr/local/lsws/conf/httpd_config.conf',
-            '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
-            '/usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf',
-        ]));
+        // ── Config file hierarchy ─────────────────────────────────────────────
+        $hierarchy = $info['config']['config_hierarchy'] ?? [];
+        if ($hierarchy) {
+            echo '<h2>Konfigūracijos failai</h2>';
+            $nonce = wp_create_nonce('wp_rest');
+            $restUrl = esc_js(rest_url('vlt-cache/v1'));
+            foreach ($hierarchy as $entry) {
+                $exists   = $entry['exists'] ?? false;
+                $readable = $entry['readable'] ?? false;
+                $writable = $entry['writable'] ?? false;
+                $path     = $entry['path'];
+                $safeId   = 'cfg-' . md5($path);
 
-        $shown = [];
-        foreach ($configFiles as $configFile) {
-            if (!$configFile || isset($shown[$configFile]) || !@is_readable($configFile)) {
-                continue;
-            }
-            $shown[$configFile] = true;
-            echo '<h2>Konfigūracija: <code style="font-size:13px">' . esc_html($configFile) . '</code></h2>';
-            echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;overflow:auto;max-height:400px;font-size:12px">';
-            echo esc_html(substr(@file_get_contents($configFile) ?: '(nepasiekiamas)', 0, 50000));
-            echo '</pre>';
-        }
+                echo '<div style="margin-bottom:16px;border:1px solid #ddd;border-radius:4px;overflow:hidden">';
 
-        foreach (['/usr/local/lsws/conf/vhosts/', '/etc/openlitespeed/vhosts/'] as $dir) {
-            foreach (@glob($dir . '*/vhconf.conf') ?: [] as $vhconf) {
-                if (!@is_readable($vhconf)) continue;
-                echo '<h2>VHost: <code style="font-size:13px">' . esc_html($vhconf) . '</code></h2>';
-                echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;overflow:auto;max-height:300px;font-size:12px">';
-                echo esc_html(substr(@file_get_contents($vhconf) ?: '', 0, 30000));
-                echo '</pre>';
+                // Header bar
+                $roleColors = [
+                    'main'            => '#2271b1',
+                    'lscache'         => '#00a32a',
+                    'vhosts'          => '#6b3fa0',
+                    'vhosts-da'       => '#6b3fa0',
+                    'template-master' => '#b26200',
+                    'template-custom' => '#c9356e',
+                ];
+                $color = $roleColors[$entry['role']] ?? '#666';
+                echo '<div style="background:' . $color . ';color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
+                echo '<div><strong>' . esc_html($entry['label']) . '</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px;font-size:11px">' . esc_html($path) . '</code></div>';
+                echo '<div style="display:flex;gap:6px;align-items:center">';
+                if (!$exists) {
+                    echo '<span style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:3px;font-size:11px">Neegzistuoja</span>';
+                } else {
+                    echo '<span style="background:rgba(0,0,0,.2);padding:2px 8px;border-radius:3px;font-size:11px">' . ($writable ? '✏ Redaguojamas' : '👁 Tik skaitymas') . '</span>';
+                    echo '<button type="button" onclick="vltToggleConfig(\'' . esc_js($safeId) . '\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:12px">Rodyti ▾</button>';
+                }
+                if ($entry['role'] === 'template-custom' && !$exists) {
+                    echo '<button type="button" onclick="vltCreateCustom(\'' . esc_js($path) . '\',\'' . esc_js($safeId) . '\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:3px 10px;border-radius:3px;cursor:pointer;font-size:12px">Sukurti</button>';
+                }
+                echo '</div></div>';
+
+                // Note
+                echo '<div style="padding:6px 12px;background:#f9f9f9;font-size:12px;color:#666;border-bottom:1px solid #eee">' . esc_html($entry['note']) . '</div>';
+
+                // Content panel (hidden by default)
+                if ($exists && $readable) {
+                    $content = esc_attr(@file_get_contents($path) ?: '');
+                    echo '<div id="' . esc_attr($safeId) . '" style="display:none">';
+                    if ($writable) {
+                        echo '<textarea id="' . esc_attr($safeId) . '-ta" style="width:100%;height:400px;font-family:monospace;font-size:12px;border:none;padding:12px;background:#1e1e1e;color:#d4d4d4;box-sizing:border-box" spellcheck="false">' . esc_textarea(@file_get_contents($path) ?: '') . '</textarea>';
+                        echo '<div style="padding:8px 12px;background:#f0f0f0;display:flex;gap:8px;align-items:center">';
+                        echo '<button type="button" onclick="vltSaveConfig(\'' . esc_js($path) . '\',\'' . esc_js($safeId) . '\')" class="button button-primary">Išsaugoti</button>';
+                        echo '<span id="' . esc_attr($safeId) . '-status" style="color:#666;font-size:12px"></span>';
+                        echo '<span style="color:#d63638;font-size:11px">⚠ Klaidos šiame faile gali sustabdyti serverį. Prieš keičiant padarykite atsarginę kopiją.</span>';
+                        echo '</div>';
+                    } else {
+                        echo '<pre style="margin:0;padding:12px;background:#1e1e1e;color:#d4d4d4;font-size:12px;overflow:auto;max-height:400px">' . esc_html(@file_get_contents($path) ?: '') . '</pre>';
+                    }
+                    echo '</div>';
+                }
+
+                echo '</div>';
             }
+
+            echo '<script>
+            function vltToggleConfig(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+            }
+            function vltSaveConfig(path, id) {
+                var ta = document.getElementById(id + "-ta");
+                var status = document.getElementById(id + "-status");
+                if (!ta) return;
+                status.textContent = "Saugoma...";
+                fetch("' . $restUrl . '/config-save", {
+                    method: "POST",
+                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
+                    body: JSON.stringify({path: path, content: ta.value})
+                }).then(r => r.json()).then(d => {
+                    status.textContent = d.ok ? "✅ Išsaugota" : "❌ " + (d.error || "Klaida");
+                    status.style.color = d.ok ? "#00a32a" : "#d63638";
+                }).catch(() => { status.textContent = "❌ Klaida"; status.style.color = "#d63638"; });
+            }
+            function vltCreateCustom(path, id) {
+                var masterPath = path.replace("/custom/", "/").replace("custom/", "");
+                fetch("' . $restUrl . '/config-save", {
+                    method: "POST",
+                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
+                    body: JSON.stringify({path: path, content: "# Custom OLS vhost template override\n# Pakeitimai čia perrašo: " + masterPath + "\n"})
+                }).then(r => r.json()).then(d => {
+                    if (d.ok) location.reload();
+                });
+            }
+            </script>';
         }
 
         echo '</div>';
