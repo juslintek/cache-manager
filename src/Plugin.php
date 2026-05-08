@@ -9,6 +9,7 @@ use VLT\CacheManager\Admin\Page\ApachePage;
 use VLT\CacheManager\Admin\Page\CloudflarePage;
 use VLT\CacheManager\Admin\Page\CloudLinuxPage;
 use VLT\CacheManager\Admin\Page\DashboardPage;
+use VLT\CacheManager\Admin\Page\DocsPage;
 use VLT\CacheManager\Admin\Page\LiteSpeedPage;
 use VLT\CacheManager\Admin\Page\LogsPage;
 use VLT\CacheManager\Admin\Page\NginxExplorerPage;
@@ -206,6 +207,7 @@ final class Plugin
         if (\VLT\CacheManager\CloudLinuxDetector::isCloudLinux()) {
             $pages[] = new CloudLinuxPage();
         }
+        $pages[] = new DocsPage();
         $pages[] = new SettingsPage();
 
         add_menu_page(
