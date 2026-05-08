@@ -34,8 +34,8 @@ final class TraceWorker
         }
         // xAdd to Redis stream — O(1), non-blocking
         $r->xAdd(self::STREAM_KEY, '*', ['data' => json_encode($trace)]);
-        // Cap stream at 1000 entries
-        $r->xTrim(self::STREAM_KEY, 1000);
+        // Cap stream at 1000 entries (MAXLEN ~ 1000)
+        $r->xTrim(self::STREAM_KEY, 'MAXLEN', false, 1000);
         $r->close();
     }
 
