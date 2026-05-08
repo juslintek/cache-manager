@@ -245,7 +245,14 @@ final class CacheInvalidator
         foreach ($groups as $group) {
             $keys = $r->keys('vlt_' . $group . ':*');
             if ($keys) {
-                $r->del(...$keys);
+                // Never delete pipeline/queue keys even if they match a group pattern
+                $safe = array_filter($keys, fn($k) => !str_starts_with($k, 'vlt_async_')
+                    && !str_starts_with($k, 'vlt_cron_')
+                    && !str_starts_with($k, 'vlt_trace_')
+                    && !str_starts_with($k, 'vlt_purge_'));
+                if ($safe) {
+                    $r->del(...array_values($safe));
+                }
             }
         }
         $r->close();
