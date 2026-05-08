@@ -24,12 +24,12 @@ final class RedisExplorerPage extends AdminPage
         <div class="wrap" x-data="vltRedis()" x-init="init()" x-cloak>
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Redis naršyklė</h1>
 
-        <!-- Stats + inline charts combined -->
+        <!-- Stats + charts in one grid -->
         <div class="tw-mb-4" x-data="{open:secOpen('stats')}" x-init="$watch('open',v=>secSave('stats',v))">
             <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika ir grafikai</h3>
             <div x-show="open">
-                <!-- Stat cards row -->
-                <div class="tw-grid tw-gap-3 tw-mb-4" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+                <div class="tw-grid tw-gap-3" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+                <!-- Stat cards -->
                 <template x-for="c in cards" :key="c.label">
                     <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                         <div class="tw-text-xs tw-text-gray-500" x-text="c.label"></div>
@@ -37,23 +37,22 @@ final class RedisExplorerPage extends AdminPage
                         <div class="tw-text-xs tw-text-gray-400 tw-mt-0.5" x-text="c.sub" x-show="c.sub"></div>
                     </div>
                 </template>
+                <!-- Groups chart card — spans 2 cols -->
+                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4" style="grid-column:span 2;min-width:0">
+                    <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
+                        <span class="tw-text-xs tw-text-gray-500">Raktų pasiskirstymas</span>
+                        <button @click="openChartModal('groups')" class="tw-text-xs tw-text-blue-600 tw-cursor-pointer" title="Padidinti">⤢</button>
+                    </div>
+                    <canvas id="vlt-redis-groups-chart" height="160" class="tw-cursor-pointer" @click="openChartModal('groups')"></canvas>
                 </div>
-                <!-- Inline charts row -->
-                <div class="tw-grid tw-grid-cols-1 tw-md:grid-cols-2 tw-gap-4">
-                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
-                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
-                            <h4 class="tw-text-sm tw-font-semibold">Raktų pasiskirstymas</h4>
-                            <button @click="openChartModal('groups')" class="tw-text-xs tw-text-blue-600 hover:tw-underline tw-flex tw-items-center tw-gap-1" title="Padidinti">⤢ Padidinti</button>
-                        </div>
-                        <canvas id="vlt-redis-groups-chart" height="200" class="tw-cursor-pointer" @click="openChartModal('groups')"></canvas>
+                <!-- Memory chart card — spans 2 cols -->
+                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4" style="grid-column:span 2;min-width:0">
+                    <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
+                        <span class="tw-text-xs tw-text-gray-500">Atminties naudojimas</span>
+                        <button @click="openChartModal('memory')" class="tw-text-xs tw-text-blue-600 tw-cursor-pointer" title="Padidinti">⤢</button>
                     </div>
-                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
-                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
-                            <h4 class="tw-text-sm tw-font-semibold">Atminties naudojimas</h4>
-                            <button @click="openChartModal('memory')" class="tw-text-xs tw-text-blue-600 hover:tw-underline tw-flex tw-items-center tw-gap-1" title="Padidinti">⤢ Padidinti</button>
-                        </div>
-                        <canvas id="vlt-redis-memory-chart" height="200" class="tw-cursor-pointer" @click="openChartModal('memory')"></canvas>
-                    </div>
+                    <canvas id="vlt-redis-memory-chart" height="160" class="tw-cursor-pointer" @click="openChartModal('memory')"></canvas>
+                </div>
                 </div>
             </div>
         </div>
