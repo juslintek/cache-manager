@@ -160,7 +160,10 @@ final class ServerDetector
         }
 
         // ls_enabled 1 in module cache block = module present
-        $moduleEnabled = (bool) preg_match('/module\s+cache\s*\{[^}]*ls_enabled\s+1/s', $content);
+        // Check both main config and dedicated lscache conf
+        $lscacheConfContent = @file_get_contents('/etc/openlitespeed/httpd-lscache.conf') ?: '';
+        $allContent = $content . "\n" . $lscacheConfContent;
+        $moduleEnabled = (bool) preg_match('/ls_enabled\s+1/', $allContent);
         // enableCache 1 = caching active
         $cacheEnabled  = (bool) preg_match('/enableCache\s+1/', $content);
         $lscache       = $moduleEnabled || str_contains($content, 'lscache') || str_contains($content, 'LSCache');
