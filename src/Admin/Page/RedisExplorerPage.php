@@ -29,7 +29,7 @@ final class RedisExplorerPage extends AdminPage
             <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika ir grafikai</h3>
             <div x-show="open">
                 <!-- Stat cards row -->
-                <div class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3 tw-mb-4">
+                <div class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3 tw-mb-4" style="max-width:1600px;grid-template-columns:repeat(auto-fill,minmax(180px,400px))">
                 <template x-for="c in cards" :key="c.label">
                     <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                         <div class="tw-text-xs tw-text-gray-500" x-text="c.label"></div>
