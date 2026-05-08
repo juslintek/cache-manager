@@ -99,16 +99,18 @@ final class LiteSpeedCache
 
         $ttl = (int) get_option('vlt_ls_cache_ttl', 86400);
 
-        if (self::isCacheable()) {
-            // Tell LiteSpeed to cache this response
-            header('X-LiteSpeed-Cache-Control: public,max-age=' . $ttl);
+        // Vary cache by login status so logged-in users never get logged-out cached pages
+        $loggedIn = is_user_logged_in();
+        header('X-LiteSpeed-Vary: cookie=wordpress_logged_in_' . COOKIEHASH);
 
-            // Add cache tags for targeted purging (post ID, post type, home)
+        if (self::isCacheable() && !$loggedIn) {
+            header('X-LiteSpeed-Cache-Control: public,max-age=' . $ttl);
             $tags = self::buildTags();
             if ($tags) {
                 header('X-LiteSpeed-Tag: ' . implode(',', $tags));
             }
         } else {
+            // Logged-in users or explicitly marked no-cache: bypass cache entirely
             header('X-LiteSpeed-Cache-Control: no-cache');
         }
     }
