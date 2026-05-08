@@ -24,31 +24,49 @@ final class RedisExplorerPage extends AdminPage
         <div class="wrap" x-data="vltRedis()" x-init="init()" x-cloak>
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Redis naršyklė</h1>
 
-        <!-- Stats cards - collapsible -->
+        <!-- Stats + inline charts combined -->
         <div class="tw-mb-4" x-data="{open:secOpen('stats')}" x-init="$watch('open',v=>secSave('stats',v))">
-            <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika</h3>
-            <div x-show="open" class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3">
-            <template x-for="c in cards" :key="c.label">
-                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
-                    <div class="tw-text-xs tw-text-gray-500" x-text="c.label"></div>
-                    <div class="tw-text-2xl tw-font-bold tw-mt-1" x-text="c.value"></div>
-                    <div class="tw-text-xs tw-text-gray-400 mt-0.5" x-text="c.sub" x-show="c.sub"></div>
+            <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika ir grafikai</h3>
+            <div x-show="open">
+                <!-- Stat cards row -->
+                <div class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3 tw-mb-4">
+                <template x-for="c in cards" :key="c.label">
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                        <div class="tw-text-xs tw-text-gray-500" x-text="c.label"></div>
+                        <div class="tw-text-2xl tw-font-bold tw-mt-1" x-text="c.value"></div>
+                        <div class="tw-text-xs tw-text-gray-400 mt-0.5" x-text="c.sub" x-show="c.sub"></div>
+                    </div>
+                </template>
                 </div>
-            </template>
+                <!-- Inline charts row -->
+                <div class="tw-grid grid-cols-1 md:grid-cols-2 tw-gap-4">
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
+                            <h4 class="tw-text-sm tw-font-semibold">Raktų pasiskirstymas</h4>
+                            <button @click="openChartModal('groups')" class="tw-text-xs tw-text-blue-600 hover:tw-underline tw-flex tw-items-center tw-gap-1" title="Padidinti">⤢ Padidinti</button>
+                        </div>
+                        <canvas id="vlt-redis-groups-chart" height="200" class="tw-cursor-pointer" @click="openChartModal('groups')"></canvas>
+                    </div>
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-2">
+                            <h4 class="tw-text-sm tw-font-semibold">Atminties naudojimas</h4>
+                            <button @click="openChartModal('memory')" class="tw-text-xs tw-text-blue-600 hover:tw-underline tw-flex tw-items-center tw-gap-1" title="Padidinti">⤢ Padidinti</button>
+                        </div>
+                        <canvas id="vlt-redis-memory-chart" height="200" class="tw-cursor-pointer" @click="openChartModal('memory')"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Charts - collapsible -->
-        <div class="tw-mb-4" x-data="{open:secOpen('charts')}" x-init="$watch('open',v=>secSave('charts',v))">
-            <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grafikai</h3>
-            <div x-show="open" class="tw-grid grid-cols-1 md:grid-cols-2 tw-gap-4">
-            <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
-                <h3 class="tw-font-semibold tw-mb-3">Raktų pasiskirstymas pagal grupę</h3>
-                <canvas id="vlt-redis-groups-chart" height="250"></canvas>
-            </div>
-            <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
-                <h3 class="tw-font-semibold tw-mb-3">Atminties naudojimas</h3>
-                <canvas id="vlt-redis-memory-chart" height="250"></canvas>
+        <!-- Chart zoom modal -->
+        <div x-show="chartModal" class="tw-fixed tw-inset-0 tw-bg-black/60 tw-z-[99999] tw-flex tw-items-center tw-justify-center tw-p-4" @click.self="chartModal=null" style="display:none">
+            <div class="tw-bg-white tw-rounded-xl tw-shadow-2xl tw-p-6 tw-w-full tw-max-w-3xl">
+                <div class="tw-flex tw-justify-between tw-items-center tw-mb-4">
+                    <h3 class="tw-font-semibold tw-text-base" x-text="chartModal==='groups'?'Raktų pasiskirstymas pagal grupę':'Atminties naudojimas'"></h3>
+                    <button @click="chartModal=null" class="tw-text-gray-400 hover:tw-text-gray-700 tw-text-xl tw-leading-none">✕</button>
+                </div>
+                <canvas id="vlt-redis-modal-chart" height="350"></canvas>
+                <div class="tw-mt-3 tw-text-xs tw-text-gray-400 tw-text-center">Spustelėkite už lango ribų arba ✕ kad uždarytumėte</div>
             </div>
         </div>
 
@@ -153,9 +171,12 @@ final class RedisExplorerPage extends AdminPage
                 cards: [], groups: [], groupSort: 'count', groupDir: 'desc',
                 browsing: false, browseGroupName: '', browseKeys: [], filteredKeys: [], keySearch: '', keyPage: 1, keyPerPage: 50,
                 previewVisible: false, previewData: {}, previewMode: 'pretty',
-                charts: {}, pollTimer: null,
+                charts: {}, pollTimer: null, chartModal: null, modalChart: null,
 
                 async init() {
+                    this.$watch('chartModal', v => {
+                        if (!v && this.modalChart) { this.modalChart.destroy(); this.modalChart = null; }
+                    });
                     await this.fetchStats();
                     this.pollTimer = setInterval(() => this.fetchStats(), 10000);
                 },
@@ -211,6 +232,26 @@ final class RedisExplorerPage extends AdminPage
                         options:{responsive:true, scales:{y:{beginAtZero:true,title:{display:true,text:'MB'}}}, plugins:{legend:{display:false}}}
                     });
                     } catch(e) { console.error('VLT Redis drawCharts error:', e); }
+                },
+
+                openChartModal(type) {
+                    this.chartModal = type;
+                    this.$nextTick(() => {
+                        const mc = document.getElementById('vlt-redis-modal-chart');
+                        if (!mc) return;
+                        if (this.modalChart) { this.modalChart.destroy(); this.modalChart = null; }
+                        const src = this.charts[type];
+                        if (!src) return;
+                        // Clone config with legend enabled and larger display
+                        const cfg = JSON.parse(JSON.stringify(src.config));
+                        if (cfg.options?.plugins?.legend) cfg.options.plugins.legend.display = true;
+                        if (cfg.options?.plugins?.legend) cfg.options.plugins.legend.position = 'bottom';
+                        cfg.options = cfg.options || {};
+                        cfg.options.responsive = true;
+                        cfg.options.maintainAspectRatio = false;
+                        mc.style.height = '350px';
+                        this.modalChart = new Chart(mc, cfg);
+                    });
                 },
 
                 get sortedGroups() {
