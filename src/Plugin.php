@@ -229,7 +229,15 @@ final class Plugin
             if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_purge') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
-            $this->purge->purge(sanitize_key($_GET['type'] ?? 'all'));
+            $type = sanitize_key($_GET['type'] ?? 'all');
+            if ($type === 'all') {
+                // Use generator to purge one strategy at a time with GC between each
+                foreach ($this->purge->purgeAllGenerator() as $purged) {
+                    // gc between strategies
+                }
+            } else {
+                $this->purge->purge($type);
+            }
             wp_safe_redirect(add_query_arg('vlt_purged', '1', wp_get_referer() ?: admin_url()));
             exit;
         }

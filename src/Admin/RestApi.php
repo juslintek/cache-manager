@@ -136,6 +136,11 @@ final class RestApi
             'permission_callback' => [self::class, 'canManage'],
         ]);
 
+        register_rest_route(self::NS, '/purge/(?P<type>[a-z_]+)', [
+            'methods' => 'POST', 'callback' => [self::class, 'purgeType'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+
         // Image optimization
         register_rest_route(self::NS, '/img-optm/status', [
             'methods' => 'GET', 'callback' => [self::class, 'imgOptmStatus'],
@@ -611,6 +616,14 @@ final class RestApi
         @wp_mkdir_p(dirname($path));
         $ok = file_put_contents($path, $content);
         return new \WP_REST_Response(['ok' => $ok !== false]);
+    }
+
+    public static function purgeType(\WP_REST_Request $req): \WP_REST_Response
+    {
+        @ini_set('memory_limit', '512M');
+        $type = sanitize_key($req->get_param('type'));
+        \VLT\CacheManager\Plugin::instance()->purge()->purge($type);
+        return new \WP_REST_Response(['ok' => true, 'type' => $type]);
     }
 
     public static function gcFix(): \WP_REST_Response

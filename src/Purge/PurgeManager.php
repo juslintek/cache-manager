@@ -34,6 +34,7 @@ final class PurgeManager
         if (!isset($this->strategies[$type])) {
             return;
         }
+        @ini_set('memory_limit', '512M');
         $this->strategies[$type]->purge();
         $this->purged[$type] = true;
         $this->logger->log('purge', $type);
@@ -41,8 +42,22 @@ final class PurgeManager
 
     public function purgeAll(): void
     {
+        // Purge one strategy at a time to avoid OOM on full purge
         foreach ($this->strategies as $type => $strategy) {
             $this->purge($type);
+            // Free memory between strategies
+            gc_collect_cycles();
+        }
+    }
+
+    /** @return \Generator<string> Yields each purged type — use for batched async purging */
+    public function purgeAllGenerator(): \Generator
+    {
+        foreach (array_keys($this->strategies) as $type) {
+            if (!isset($this->purged[$type])) {
+                $this->purge($type);
+                yield $type;
+            }
         }
     }
 
