@@ -59,7 +59,13 @@ add_filter('template_include', function ($tpl) {
     return $tpl;
 }, PHP_INT_MAX);
 
-add_action('shutdown', [\VLT\CacheManager\Tracer\Tracer::class, 'finish'], 0);
+add_action('shutdown', function() {
+    try {
+        \VLT\CacheManager\Tracer\Tracer::finish();
+    } catch (\Throwable) {
+        // Never let tracer crash affect HTTP response code
+    }
+}, 0);
 } // end if (!$_vlt_skip_tracer)
 
 // Boot the plugin

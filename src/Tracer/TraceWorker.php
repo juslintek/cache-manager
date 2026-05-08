@@ -28,15 +28,17 @@ final class TraceWorker
 
     public static function push(array $trace): void
     {
-        $r = RedisFactory::create(0.1);
-        if (!$r) {
-            return;
+        try {
+            $r = RedisFactory::create(0.1);
+            if (!$r) {
+                return;
+            }
+            $r->xAdd(self::STREAM_KEY, '*', ['data' => json_encode($trace)]);
+            $r->xTrim(self::STREAM_KEY, 'MAXLEN', false, 1000);
+            $r->close();
+        } catch (\Throwable) {
+            // Silently fail — push is non-critical, must not affect HTTP response code
         }
-        // xAdd to Redis stream — O(1), non-blocking
-        $r->xAdd(self::STREAM_KEY, '*', ['data' => json_encode($trace)]);
-        // Cap stream at 1000 entries (MAXLEN ~ 1000)
-        $r->xTrim(self::STREAM_KEY, 'MAXLEN', false, 1000);
-        $r->close();
     }
 
     // ── Worker process ────────────────────────────────────────────────────────
