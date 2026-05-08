@@ -167,61 +167,6 @@ final class LiteSpeedPage extends AdminPage
         echo Plugin::purgeButton('all', 'Valyti viską');
         echo '</p>';
 
-        // ── Domain management ─────────────────────────────────────────────────
-        echo '<h2>LSCache per domeną</h2>';
-        echo '<p class="tw-text-gray-500 tw-text-sm tw-mb-3">Įjunkite arba išjunkite LSCache kiekvienam domenui atskirai. Keičia <code>CacheLookup public on</code> .htaccess faile.</p>';
-
-        // Scan all domains
-        $domains = [];
-        foreach (glob('/home/*/domains/*/public_html/.htaccess') ?: [] as $htaccess) {
-            preg_match('#/home/([^/]+)/domains/([^/]+)/public_html#', $htaccess, $m);
-            if (!$m) continue;
-            $content = @file_get_contents($htaccess) ?: '';
-            $domains[] = [
-                'user'    => $m[1],
-                'domain'  => $m[2],
-                'enabled' => str_contains($content, 'CacheLookup'),
-            ];
-        }
-        usort($domains, fn($a, $b) => strcmp($a['domain'], $b['domain']));
-
-        $nonce   = wp_create_nonce('wp_rest');
-        $restUrl = esc_js(rest_url('vlt-cache/v1'));
-
-        echo '<table class="widefat tw-fixed striped tw-max-w-3xl"><thead><tr><th>Domenas</th><th style="width:80px">Vartotojas</th><th style="width:120px">LSCache</th><th style="width:100px">Veiksmas</th></tr></thead><tbody>';
-        foreach ($domains as $d) {
-            $id = 'ls-' . md5($d['domain']);
-            echo '<tr id="row-' . esc_attr($id) . '">';
-            echo '<td><code class="tw-text-xs">' . esc_html($d['domain']) . '</code></td>';
-            echo '<td class="tw-text-xs tw-text-gray-500">' . esc_html($d['user']) . '</td>';
-            echo '<td>' . ($d['enabled'] ? '<span class="tw-text-green-600 tw-text-xs tw-font-semibold">✅ Įjungta</span>' : '<span class="tw-text-gray-400 tw-text-xs">— Išjungta</span>') . '</td>';
-            echo '<td>';
-            if ($d['enabled']) {
-                echo '<button class="button button-small vlt-ls-toggle" data-domain="' . esc_attr($d['domain']) . '" data-enable="0" style="color:#d63638">Išjungti</button>';
-            } else {
-                echo '<button class="button button-small button-primary vlt-ls-toggle" data-domain="' . esc_attr($d['domain']) . '" data-enable="1">Įjungti</button>';
-            }
-            echo '</td></tr>';
-        }
-        echo '</tbody></table>';
-
-        echo '<script>
-        document.querySelectorAll(".vlt-ls-toggle").forEach(btn => {
-            btn.addEventListener("click", function() {
-                const domain = this.dataset.domain;
-                const enable = this.dataset.enable === "1";
-                this.disabled = true; this.textContent = "...";
-                fetch("' . $restUrl . '/lscache-domain", {
-                    method: "POST",
-                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
-                    body: JSON.stringify({domain, enable})
-                }).then(r => r.json()).then(d => {
-                    if (d.ok) location.reload();
-                    else { this.textContent = "Klaida"; this.disabled = false; }
-                }).catch(() => { this.textContent = "Klaida"; this.disabled = false; });
-            });
-        });
-        </script>';
         $hierarchy = $info['config']['config_hierarchy'] ?? [];
         if ($hierarchy) {
             echo '<h2>Konfigūracijos failai</h2>';
