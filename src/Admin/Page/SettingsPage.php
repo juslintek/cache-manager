@@ -309,7 +309,7 @@ final class SettingsPage extends AdminPage
         echo '</div>';
     }
 
-    private static function isDomainBehindCloudflare(string $host): bool
+    public static function isDomainBehindCloudflare(string $host): bool
     {
         if (!$host) {
             return false;

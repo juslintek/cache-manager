@@ -149,7 +149,14 @@ final class Plugin
         $isNginx  = $server === \VLT\CacheManager\ServerDetector::NGINX;
         $isApache = $server === \VLT\CacheManager\ServerDetector::APACHE;
 
-        $pages = [new DashboardPage(), new LogsPage(), new CloudflarePage()];
+        $host    = parse_url(home_url(), PHP_URL_HOST) ?? '';
+        $hasCf   = \VLT\CacheManager\Admin\Page\SettingsPage::isDomainBehindCloudflare($host)
+                   || get_option('vlt_cm_cf_tracking', false);
+
+        $pages = [new DashboardPage(), new LogsPage()];
+        if ($hasCf) {
+            $pages[] = new CloudflarePage();
+        }
 
         // Show server-specific page, hide others
         if ($isLS) {
