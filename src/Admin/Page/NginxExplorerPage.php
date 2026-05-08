@@ -10,7 +10,7 @@ use VLT\CacheManager\Plugin;
 final class NginxExplorerPage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache-nginx'; }
-    public function title(): string { return 'Nginx naršyklė'; }
+    public function title(): string { return 'Nginx Explorer'; }
 
     public function render(): void
     {

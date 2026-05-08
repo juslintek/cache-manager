@@ -1,0 +1,391 @@
+# Lithuanian translation for Juslintek Cache Manager
+# Copyright (C) 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: Juslintek Cache Manager\n"
+"POT-Creation-Date: 2026-05-08\n"
+"PO-Revision-Date: 2026-05-08\n"
+"Language: lt_LT\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Cache Manager"
+msgstr "Podėlio Valdymas"
+
+msgid "Dashboard"
+msgstr "Suvestinė"
+
+msgid "Logs"
+msgstr "Žurnalai"
+
+msgid "Settings"
+msgstr "Nustatymai"
+
+msgid "Tracer"
+msgstr "Tracer"
+
+msgid "Performance"
+msgstr "Našumas"
+
+msgid "LiteSpeed"
+msgstr "LiteSpeed"
+
+msgid "CloudLinux"
+msgstr "CloudLinux"
+
+msgid "Connected"
+msgstr "Prijungtas"
+
+msgid "Unreachable"
+msgstr "Nepasiekiamas"
+
+msgid "Enabled"
+msgstr "Įjungtas"
+
+msgid "Disabled"
+msgstr "Išjungtas"
+
+msgid "Active"
+msgstr "Aktyvus"
+
+msgid "Inactive"
+msgstr "Neaktyvus"
+
+msgid "Found"
+msgstr "Rastas"
+
+msgid "Not found"
+msgstr "Nerastas"
+
+msgid "Purge all"
+msgstr "Valyti viską"
+
+msgid "Purge LiteSpeed"
+msgstr "Valyti LiteSpeed"
+
+msgid "Purge Nginx"
+msgstr "Valyti Nginx"
+
+msgid "Purge OPcache"
+msgstr "Valyti OPcache"
+
+msgid "Purge Redis"
+msgstr "Valyti Redis"
+
+msgid "Save"
+msgstr "Išsaugoti"
+
+msgid "Save settings"
+msgstr "Išsaugoti nustatymus"
+
+msgid "Enable"
+msgstr "Įjungti"
+
+msgid "Disable"
+msgstr "Išjungti"
+
+msgid "Back"
+msgstr "Atgal"
+
+msgid "Cache"
+msgstr "Talpykla"
+
+msgid "Status"
+msgstr "Būsena"
+
+msgid "Time"
+msgstr "Laikas"
+
+msgid "Size"
+msgstr "Dydis"
+
+msgid "Files"
+msgstr "Failų"
+
+msgid "Keys"
+msgstr "Raktų"
+
+msgid "Memory usage"
+msgstr "Atminties naudojimas"
+
+msgid "Today's statistics"
+msgstr "Šiandienos statistika"
+
+msgid "Hit rate"
+msgstr "Pataikymų santykis"
+
+msgid "Purge events"
+msgstr "Valymo įvykiai"
+
+msgid "Recent purge events"
+msgstr "Paskutiniai valymo įvykiai"
+
+msgid "Quick purge"
+msgstr "Greitas valymas"
+
+msgid "Purge log"
+msgstr "Valymo žurnalas"
+
+msgid "No records"
+msgstr "Nėra įrašų"
+
+msgid "Loading"
+msgstr "Kraunama"
+
+msgid "Error"
+msgstr "Klaida"
+
+msgid "All cleared"
+msgstr "Viskas išvalyta"
+
+msgid "Purging cache"
+msgstr "Valoma talpykla"
+
+msgid "Debug mode"
+msgstr "Debug režimas"
+
+msgid "Request logging"
+msgstr "Užklausų registravimas"
+
+msgid "Cloudflare tracking"
+msgstr "Cloudflare stebėjimas"
+
+msgid "Log retention (days)"
+msgstr "Žurnalų saugojimas (dienų)"
+
+msgid "Unix socket path"
+msgstr "Unix socket kelias"
+
+msgid "Redis connection"
+msgstr "Redis ryšys"
+
+msgid "Auto-detect Redis"
+msgstr "Aptikti Redis automatiškai"
+
+msgid "Detecting"
+msgstr "Aptinkama"
+
+msgid "Redis found"
+msgstr "Redis rastas"
+
+msgid "Redis not found"
+msgstr "Redis nerastas"
+
+msgid "Cache settings"
+msgstr "Talpyklos nustatymai"
+
+msgid "Cache TTL"
+msgstr "Talpyklos gyvavimo laikas (TTL)"
+
+msgid "Enable LSCache"
+msgstr "Įjungti LSCache talpyklą"
+
+msgid "Cache logged-in users"
+msgstr "Talpykluoti prisijungusius vartotojus"
+
+msgid "Cache search results"
+msgstr "Talpykluoti paieškos rezultatus"
+
+msgid "Cache 404 pages"
+msgstr "Talpykluoti 404 puslapius"
+
+msgid "Cache management"
+msgstr "Talpyklos valdymas"
+
+msgid "Configuration file"
+msgstr "Konfigūracijos failas"
+
+msgid "Configuration files"
+msgstr "Konfigūracijos failai"
+
+msgid "LSCache module"
+msgstr "LSCache modulis"
+
+msgid "Cache enabled"
+msgstr "Talpykla įjungta"
+
+msgid "LSCWP plugin"
+msgstr "LSCWP įskiepis"
+
+msgid "Cache directory"
+msgstr "Talpyklos katalogas"
+
+msgid "Server"
+msgstr "Serveris"
+
+msgid "Parameter"
+msgstr "Parametras"
+
+msgid "How to enable / fix"
+msgstr "Kaip įjungti / taisyti"
+
+msgid "PHP GC & memory analysis"
+msgstr "PHP GC ir atminties analizė"
+
+msgid "Async queue (Redis)"
+msgstr "Asinchroninė eilė (Redis)"
+
+msgid "WP-Cron → Redis queue"
+msgstr "WP-Cron → Redis eilė"
+
+msgid "WP-Cron tasks"
+msgstr "WP-Cron užduotys"
+
+msgid "WP-Cron — Live monitoring"
+msgstr "WP-Cron — Gyvas stebėjimas"
+
+msgid "Scheduled"
+msgstr "Suplanuota"
+
+msgid "Overdue"
+msgstr "Vėluoja"
+
+msgid "Execution log"
+msgstr "Vykdymo žurnalas"
+
+msgid "Stats by hook"
+msgstr "Statistika pagal hook"
+
+msgid "Scheduled tasks"
+msgstr "Suplanuotos užduotys"
+
+msgid "Run queue now"
+msgstr "Vykdyti eilę dabar"
+
+msgid "Auto-fix"
+msgstr "Automatiškai taisyti"
+
+msgid "Fixing"
+msgstr "Taisoma"
+
+msgid "Live monitoring"
+msgstr "Gyvas stebėjimas"
+
+msgid "Trace Worker"
+msgstr "Trace Worker"
+
+msgid "Running"
+msgstr "Veikia"
+
+msgid "Stopped"
+msgstr "Sustabdytas"
+
+msgid "Start"
+msgstr "Paleisti"
+
+msgid "Stop"
+msgstr "Sustabdyti"
+
+msgid "In queue"
+msgstr "Eilėje"
+
+msgid "Heartbeat"
+msgstr "Heartbeat"
+
+msgid "CloudLinux detected"
+msgstr "CloudLinux aptiktas"
+
+msgid "Optimization recommendations"
+msgstr "Optimizavimo rekomendacijos"
+
+msgid "LSCache per domain"
+msgstr "LSCache per domeną"
+
+msgid "Domain"
+msgstr "Domenas"
+
+msgid "User"
+msgstr "Vartotojas"
+
+msgid "Action"
+msgstr "Veiksmas"
+
+msgid "Image optimization"
+msgstr "Paveikslėlių optimizavimas"
+
+msgid "Optimized"
+msgstr "Optimizuota"
+
+msgid "Pending"
+msgstr "Laukia"
+
+msgid "Optimize pending"
+msgstr "Optimizuoti laukiančius"
+
+msgid "Delegated to LSCWP"
+msgstr "Perduota LSCWP"
+
+msgid "Processed"
+msgstr "Apdorota"
+
+msgid "Skipped"
+msgstr "Praleista"
+
+msgid "Nginx Explorer"
+msgstr "Nginx naršyklė"
+
+msgid "Nginx cache"
+msgstr "Nginx talpykla"
+
+msgid "Source code"
+msgstr "Šaltinio kodas"
+
+msgid "Render"
+msgstr "Atvaizdavimas"
+
+msgid "Headers"
+msgstr "Antraštės"
+
+msgid "URL key"
+msgstr "URL raktas"
+
+msgid "Cache file"
+msgstr "Talpyklos failas"
+
+msgid "Created"
+msgstr "Sukurtas"
+
+msgid "Redis Explorer"
+msgstr "Redis naršyklė"
+
+msgid "Group"
+msgstr "Grupė"
+
+msgid "Key count"
+msgstr "Raktų skaičius"
+
+msgid "Preview"
+msgstr "Peržiūra"
+
+msgid "Delete"
+msgstr "Ištrinti"
+
+msgid "Delete group"
+msgstr "Ištrinti grupę"
+
+msgid "OPcache Explorer"
+msgstr "OPcache naršyklė"
+
+msgid "Reset"
+msgstr "Iš naujo nustatyti"
+
+msgid "Actions"
+msgstr "Veiksmai"
+
+msgid "Download logs (ZIP)"
+msgstr "Atsisiųsti žurnalus (ZIP)"
+
+msgid "Install object-cache.php"
+msgstr "Įdiegti object-cache.php"
+
+msgid "Reinstall object-cache.php"
+msgstr "Perdiegti object-cache.php"
+
+msgid "Re-detect server"
+msgstr "Iš naujo aptikti serverį"
+
+msgid "Detected"
+msgstr "Aptikta"
+

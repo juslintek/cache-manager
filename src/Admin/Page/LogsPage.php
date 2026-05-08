@@ -9,7 +9,7 @@ use VLT\CacheManager\Admin\AdminPage;
 final class LogsPage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache-logs'; }
-    public function title(): string { return 'Žurnalai'; }
+    public function title(): string { return 'Logs'; }
 
     public function render(): void
     {

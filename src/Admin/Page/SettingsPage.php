@@ -10,7 +10,7 @@ use VLT\CacheManager\Plugin;
 final class SettingsPage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache-settings'; }
-    public function title(): string { return 'Nustatymai'; }
+    public function title(): string { return 'Settings'; }
 
     public function render(): void
     {

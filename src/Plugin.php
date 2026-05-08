@@ -207,11 +207,16 @@ final class Plugin
         }
         $pages[] = new SettingsPage();
 
-        add_menu_page('Podėlio Valdymas', 'Podėlio Valdymas', 'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80);
-        add_submenu_page('vlt-cache', 'Suvestinė', 'Suvestinė', 'manage_options', 'vlt-cache', [$pages[0], 'render']);
+        add_menu_page(
+            __('Cache Manager', 'juslintek-cache-manager'),
+            __('Cache Manager', 'juslintek-cache-manager'),
+            'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80
+        );
+        add_submenu_page('vlt-cache', __('Dashboard', 'juslintek-cache-manager'), __('Dashboard', 'juslintek-cache-manager'), 'manage_options', 'vlt-cache', [$pages[0], 'render']);
 
         for ($i = 1, $c = count($pages); $i < $c; $i++) {
-            add_submenu_page('vlt-cache', $pages[$i]->title(), $pages[$i]->title(), 'manage_options', $pages[$i]->slug(), [$pages[$i], 'render']);
+            $title = __($pages[$i]->title(), 'juslintek-cache-manager');
+            add_submenu_page('vlt-cache', $title, $title, 'manage_options', $pages[$i]->slug(), [$pages[$i], 'render']);
         }
     }
 
@@ -227,16 +232,16 @@ final class Plugin
         }
         $wp_admin_bar->add_node([
             'id'    => 'vlt-cache',
-            'title' => "Podėlio Valdymas (H:$hits M:$misses)",
+            'title' => sprintf(__('Cache Manager (H:%d M:%d)', 'juslintek-cache-manager'), $hits, $misses),
             'href'  => admin_url('admin.php?page=vlt-cache'),
         ]);
         $isLS = \VLT\CacheManager\ServerDetector::isLiteSpeed();
         $items = [
-            'purge-all'     => ['Valyti viską', 'all'],
-            'purge-server'  => [$isLS ? 'Valyti LiteSpeed' : 'Valyti Nginx', $isLS ? 'litespeed' : 'nginx'],
-            'purge-opcache' => ['Valyti OPcache', 'opcache'],
-            'purge-redis'   => ['Valyti Redis', 'redis'],
-            'debug-toggle'  => [isset($_COOKIE['vlt_debug_cache']) ? 'Išjungti debug' : 'Įjungti debug', 'debug'],
+            'purge-all'     => [__('Purge all', 'juslintek-cache-manager'), 'all'],
+            'purge-server'  => [$isLS ? __('Purge LiteSpeed', 'juslintek-cache-manager') : __('Purge Nginx', 'juslintek-cache-manager'), $isLS ? 'litespeed' : 'nginx'],
+            'purge-opcache' => [__('Purge OPcache', 'juslintek-cache-manager'), 'opcache'],
+            'purge-redis'   => [__('Purge Redis', 'juslintek-cache-manager'), 'redis'],
+            'debug-toggle'  => [isset($_COOKIE['vlt_debug_cache']) ? __('Disable debug', 'juslintek-cache-manager') : __('Enable debug', 'juslintek-cache-manager'), 'debug'],
         ];
         foreach ($items as $id => $item) {
             $href = $item[1] === 'debug'

@@ -10,7 +10,7 @@ use VLT\CacheManager\Plugin;
 final class DashboardPage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache'; }
-    public function title(): string { return 'Suvestinė'; }
+    public function title(): string { return 'Dashboard'; }
 
     public function render(): void
     {

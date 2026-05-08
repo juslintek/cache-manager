@@ -12,7 +12,7 @@ use VLT\CacheManager\Plugin;
 final class PerformancePage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache-performance'; }
-    public function title(): string { return 'Našumas'; }
+    public function title(): string { return 'Performance'; }
 
     public function render(): void
     {

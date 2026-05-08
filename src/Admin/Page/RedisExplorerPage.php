@@ -9,7 +9,7 @@ use VLT\CacheManager\Admin\AdminPage;
 final class RedisExplorerPage extends AdminPage
 {
     public function slug(): string { return 'vlt-cache-redis'; }
-    public function title(): string { return 'Redis naršyklė'; }
+    public function title(): string { return 'Redis Explorer'; }
 
     public function render(): void
     {
