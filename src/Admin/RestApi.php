@@ -148,6 +148,10 @@ final class RestApi
             'methods' => 'GET', 'callback' => [self::class, 'purgeStream'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/lscache-domain', [
+            'methods' => 'POST', 'callback' => [self::class, 'lscacheDomain'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
         register_rest_route(self::NS, '/trace-worker', [
             'methods' => 'GET', 'callback' => [self::class, 'traceWorkerStatus'],
             'permission_callback' => [self::class, 'canManage'],
@@ -658,6 +662,49 @@ final class RestApi
         }
 
         return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
+    }
+
+    public static function lscacheDomain(\WP_REST_Request $req): \WP_REST_Response
+    {
+        $domain = sanitize_text_field($req->get_json_params()['domain'] ?? '');
+        $enable = (bool) ($req->get_json_params()['enable'] ?? false);
+
+        if (!$domain || !preg_match('/^[a-z0-9.\-]+\.[a-z]{2,}$/i', $domain)) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'Invalid domain'], 400);
+        }
+
+        // Find .htaccess for this domain across all users
+        $htaccess = null;
+        foreach (glob('/home/*/domains/' . $domain . '/public_html/.htaccess') ?: [] as $f) {
+            $htaccess = $f;
+            break;
+        }
+        if (!$htaccess) {
+            // Create it
+            $dir = '/home/' . (explode('/', $htaccess ?? '')[2] ?? '') . '/domains/' . $domain . '/public_html';
+            foreach (glob('/home/*/domains/' . $domain . '/public_html') ?: [] as $d) {
+                $htaccess = $d . '/.htaccess';
+                break;
+            }
+        }
+        if (!$htaccess) {
+            return new \WP_REST_Response(['ok' => false, 'error' => 'Domain not found'], 404);
+        }
+
+        $content = @file_get_contents($htaccess) ?: '';
+        $block   = "\n<IfModule LiteSpeed>\n  CacheLookup public on\n</IfModule>\n";
+
+        if ($enable) {
+            if (!str_contains($content, 'CacheLookup')) {
+                $content .= $block;
+                file_put_contents($htaccess, $content);
+            }
+        } else {
+            $content = preg_replace('/<IfModule LiteSpeed>\s*CacheLookup[^\n]*\n<\/IfModule>\n?/s', '', $content);
+            file_put_contents($htaccess, $content);
+        }
+
+        return new \WP_REST_Response(['ok' => true, 'domain' => $domain, 'enabled' => $enable]);
     }
 
     public static function traceWorkerStatus(): \WP_REST_Response
