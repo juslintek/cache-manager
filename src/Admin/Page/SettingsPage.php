@@ -358,13 +358,13 @@ final class SettingsPage extends AdminPage
         ?>
         <h2 class="tw-mt-6 tw-mb-2 tw-text-lg tw-font-semibold">Žurnalų failai</h2>
         <div x-data="vltLogs()" class="tw-text-xs">
-            <div class="tw-grid grid-cols-2 tw-gap-4">
+            <div class="tw-grid tw-grid-cols-2 tw-gap-4">
                 <!-- Cache logs -->
                 <div>
                     <h3 class="tw-font-semibold tw-mb-2">Talpyklos žurnalai</h3>
-                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded max-h-48 tw-overflow-auto">
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded tw-max-h-48 tw-overflow-auto">
                         <?php foreach ($logFiles as $f): ?>
-                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'log')">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b tw-border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'log')">
                             <span><?php echo esc_html(basename($f)); ?></span>
                             <span class="tw-text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
                         </div>
@@ -375,9 +375,9 @@ final class SettingsPage extends AdminPage
                 <!-- Trace logs -->
                 <div>
                     <h3 class="tw-font-semibold tw-mb-2">Pėdsakų žurnalai</h3>
-                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded max-h-48 tw-overflow-auto">
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded tw-max-h-48 tw-overflow-auto">
                         <?php foreach ($traceFiles as $f): ?>
-                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'trace')">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b tw-border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'trace')">
                             <span><?php echo esc_html(basename($f)); ?></span>
                             <span class="tw-text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
                         </div>
@@ -394,7 +394,7 @@ final class SettingsPage extends AdminPage
                     <div class="tw-flex tw-gap-2">
                         <span class="tw-text-gray-500" x-text="entries.length+' įrašų'"></span>
                         <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-0.5 tw-w-48" x-model="search" placeholder="Filtruoti...">
-                        <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-rounded hover:bg-gray-300" @click="viewing=false">✕ Uždaryti</button>
+                        <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-rounded tw-hover:bg-gray-300" @click="viewing=false">✕ Uždaryti</button>
                     </div>
                 </div>
                 <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded tw-overflow-auto" style="max-height:500px">
@@ -403,11 +403,11 @@ final class SettingsPage extends AdminPage
                             <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-cursor-pointer hover:tw-bg-gray-50" @click="e._open=!e._open">
                                 <span class="tw-text-gray-400 tw-w-4" x-text="e._open?'▾':'▸'"></span>
                                 <span class="tw-text-gray-500 w-40 tw-shrink-0" x-text="e.timestamp||e.ts||''"></span>
-                                <span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="{'bg-yellow-50':e.type==='purge','bg-green-50':e.type==='stats','bg-blue-50':e.type==='cloudflare','bg-red-50':e.type==='error','bg-purple-50':e.method}" x-text="e.type||e.method||'—'"></span>
+                                <span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="{"bg-yellow-50':e.type==='purge','bg-green-50':e.type==='stats','bg-blue-50':e.type==='cloudflare','bg-red-50':e.type==='error','bg-purple-50':e.method}" x-text="e.type||e.method||'—'"></span>
                                 <span class="tw-truncate tw-text-gray-600" x-text="e.uri||e.details_str||JSON.stringify(e.details||'').substring(0,80)"></span>
                             </div>
-                            <div x-show="e._open" class="tw-px-3 pb-2">
-                                <pre class="tw-bg-gray-900 text-green-300 tw-p-3 tw-rounded tw-text-[10px] tw-overflow-auto max-h-64 tw-whitespace-pre-wrap" x-text="JSON.stringify(e,null,2)"></pre>
+                            <div x-show="e._open" class="tw-px-3 tw-pb-2">
+                                <pre class="tw-bg-gray-900 text-green-300 tw-p-3 tw-rounded tw-text-[10px] tw-overflow-auto tw-max-h-64 tw-whitespace-pre-wrap" x-text="JSON.stringify(e,null,2)"></pre>
                             </div>
                         </div>
                     </template>

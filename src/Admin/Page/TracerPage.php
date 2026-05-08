@@ -74,24 +74,24 @@ final class TracerPage extends AdminPage
         </div>
 
         <!-- Tabs -->
-        <div class="tw-flex mb-0">
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 border-b-0 rounded-t tw-cursor-pointer -mr-px" :class="tab==='live'&&'bg-white border-b-white z-10 relative'" @click="tab='live'">🔴 Gyvai</div>
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 border-b-0 rounded-t tw-cursor-pointer -mr-px" :class="tab==='explorer'&&'bg-white border-b-white z-10 relative'" @click="tab='explorer'">🔍 Naršyklė</div>
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 border-b-0 rounded-t tw-cursor-pointer" :class="tab==='detail'&&'bg-white border-b-white z-10 relative'" x-show="detailTrace" @click="tab='detail'">📋 Detalės</div>
+        <div class="tw-flex tw-mb-0">
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer -mr-px" :class="tab==="live'&&'bg-white border-b-white z-10 relative'" @click="tab='live'">🔴 Gyvai</div>
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer -mr-px" :class="tab==="explorer'&&'bg-white border-b-white z-10 relative'" @click="tab='explorer'">🔍 Naršyklė</div>
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer" :class="tab==="detail'&&'bg-white border-b-white z-10 relative'" x-show="detailTrace" @click="tab='detail'">📋 Detalės</div>
         </div>
 
         <!-- ==================== LIVE PANEL ==================== -->
-        <div class="tw-border tw-border-gray-300 rounded-b rounded-tr tw-bg-white tw-p-3" x-show="tab==='live'">
+        <div class="tw-border tw-border-gray-300 tw-rounded-b tw-rounded-tr tw-bg-white tw-p-3" x-show="tab==='live'">
             <div class="tw-flex tw-items-center tw-gap-3 tw-mb-2">
-                <span class="tw-flex tw-items-center tw-gap-1 tw-text-xs" :class="sseConnected?'text-green-600':'text-red-500'">
-                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?'bg-green-500 animate-pulse':'bg-red-400'"></span>
+                <span class="tw-flex tw-items-center tw-gap-1 tw-text-xs" :class="sseConnected?"text-green-600':'text-red-500'">
+                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?"bg-green-500 animate-pulse':'bg-red-400'"></span>
                     <span x-text="sseConnected?'Gyvai':'Atsijungta'"></span>
                 </span>
                 <span class="tw-text-gray-400 tw-text-xs">Spustelėkite eilutę → detalės</span>
             </div>
             <div class="tw-overflow-auto" style="max-height:calc(100vh - 340px)">
             <table class="tw-w-full tw-text-xs">
-                <thead class="tw-bg-gray-50 tw-sticky top-0 tw-z-10"><tr>
+                <thead class="tw-bg-gray-50 tw-sticky tw-top-0 tw-z-10"><tr>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none" @click="ss('ts')">Laikas <span x-text="si('ts')"></span></th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none tw-w-10" @click="ss('method')">Met.</th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none w-9" @click="ss('status')">St.</th>
@@ -103,12 +103,12 @@ final class TracerPage extends AdminPage
                 </tr></thead>
                 <tbody>
                 <template x-for="t in liveSorted" :key="t.id">
-                    <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="openDetail(t)">
+                    <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="openDetail(t)">
                         <td class="tw-px-2 tw-py-1 tw-text-gray-400" x-text="t.ts.substring(11,19)"></td>
                         <td class="tw-px-2 tw-py-1 tw-font-bold" x-text="t.method"></td>
-                        <td class="tw-px-2 tw-py-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="t.status>=400?'bg-red-50':'bg-green-50'" x-text="t.status"></span></td>
+                        <td class="tw-px-2 tw-py-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="t.status>=400?"bg-red-50':'bg-green-50'" x-text="t.status"></span></td>
                         <td class="tw-px-2 tw-py-1 tw-truncate tw-max-w-xs" :title="t.uri" x-text="t.uri"></td>
-                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="t.total_ms>1000?'text-red-600':t.total_ms>300?'text-yellow-600':'text-green-600'" x-text="t.total_ms"></td>
+                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="t.total_ms>1000?"text-red-600':t.total_ms>300?'text-yellow-600':'text-green-600'" x-text="t.total_ms"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-right tw-text-gray-500" x-text="t.db_n"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-right tw-text-gray-500" x-text="sz(t.mem)"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-gray-400 tw-text-[10px]" x-text="t.user_name||'—'"></td>
@@ -120,7 +120,7 @@ final class TracerPage extends AdminPage
         </div>
 
         <!-- ==================== EXPLORER PANEL ==================== -->
-        <div class="tw-border tw-border-gray-300 rounded-b rounded-tr tw-bg-white tw-p-3" x-show="tab==='explorer'">
+        <div class="tw-border tw-border-gray-300 tw-rounded-b tw-rounded-tr tw-bg-white tw-p-3" x-show="tab==='explorer'">
             <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2 tw-mb-2">
                 <label class="tw-flex tw-items-center tw-gap-1">Data: <input type="date" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5" x-model="expDate" @change="loadExp()"></label>
                 <button class="button" @click="loadExp()">Įkelti</button>
@@ -139,11 +139,11 @@ final class TracerPage extends AdminPage
                 <label class="tw-flex tw-items-center tw-gap-1 tw-text-gray-600">Mem≥MB: <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5 tw-w-10" x-model="ef.minMem"></label>
                 <label class="tw-flex tw-items-center tw-gap-1 tw-text-gray-600">Vart: <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5 w-14" x-model="ef.user" placeholder="vardas"></label>
                 <label class="tw-flex tw-items-center tw-gap-1 tw-text-gray-600">🌍 <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5 tw-w-8" x-model="ef.co" placeholder="LT"></label>
-                <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 hover:bg-gray-300 tw-rounded tw-cursor-pointer" @click="ef={method:'',uri:'',status:'',ip:'',minMs:0,maxMs:0,minDb:0,minDbMs:0,minMem:'',user:'',co:''}">✕</button>
+                <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-hover:bg-gray-300 tw-rounded tw-cursor-pointer" @click="ef={method:'',uri:'',status:'',ip:'',minMs:0,maxMs:0,minDb:0,minDbMs:0,minMem:'',user:'',co:''}">✕</button>
             </div>
             <div class="tw-overflow-auto" style="max-height:calc(100vh - 420px)">
             <table class="tw-w-full tw-text-xs">
-                <thead class="tw-bg-gray-50 tw-sticky top-0 tw-z-10"><tr>
+                <thead class="tw-bg-gray-50 tw-sticky tw-top-0 tw-z-10"><tr>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none" @click="es('ts')">Laikas <span x-text="esi('ts')"></span></th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none tw-w-10" @click="es('method')">Met. <span x-text="esi('method')"></span></th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none w-9" @click="es('status')">St. <span x-text="esi('status')"></span></th>
@@ -158,12 +158,12 @@ final class TracerPage extends AdminPage
                 </tr></thead>
                 <tbody>
                 <template x-for="t in expSorted" :key="t.id">
-                    <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="openDetail(t)">
+                    <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="openDetail(t)">
                         <td class="tw-px-2 tw-py-1 tw-text-gray-400" x-text="t.ts.substring(11,19)"></td>
                         <td class="tw-px-2 tw-py-1 tw-font-bold" x-text="t.method"></td>
-                        <td class="tw-px-2 tw-py-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="t.status>=400?'bg-red-50':'bg-green-50'" x-text="t.status"></span></td>
+                        <td class="tw-px-2 tw-py-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="t.status>=400?"bg-red-50':'bg-green-50'" x-text="t.status"></span></td>
                         <td class="tw-px-2 tw-py-1 tw-truncate tw-max-w-[250px]" :title="t.uri" x-text="t.uri"></td>
-                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="t.total_ms>1000?'text-red-600':t.total_ms>300?'text-yellow-600':'text-green-600'" x-text="t.total_ms"></td>
+                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="t.total_ms>1000?"text-red-600':t.total_ms>300?'text-yellow-600':'text-green-600'" x-text="t.total_ms"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono tw-text-gray-500" x-text="t.db_ms"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-right tw-text-gray-500" x-text="t.db_n"></td>
                         <td class="tw-px-2 tw-py-1 tw-text-right tw-text-gray-500" x-text="sz(t.mem)"></td>
@@ -178,7 +178,7 @@ final class TracerPage extends AdminPage
         </div>
 
         <!-- ==================== DETAIL PANEL ==================== -->
-        <div class="tw-border tw-border-gray-300 rounded-b rounded-tr tw-bg-white tw-p-4" x-show="tab==='detail'&&detailTrace">
+        <div class="tw-border tw-border-gray-300 tw-rounded-b tw-rounded-tr tw-bg-white tw-p-4" x-show="tab==='detail'&&detailTrace">
             <div class="tw-flex tw-justify-between tw-items-center tw-mb-4">
                 <h3 class="tw-text-sm tw-font-bold" x-text="(detailTrace?.method||'')+' '+(detailTrace?.uri||'')"></h3>
                 <button class="button" @click="detailTrace=null;tab='explorer'">← Atgal</button>
@@ -189,13 +189,13 @@ final class TracerPage extends AdminPage
                 <!-- Overview -->
                 <div>
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">Apžvalga</h4>
-                    <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-xs">
+                    <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-xs">
                         <dt class="tw-text-gray-500 tw-font-medium">Trace ID</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.id"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">Laikas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.ts"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">Metodas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.method"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">URI</dt><dd class="tw-break-all" x-text="detailTrace.uri"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">Statusas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.status"></dd>
-                        <dt class="tw-text-gray-500 tw-font-medium">Trukmė</dt><dd class="tw-font-mono tw-font-semibold" :class="detailTrace.total_ms>1000?'text-red-600':detailTrace.total_ms>300?'text-yellow-600':'text-green-600'" x-text="detailTrace.total_ms+'ms'"></dd>
+                        <dt class="tw-text-gray-500 tw-font-medium">Trukmė</dt><dd class="tw-font-mono tw-font-semibold" :class="detailTrace.total_ms>1000?"text-red-600':detailTrace.total_ms>300?'text-yellow-600':'text-green-600'" x-text="detailTrace.total_ms+'ms'"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">DB užklausos</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.db_n+' ('+detailTrace.db_ms+'ms)'"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">Atmintis</dt><dd x-text="sz(detailTrace.mem)"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">IP</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.ip"></dd>
@@ -210,7 +210,7 @@ final class TracerPage extends AdminPage
                 <!-- User -->
                 <div x-show="detailTrace.user">
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">Vartotojas</h4>
-                    <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-xs">
+                    <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-xs">
                         <dt class="tw-text-gray-500 tw-font-medium">ID</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.user"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">Vardas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.user_name||'—'"></dd>
                         <dt class="tw-text-gray-500 tw-font-medium">El. paštas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.user_email||'—'"></dd>
@@ -223,30 +223,30 @@ final class TracerPage extends AdminPage
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">Užklausa (Request)</h4>
                     <template x-if="detailTrace.req_get&&Object.keys(detailTrace.req_get).length">
                         <div class="tw-mb-2"><span class="tw-text-xs tw-font-semibold">GET parametrai:</span>
-                        <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-xs tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_get)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd><code class="tw-text-[10px] tw-bg-gray-100 tw-px-1 tw-rounded" x-text="detailTrace.req_get[k]"></code></dd></template></dl></div>
+                        <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-xs tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_get)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd><code class="tw-text-[10px] tw-bg-gray-100 tw-px-1 tw-rounded" x-text="detailTrace.req_get[k]"></code></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_post&&Object.keys(detailTrace.req_post).length">
                         <div class="tw-mb-2"><span class="tw-text-xs tw-font-semibold">POST parametrai:</span>
-                        <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-xs tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_post)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd><code class="tw-text-[10px] tw-bg-gray-100 tw-px-1 tw-rounded tw-break-all" x-text="typeof detailTrace.req_post[k]==='object'?JSON.stringify(detailTrace.req_post[k]):detailTrace.req_post[k]"></code></dd></template></dl></div>
+                        <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-xs tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_post)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd><code class="tw-text-[10px] tw-bg-gray-100 tw-px-1 tw-rounded tw-break-all" x-text="typeof detailTrace.req_post[k]==='object'?JSON.stringify(detailTrace.req_post[k]):detailTrace.req_post[k]"></code></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_body">
                         <div class="tw-mb-2"><span class="tw-text-xs tw-font-semibold">Body:</span>
-                        <pre class="tw-bg-gray-100 tw-p-2 tw-rounded tw-text-[10px] max-h-48 tw-overflow-auto tw-whitespace-pre-wrap tw-break-all tw-mt-1" x-text="detailTrace.req_body"></pre></div>
+                        <pre class="tw-bg-gray-100 tw-p-2 tw-rounded tw-text-[10px] tw-max-h-48 tw-overflow-auto tw-whitespace-pre-wrap tw-break-all tw-mt-1" x-text="detailTrace.req_body"></pre></div>
                     </template>
                     <template x-if="detailTrace.req_headers&&Object.keys(detailTrace.req_headers).length">
                         <div class="tw-mb-2"><span class="tw-text-xs tw-font-semibold">Antraštės:</span>
-                        <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-[10px] tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_headers)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd class="tw-break-all" x-text="detailTrace.req_headers[k]"></dd></template></dl></div>
+                        <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-[10px] tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_headers)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd class="tw-break-all" x-text="detailTrace.req_headers[k]"></dd></template></dl></div>
                     </template>
                     <template x-if="detailTrace.req_cookies&&Object.keys(detailTrace.req_cookies).length">
                         <div><span class="tw-text-xs tw-font-semibold">Slapukai:</span>
-                        <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-[10px] tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_cookies)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd class="tw-break-all" x-text="detailTrace.req_cookies[k]"></dd></template></dl></div>
+                        <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-[10px] tw-mt-1"><template x-for="k in Object.keys(detailTrace.req_cookies)" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd class="tw-break-all" x-text="detailTrace.req_cookies[k]"></dd></template></dl></div>
                     </template>
                 </div>
 
                 <!-- Response -->
                 <div x-show="detailTrace.resp_headers&&Object.keys(detailTrace.resp_headers).length">
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">Atsakymas (Response)</h4>
-                    <dl class="tw-grid grid-cols-[140px_minmax(0,1fr)] gap-x-3 gap-y-0.5 tw-text-[10px]">
+                    <dl class="tw-grid tw-grid-cols-[140px_minmax(0,1fr)] tw-gap-x-3 tw-gap-y-0.5 tw-text-[10px]">
                         <dt class="tw-text-gray-500 tw-font-medium">Statusas</dt><dd class="tw-break-all tw-min-w-0" x-text="detailTrace.resp_code||detailTrace.status"></dd>
                         <template x-for="k in Object.keys(detailTrace.resp_headers||{})" :key="k"><dt class="tw-text-gray-500" x-text="k"></dt><dd class="tw-break-all" x-text="detailTrace.resp_headers[k]"></dd></template>
                     </dl>
@@ -262,33 +262,33 @@ final class TracerPage extends AdminPage
                                     <span class="tw-w-5 tw-text-center tw-text-gray-400 tw-shrink-0 tw-text-[10px]" x-text="s._children.length?(openS[s._i]?'▾':'▸'):' '"></span>
                                     <span class="w-36 tw-text-gray-600 tw-shrink-0 tw-truncate tw-font-medium" :title="s.n" x-text="s.n"></span>
                                     <div class="tw-flex-1 tw-h-2.5 tw-bg-gray-100 tw-rounded tw-overflow-hidden tw-min-w-[40px]">
-                                        <div class="tw-h-full tw-rounded" :class="s.ms>100?'bg-red-500':s.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(s.ms||0)/detailTrace.total_ms*100))+'%'"></div>
+                                        <div class="tw-h-full tw-rounded" :class="s.ms>100?"bg-red-500':s.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(s.ms||0)/detailTrace.total_ms*100))+'%'"></div>
                                     </div>
                                     <span class="w-14 tw-text-right tw-font-mono tw-text-[10px] tw-shrink-0" x-text="(s.ms??'—')+'ms'"></span>
                                     <span class="tw-w-8 tw-text-right tw-text-[10px] tw-text-gray-400 tw-shrink-0" x-show="s._children.length" x-text="s._children.length+'↓'"></span>
                                 </div>
                                 <!-- Children (level 1) -->
                                 <template x-if="openS[s._i]&&s._children.length">
-                                    <div class="ml-6 border-l-2 tw-border-gray-200 tw-pl-2">
+                                    <div class="tw-ml-6 tw-border-l-2 tw-border-gray-200 tw-pl-2">
                                         <template x-for="(c,ci) in s._children" :key="ci">
                                             <div>
                                                 <div class="tw-flex tw-items-center tw-gap-1.5 tw-py-0.5 tw-text-xs tw-cursor-pointer hover:tw-bg-gray-50 tw-rounded" @click="openS[c._i]=!openS[c._i]">
-                                                    <span class="tw-w-5 tw-text-center text-gray-300 tw-shrink-0 tw-text-[10px]" x-text="c._children.length?(openS[c._i]?'▾':'▸'):' '"></span>
+                                                    <span class="tw-w-5 tw-text-center tw-text-gray-300 tw-shrink-0 tw-text-[10px]" x-text="c._children.length?(openS[c._i]?'▾':'▸'):' '"></span>
                                                     <span class="tw-w-32 tw-text-gray-500 tw-shrink-0 tw-truncate" :title="c.n" x-text="c.n"></span>
                                                     <div class="tw-flex-1 tw-h-2 tw-bg-gray-100 tw-rounded tw-overflow-hidden tw-min-w-[30px]">
-                                                        <div class="tw-h-full tw-rounded" :class="c.ms>100?'bg-red-500':c.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(c.ms||0)/detailTrace.total_ms*100))+'%'"></div>
+                                                        <div class="tw-h-full tw-rounded" :class="c.ms>100?"bg-red-500':c.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(c.ms||0)/detailTrace.total_ms*100))+'%'"></div>
                                                     </div>
                                                     <span class="w-14 tw-text-right tw-font-mono tw-text-[10px] tw-shrink-0" x-text="(c.ms??'—')+'ms'"></span>
                                                 </div>
                                                 <!-- Children (level 2+) -->
                                                 <template x-if="openS[c._i]&&c._children.length">
-                                                    <div class="ml-6 tw-border-l tw-border-gray-100 tw-pl-2">
+                                                    <div class="tw-ml-6 tw-border-l tw-border-gray-100 tw-pl-2">
                                                         <template x-for="(gc,gci) in c._children" :key="gci">
                                                             <div class="tw-flex tw-items-center tw-gap-1.5 tw-py-0.5 tw-text-xs">
                                                                 <span class="tw-w-5 tw-shrink-0"></span>
                                                                 <span class="w-28 tw-text-gray-400 tw-shrink-0 tw-truncate" :title="gc.n" x-text="gc.n"></span>
                                                                 <div class="tw-flex-1 tw-h-1.5 tw-bg-gray-100 tw-rounded tw-overflow-hidden tw-min-w-[20px]">
-                                                                    <div class="tw-h-full tw-rounded" :class="gc.ms>100?'bg-red-500':gc.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(gc.ms||0)/detailTrace.total_ms*100))+'%'"></div>
+                                                                    <div class="tw-h-full tw-rounded" :class="gc.ms>100?"bg-red-500':gc.ms>30?'bg-yellow-400':'bg-green-500'" :style="'width:'+Math.max(1,Math.min(100,(gc.ms||0)/detailTrace.total_ms*100))+'%'"></div>
                                                                 </div>
                                                                 <span class="w-14 tw-text-right tw-font-mono tw-text-[10px] tw-shrink-0" x-text="(gc.ms??'—')+'ms'"></span>
                                                             </div>
@@ -312,9 +312,9 @@ final class TracerPage extends AdminPage
                         <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-0.5 tw-text-[10px] w-52" x-model="qf" placeholder="Filtruoti SQL / kvietėją...">
                         <label class="tw-flex tw-items-center tw-gap-1 tw-text-[10px]"><input type="checkbox" x-model="qs"> &gt;5ms</label>
                         <label class="tw-flex tw-items-center tw-gap-1 tw-text-[10px]"><input type="checkbox" x-model="qdup"> Grupuoti</label>
-                        <div class="tw-flex gap-0.5 tw-ml-2">
-                            <button class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px]" :class="qview==='tree'?'bg-blue-100 text-blue-700':'bg-gray-100'" @click="qview='tree'">Medis</button>
-                            <button class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px]" :class="qview==='flat'?'bg-blue-100 text-blue-700':'bg-gray-100'" @click="qview='flat'">Sąrašas</button>
+                        <div class="tw-flex tw-gap-0.5 tw-ml-2">
+                            <button class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px]" :class="qview==="tree'?'bg-blue-100 text-blue-700':'bg-gray-100'" @click="qview='tree'">Medis</button>
+                            <button class="tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px]" :class="qview==="flat'?'bg-blue-100 text-blue-700':'bg-gray-100'" @click="qview='flat'">Sąrašas</button>
                         </div>
                     </div>
 
@@ -328,23 +328,23 @@ final class TracerPage extends AdminPage
                                     <span class="tw-font-mono tw-text-gray-400" x-text="spanQueries(si).reduce((a,q)=>a+q.ms,0).toFixed(1)+'ms'"></span>
                                 </div>
                                 <template x-for="(q,qi) in spanQueries(si)" :key="qi">
-                                    <div class="border-l-2 tw-border-gray-200 tw-ml-2 tw-pl-2 tw-py-0.5">
+                                    <div class="tw-border-l-2 tw-border-gray-200 tw-ml-2 tw-pl-2 tw-py-0.5">
                                         <div class="tw-flex tw-items-start tw-gap-2 tw-cursor-pointer hover:tw-bg-gray-50 tw-rounded tw-px-1" @click="openQ[si+'_'+qi]=!openQ[si+'_'+qi]">
                                             <span class="tw-text-gray-400 tw-text-[10px] tw-shrink-0" x-text="openQ[si+'_'+qi]?'▾':'▸'"></span>
-                                            <span class="tw-font-mono tw-font-semibold tw-text-[10px] tw-shrink-0 tw-w-12 tw-text-right" :class="q.ms>10?'text-red-600':q.ms>5?'text-yellow-600':'text-gray-600'" x-text="q.ms+'ms'"></span>
+                                            <span class="tw-font-mono tw-font-semibold tw-text-[10px] tw-shrink-0 tw-w-12 tw-text-right" :class="q.ms>10?"text-red-600':q.ms>5?'text-yellow-600':'text-gray-600'" x-text="q.ms+'ms'"></span>
                                             <code class="tw-text-[10px] tw-break-all tw-text-gray-700 tw-flex-1" x-text="q.sql.substring(0,120)+(q.sql.length>120?'…':'')"></code>
                                             <span class="tw-text-[10px] tw-text-gray-400 tw-shrink-0" x-show="q._c>1" x-text="'×'+q._c"></span>
                                         </div>
                                         <!-- Expanded: full SQL + call stack -->
-                                        <div x-show="openQ[si+'_'+qi]" class="ml-6 tw-mt-1 tw-mb-2 space-y-1">
-                                            <pre class="tw-bg-gray-900 text-green-300 tw-p-2 tw-rounded tw-text-[10px] tw-overflow-auto max-h-32 tw-whitespace-pre-wrap" x-text="q.sql"></pre>
+                                        <div x-show="openQ[si+'_'+qi]" class="tw-ml-6 tw-mt-1 tw-mb-2 tw-space-y-1">
+                                            <pre class="tw-bg-gray-900 text-green-300 tw-p-2 tw-rounded tw-text-[10px] tw-overflow-auto tw-max-h-32 tw-whitespace-pre-wrap" x-text="q.sql"></pre>
                                             <div class="tw-text-[10px]">
                                                 <span class="tw-font-semibold tw-text-gray-600">Kvietimų grandinė:</span>
-                                                <div class="mt-0.5 tw-pl-2 tw-border-l tw-border-gray-200 space-y-0">
+                                                <div class="tw-mt-0.5 tw-pl-2 tw-border-l tw-border-gray-200 tw-space-y-0">
                                                     <template x-for="(fn,fi) in (q.stack||q.caller.split(', '))" :key="fi">
-                                                        <div class="tw-flex tw-items-center tw-gap-1 py-0">
-                                                            <span class="text-gray-300">→</span>
-                                                            <code class="tw-text-[10px]" :class="fi===(q.stack||q.caller.split(', ')).length-1?'text-blue-600 font-semibold':'text-gray-500'" x-text="fn"></code>
+                                                        <div class="tw-flex tw-items-center tw-gap-1 tw-py-0">
+                                                            <span class="tw-text-gray-300">→</span>
+                                                            <code class="tw-text-[10px]" :class="fi===(q.stack||q.caller.split(", ')).length-1?'text-blue-600 font-semibold':'text-gray-500'" x-text="fn"></code>
                                                         </div>
                                                     </template>
                                                 </div>
@@ -364,17 +364,17 @@ final class TracerPage extends AdminPage
                                 <span class="tw-text-gray-400" x-text="unassignedQueries().length+' užkl.'"></span>
                             </div>
                             <template x-for="(q,qi) in unassignedQueries()" :key="qi">
-                                <div class="border-l-2 tw-border-yellow-200 tw-ml-2 tw-pl-2 tw-py-0.5">
+                                <div class="tw-border-l-2 tw-border-yellow-200 tw-ml-2 tw-pl-2 tw-py-0.5">
                                     <div class="tw-flex tw-items-start tw-gap-2 tw-cursor-pointer hover:tw-bg-gray-50 tw-rounded tw-px-1" @click="openQ['u_'+qi]=!openQ['u_'+qi]">
                                         <span class="tw-text-gray-400 tw-text-[10px]" x-text="openQ['u_'+qi]?'▾':'▸'"></span>
-                                        <span class="tw-font-mono tw-font-semibold tw-text-[10px] tw-w-12 tw-text-right" :class="q.ms>10?'text-red-600':'text-gray-600'" x-text="q.ms+'ms'"></span>
+                                        <span class="tw-font-mono tw-font-semibold tw-text-[10px] tw-w-12 tw-text-right" :class="q.ms>10?"text-red-600':'text-gray-600'" x-text="q.ms+'ms'"></span>
                                         <code class="tw-text-[10px] tw-break-all tw-text-gray-700 tw-flex-1" x-text="q.sql.substring(0,120)"></code>
                                     </div>
-                                    <div x-show="openQ['u_'+qi]" class="ml-6 tw-mt-1 tw-mb-2 space-y-1">
-                                        <pre class="tw-bg-gray-900 text-green-300 tw-p-2 tw-rounded tw-text-[10px] tw-overflow-auto max-h-32 tw-whitespace-pre-wrap" x-text="q.sql"></pre>
+                                    <div x-show="openQ['u_'+qi]" class="tw-ml-6 tw-mt-1 tw-mb-2 tw-space-y-1">
+                                        <pre class="tw-bg-gray-900 text-green-300 tw-p-2 tw-rounded tw-text-[10px] tw-overflow-auto tw-max-h-32 tw-whitespace-pre-wrap" x-text="q.sql"></pre>
                                         <div class="tw-text-[10px] tw-pl-2 tw-border-l tw-border-gray-200">
                                             <template x-for="(fn,fi) in (q.stack||q.caller.split(', '))" :key="fi">
-                                                <div class="tw-flex tw-items-center tw-gap-1"><span class="text-gray-300">→</span><code class="tw-text-[10px]" :class="fi===(q.stack||q.caller.split(', ')).length-1?'text-blue-600 font-semibold':'text-gray-500'" x-text="fn"></code></div>
+                                                <div class="tw-flex tw-items-center tw-gap-1"><span class="tw-text-gray-300">→</span><code class="tw-text-[10px]" :class="fi===(q.stack||q.caller.split(", ')).length-1?'text-blue-600 font-semibold':'text-gray-500'" x-text="fn"></code></div>
                                             </template>
                                         </div>
                                     </div>
@@ -384,9 +384,9 @@ final class TracerPage extends AdminPage
                     </div>
 
                     <!-- Flat view -->
-                    <div x-show="qview==='flat'" class="max-h-96 tw-overflow-auto">
+                    <div x-show="qview==='flat'" class="tw-max-h-96 tw-overflow-auto">
                         <table class="tw-w-full tw-text-[10px]">
-                        <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                        <thead class="tw-bg-gray-50 tw-sticky tw-top-0"><tr>
                             <th class="tw-px-1.5 tw-py-1 tw-text-left w-14">ms</th>
                             <th class="tw-px-1.5 tw-py-1 tw-text-left">SQL</th>
                             <th class="tw-px-1.5 tw-py-1 tw-text-left w-44">Kvietėjas</th>
@@ -394,7 +394,7 @@ final class TracerPage extends AdminPage
                         </tr></thead>
                         <tbody>
                         <template x-for="(q,qi) in fq(detailTrace.db,qf,qs,qdup,'ms','desc')" :key="qi">
-                            <tr class="tw-border-b border-gray-50" :class="q.ms>10?'bg-red-50':q.ms>5?'bg-yellow-50':''">
+                            <tr class="tw-border-b tw-border-gray-50" :class="q.ms>10?"bg-red-50':q.ms>5?'bg-yellow-50':''">
                                 <td class="tw-px-1.5 tw-py-1 tw-font-mono tw-font-semibold" x-text="q.ms"></td>
                                 <td class="tw-px-1.5 tw-py-1"><code class="tw-break-all" x-text="q.sql"></code></td>
                                 <td class="tw-px-1.5 tw-py-1 tw-text-gray-400 tw-break-all" x-text="q.caller"></td>
@@ -411,12 +411,12 @@ final class TracerPage extends AdminPage
                 <div x-show="detailTrace.hooks&&detailTrace.hooks.length" class="tw-mt-4">
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">
                         WP Hook sekimas
-                        <span class="font-normal tw-text-gray-400 tw-ml-2" x-text="(detailTrace.hooks||[]).length+' lėtų hook\'ų'"></span>
+                        <span class="tw-font-normal tw-text-gray-400 tw-ml-2" x-text="(detailTrace.hooks||[]).length+' lėtų hook\'ų'"></span>
                     </h4>
                     <div x-data="{hf:''}">
                         <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-0.5 tw-text-[10px] tw-w-64 tw-mb-2" x-model="hf" placeholder="Filtruoti hook / failą...">
                         <div class="tw-overflow-auto tw-max-h-[400px]">
-                            <table class="tw-w-full tw-text-[10px] border-collapse">
+                            <table class="tw-w-full tw-text-[10px] tw-border-collapse">
                                 <thead><tr class="tw-bg-gray-50 tw-text-left">
                                     <th class="tw-px-2 tw-py-1 tw-font-semibold">Hook</th>
                                     <th class="tw-px-2 tw-py-1 tw-font-semibold tw-w-16 tw-text-right">ms</th>
@@ -427,7 +427,7 @@ final class TracerPage extends AdminPage
                                 <template x-for="(h,hi) in (detailTrace.hooks||[]).filter(h=>!hf||h.hook.includes(hf)||h.caller.includes(hf))" :key="hi">
                                     <tr class="tw-border-t tw-border-gray-100 hover:tw-bg-gray-50">
                                         <td class="tw-px-2 tw-py-1 tw-font-mono" x-text="h.hook"></td>
-                                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono" :class="h.ms>100?'text-red-600 font-bold':h.ms>10?'text-yellow-600':'text-gray-600'" x-text="h.ms"></td>
+                                        <td class="tw-px-2 tw-py-1 tw-text-right tw-font-mono" :class="h.ms>100?"text-red-600 font-bold':h.ms>10?'text-yellow-600':'text-gray-600'" x-text="h.ms"></td>
                                         <td class="tw-px-2 tw-py-1 tw-text-gray-500 tw-max-w-xs tw-truncate" :title="JSON.stringify(h.args)" x-text="(h.args||[]).join(' | ')"></td>
                                         <td class="tw-px-2 tw-py-1 tw-text-gray-400 tw-font-mono tw-text-[9px]" x-text="h.caller"></td>
                                     </tr>
@@ -445,13 +445,13 @@ final class TracerPage extends AdminPage
                 <div x-show="detailTrace.profile&&detailTrace.profile.length" class="tw-mt-4">
                     <h4 class="tw-text-xs tw-font-semibold tw-text-gray-700 tw-border-b tw-border-gray-200 tw-pb-1 tw-mb-2">
                         Profilis (Excimer sampling)
-                        <span class="font-normal tw-text-gray-400 tw-ml-2" x-text="detailTrace.profile_samples+' pavyzdžių'"></span>
+                        <span class="tw-font-normal tw-text-gray-400 tw-ml-2" x-text="detailTrace.profile_samples+' pavyzdžių'"></span>
                     </h4>
-                    <div x-data="{pf:'',ps:'self_ms',pd:'desc'}" class="space-y-2">
+                    <div x-data="{pf:'',ps:'self_ms',pd:'desc'}" class="tw-space-y-2">
                         <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-0.5 tw-text-[10px] tw-w-64" x-model="pf" placeholder="Filtruoti funkciją / failą...">
                         <div class="tw-overflow-auto tw-max-h-[400px]">
                             <table class="tw-w-full tw-text-[10px]">
-                            <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                            <thead class="tw-bg-gray-50 tw-sticky tw-top-0"><tr>
                                 <th class="tw-px-1.5 tw-py-1 tw-text-left tw-cursor-pointer select-none" @click="ps='fn';pd=pd==='desc'?'asc':'desc'">Funkcija</th>
                                 <th class="tw-px-1.5 tw-py-1 tw-text-left tw-w-48 tw-cursor-pointer select-none" @click="ps='file';pd=pd==='desc'?'asc':'desc'">Failas:eilutė</th>
                                 <th class="tw-px-1.5 tw-py-1 tw-text-right tw-w-16 tw-cursor-pointer select-none" @click="ps='self_ms';pd=pd==='desc'?'asc':'desc'">Self ms</th>
@@ -461,15 +461,15 @@ final class TracerPage extends AdminPage
                             </tr></thead>
                             <tbody>
                             <template x-for="(p,pi) in profileFiltered(pf,ps,pd)" :key="pi">
-                                <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50">
+                                <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50">
                                     <td class="tw-px-1.5 tw-py-1 tw-font-mono tw-font-medium tw-text-blue-700" x-text="p.fn||'(main)'"></td>
                                     <td class="tw-px-1.5 tw-py-1 tw-text-gray-400 tw-truncate tw-max-w-[200px]" :title="p.file+':'+p.line" x-text="shortPath(p.file)+':'+p.line"></td>
-                                    <td class="tw-px-1.5 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="p.self_ms>50?'text-red-600':p.self_ms>10?'text-yellow-600':''" x-text="p.self_ms"></td>
+                                    <td class="tw-px-1.5 tw-py-1 tw-text-right tw-font-mono tw-font-semibold" :class="p.self_ms>50?"text-red-600':p.self_ms>10?'text-yellow-600':''" x-text="p.self_ms"></td>
                                     <td class="tw-px-1.5 tw-py-1 tw-text-right tw-font-mono tw-text-gray-500" x-text="p.total_ms"></td>
                                     <td class="tw-px-1.5 tw-py-1 tw-text-right tw-text-gray-400" x-text="p.samples"></td>
                                     <td class="tw-px-1.5 tw-py-1">
                                         <div class="tw-h-2 tw-bg-gray-100 tw-rounded tw-overflow-hidden">
-                                            <div class="tw-h-full tw-rounded" :class="p.self_ms>50?'bg-red-500':p.self_ms>10?'bg-yellow-400':'bg-blue-400'" :style="'width:'+Math.min(100,(p.self_ms/detailTrace.total_ms*100))+'%'"></div>
+                                            <div class="tw-h-full tw-rounded" :class="p.self_ms>50?"bg-red-500':p.self_ms>10?'bg-yellow-400':'bg-blue-400'" :style="'width:'+Math.min(100,(p.self_ms/detailTrace.total_ms*100))+'%'"></div>
                                         </div>
                                     </td>
                                 </tr>

@@ -43,7 +43,7 @@ final class ApachePage extends AdminPage
         $configFile = $info['config']['config_file'] ?? '';
         if ($configFile && @is_readable($configFile)) {
             echo '<h2>Konfigūracijos failas</h2>';
-            echo '<pre class="tw-bg-gray-900 text-gray-300 tw-p-4 tw-overflow-auto tw-max-h-[400px] tw-text-xs tw-rounded">';
+            echo '<pre class="tw-bg-gray-900 tw-text-gray-300 tw-p-4 tw-overflow-auto tw-max-h-[400px] tw-text-xs tw-rounded">';
             echo esc_html(substr(@file_get_contents($configFile) ?: '', 0, 50000));
             echo '</pre>';
         }

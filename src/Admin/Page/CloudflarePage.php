@@ -31,15 +31,15 @@ final class CloudflarePage extends AdminPage
                 <input type="text" x-model.debounce.300ms="search" placeholder="URI, IP, naršyklė..." class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm tw-w-48">
             </div>
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-xs">
-                <span class="tw-flex tw-items-center tw-gap-1" :class="sseConnected?'text-green-600':'text-red-500'">
-                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?'bg-green-500 animate-pulse':'bg-red-400'"></span>
+                <span class="tw-flex tw-items-center tw-gap-1" :class="sseConnected?"text-green-600':'text-red-500'">
+                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?"bg-green-500 animate-pulse':'bg-red-400'"></span>
                     <span x-text="sseConnected?'Gyvai':'Atsijungta'"></span>
                 </span>
                 <span class="tw-text-gray-400" x-text="rows.length+' įrašų'"></span>
             </div>
         </div>
 
-        <div x-show="loading" class="py-8 tw-text-center tw-text-gray-500">Kraunama...</div>
+        <div x-show="loading" class="tw-py-8 tw-text-center tw-text-gray-500">Kraunama...</div>
 
         <template x-if="!loading">
         <div>
@@ -50,7 +50,7 @@ final class CloudflarePage extends AdminPage
                 </h2>
                 <div x-show="showLogged" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-auto tw-max-h-[45vh]">
                 <table class="tw-w-full tw-text-xs">
-                    <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                    <thead class="tw-bg-gray-50 tw-sticky tw-top-0"><tr>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">Laikas</th>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left w-40">Vartotojas</th>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-24">IP</th>
@@ -62,10 +62,10 @@ final class CloudflarePage extends AdminPage
                     </tr></thead>
                     <tbody>
                         <template x-for="(r, i) in loggedRows" :key="r.ray||i">
-                            <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
+                            <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?"bg-yellow-50':''">
                                 <td class="tw-px-2 tw-py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
                                 <td class="tw-px-2 tw-py-1 tw-leading-tight">
-                                    <span class="text-blue-600" x-text="r.user_name"></span>
+                                    <span class="tw-text-blue-600" x-text="r.user_name"></span>
                                     <br><span class="tw-text-gray-400 tw-text-[10px]" x-text="r.user_email"></span>
                                 </td>
                                 <td class="tw-px-2 tw-py-1" x-text="r.ip"></td>
@@ -88,7 +88,7 @@ final class CloudflarePage extends AdminPage
                 </h2>
                 <div x-show="showAnon" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-auto tw-max-h-[45vh]">
                 <table class="tw-w-full tw-text-xs">
-                    <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                    <thead class="tw-bg-gray-50 tw-sticky tw-top-0"><tr>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">Laikas</th>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-24">IP</th>
                         <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-10">🌍</th>
@@ -99,7 +99,7 @@ final class CloudflarePage extends AdminPage
                     </tr></thead>
                     <tbody>
                         <template x-for="(r, i) in anonRows" :key="r.ray||i">
-                            <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
+                            <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?"bg-yellow-50':''">
                                 <td class="tw-px-2 tw-py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
                                 <td class="tw-px-2 tw-py-1" x-text="r.ip"></td>
                                 <td class="tw-px-2 tw-py-1" :title="countryName(r.country)"><span x-text="flag(r.country)"></span></td>

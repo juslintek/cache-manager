@@ -160,7 +160,7 @@ final class LiteSpeedPage extends AdminPage
             $c=$o['enabled']?'text-green-600':'text-yellow-600';
             echo '<tr><td><strong>'.esc_html($o['name']).'</strong></td>';
             echo '<td class="'.esc_attr($c).'">'.(($o['enabled'])?'✅ Aktyvus':'⚠ Patikrinti').'</td>';
-            echo '<td class="text-xs text-gray-600">'.esc_html($o['desc']).($o['link']?' <a href="'.esc_url($o['link']).'" target="_blank" class="text-blue-600">Dokumentacija →</a>':''). '</td></tr>';
+            echo '<td class="text-xs tw-text-gray-600">'.esc_html($o['desc']).($o['link']?' <a href="'.esc_url($o['link']).'" target="_blank" class="tw-text-blue-600">Dokumentacija →</a>':''). '</td></tr>';
         }
         echo '</tbody></table>';
 

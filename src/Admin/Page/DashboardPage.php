@@ -62,8 +62,8 @@ final class DashboardPage extends AdminPage
             echo '<div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-shadow-sm">';
             echo '<div class="tw-flex tw-justify-between tw-items-start">';
             echo '<div><div class="tw-text-[11px] tw-text-gray-400 tw-uppercase tw-tracking-wide">' . esc_html($title) . '</div>';
-            echo '<div class="tw-text-xl tw-font-bold mt-0.5 tw-text-gray-900">' . $value . '</div>';
-            echo '<div class="tw-text-[11px] tw-text-gray-500 mt-0.5">' . $sub . '</div></div>';
+            echo '<div class="tw-text-xl tw-font-bold tw-mt-0.5 tw-text-gray-900">' . $value . '</div>';
+            echo '<div class="tw-text-[11px] tw-text-gray-500 tw-mt-0.5">' . $sub . '</div></div>';
             echo '<span class="tw-text-2xl tw-opacity-70">' . $icon . '</span></div>';
             echo $bar;
             echo '</div>';
@@ -151,11 +151,11 @@ final class DashboardPage extends AdminPage
                     <h3 class="tw-m-0 tw-text-base tw-font-semibold">🗑 Valoma talpykla</h3>
                     <span id="vlt-purge-pct-label" class="tw-text-sm tw-text-gray-500 tw-font-semibold">0%</span>
                 </div>
-                <div class="tw-bg-gray-200 tw-rounded-md tw-h-2.5 tw-overflow-hidden mb-3.5">
+                <div class="tw-bg-gray-200 tw-rounded-md tw-h-2.5 tw-overflow-hidden tw-mb-3.5">
                     <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:6px"></div>
                 </div>
                 <div id="vlt-purge-items" class="tw-font-mono tw-text-[11px] tw-max-h-[150px] tw-overflow-y-auto tw-bg-gray-50 tw-border tw-border-gray-200 tw-px-2.5 tw-py-2 tw-rounded-md tw-leading-relaxed"></div>
-                <div id="vlt-purge-done-msg" class="tw-hidden mt-3.5 tw-text-green-600 tw-font-bold tw-text-sm tw-text-center">✅ Viskas išvalyta!</div>
+                <div id="vlt-purge-done-msg" class="tw-hidden tw-mt-3.5 tw-text-green-600 tw-font-bold tw-text-sm tw-text-center">✅ Viskas išvalyta!</div>
             </div>
         </div>
 

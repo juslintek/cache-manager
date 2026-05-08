@@ -38,7 +38,7 @@ final class OpcacheExplorerPage extends AdminPage
         ?>
 
         <!-- Stats cards -->
-        <div class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3 tw-mb-4">
+        <div class="tw-grid tw-grid-cols-2 tw-md:grid-cols-4 tw-gap-3 tw-mb-4">
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-text-xs tw-text-gray-500">Pataikymų santykis</div>
                 <div class="tw-text-2xl tw-font-bold tw-mt-1 <?php echo $hit_rate > 95 ?'text-green-600' : ($hit_rate > 80 ? 'text-yellow-600' : 'text-red-600'); ?>"><?php echo $hit_rate; ?>%</div>
@@ -65,14 +65,14 @@ final class OpcacheExplorerPage extends AdminPage
         <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4">
             <h3 class="tw-text-xs tw-font-semibold tw-mb-2">Atminties naudojimas</h3>
             <div class="tw-h-6 tw-rounded tw-overflow-hidden tw-flex">
-                <div class="bg-blue-500 tw-h-full" style="width:<?php echo round($used_mem / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Naudojama: <?php echo $used_mem; ?> MB"></div>
-                <div class="bg-red-300 tw-h-full" style="width:<?php echo round($wasted / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Švaistyma: <?php echo $wasted; ?> MB"></div>
-                <div class="bg-green-200 tw-h-full tw-flex-1" title="Laisva: <?php echo $free_mem; ?> MB"></div>
+                <div class="tw-bg-blue-500 tw-h-full" style="width:<?php echo round($used_mem / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Naudojama: <?php echo $used_mem; ?> MB"></div>
+                <div class="tw-bg-red-300 tw-h-full" style="width:<?php echo round($wasted / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Švaistyma: <?php echo $wasted; ?> MB"></div>
+                <div class="tw-bg-green-200 tw-h-full tw-flex-1" title="Laisva: <?php echo $free_mem; ?> MB"></div>
             </div>
             <div class="tw-flex tw-gap-4 tw-mt-2 tw-text-xs tw-text-gray-500">
-                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 h-3 bg-blue-500 tw-rounded"></span> Naudojama</span>
-                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 h-3 bg-red-300 tw-rounded"></span> Švaistyma</span>
-                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 h-3 bg-green-200 tw-rounded"></span> Laisva</span>
+                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 tw-h-3 tw-bg-blue-500 tw-rounded"></span> Naudojama</span>
+                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 tw-h-3 tw-bg-red-300 tw-rounded"></span> Švaistyma</span>
+                <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 tw-h-3 tw-bg-green-200 tw-rounded"></span> Laisva</span>
             </div>
         </div>
 
@@ -84,7 +84,7 @@ final class OpcacheExplorerPage extends AdminPage
             <div x-show="show" class="tw-mt-2">
                 <table class="tw-w-full tw-text-xs">
                     <?php if ($config): foreach ($config['directives'] ?? [] as $k => $v): ?>
-                    <tr class="tw-border-b border-gray-50"><td class="tw-py-1 tw-text-gray-600 tw-w-64"><?php echo esc_html($k); ?></td><td class="tw-py-1 tw-font-mono"><?php echo esc_html(is_bool($v) ? ($v ? 'true' : 'false') : (string) $v); ?></td></tr>
+                    <tr class="tw-border-b tw-border-gray-50"><td class="tw-py-1 tw-text-gray-600 tw-w-64"><?php echo esc_html($k); ?></td><td class="tw-py-1 tw-font-mono"><?php echo esc_html(is_bool($v) ? ($v ? 'true' : 'false') : (string) $v); ?></td></tr>
                     <?php endforeach; endif; ?>
                 </table>
             </div>
@@ -96,9 +96,9 @@ final class OpcacheExplorerPage extends AdminPage
                 <h3 class="tw-text-xs tw-font-semibold">Talpykloje esantys failai (<?php echo number_format($scripts); ?>)</h3>
                 <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-xs tw-w-64" placeholder="Filtruoti pagal kelią..." x-model="filter">
             </div>
-            <div class="tw-overflow-auto max-h-96">
+            <div class="tw-overflow-auto tw-max-h-96">
                 <table class="tw-w-full tw-text-[10px]">
-                    <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                    <thead class="tw-bg-gray-50 tw-sticky tw-top-0"><tr>
                         <th class="tw-px-2 tw-py-1 tw-text-left tw-cursor-pointer" @click="sort='path';dir=dir==='asc'?'desc':'asc'">Failas</th>
                         <th class="tw-px-2 tw-py-1 tw-text-right tw-w-16 tw-cursor-pointer" @click="sort='hits';dir=dir==='asc'?'desc':'asc'">Pataikymai</th>
                         <th class="tw-px-2 tw-py-1 tw-text-right tw-w-16 tw-cursor-pointer" @click="sort='memory';dir=dir==='asc'?'desc':'asc'">Dydis</th>
@@ -106,7 +106,7 @@ final class OpcacheExplorerPage extends AdminPage
                     </tr></thead>
                     <tbody>
                         <template x-for="s in filteredScripts" :key="s.path">
-                            <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50">
+                            <tr class="tw-border-b tw-border-gray-50 tw-hover:tw-bg-gray-50">
                                 <td class="tw-px-2 tw-py-0.5 tw-truncate tw-max-w-md" :title="s.path" x-text="s.path"></td>
                                 <td class="tw-px-2 tw-py-0.5 tw-text-right tw-font-mono" x-text="s.hits"></td>
                                 <td class="tw-px-2 tw-py-0.5 tw-text-right tw-font-mono" x-text="sz(s.memory)"></td>

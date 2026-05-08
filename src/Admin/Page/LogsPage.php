@@ -22,7 +22,7 @@ final class LogsPage extends AdminPage
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Žurnalai</h1>
 
         <!-- Filters -->
-        <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4 tw-grid grid-cols-2 md:grid-cols-6 tw-gap-3">
+        <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4 tw-grid tw-grid-cols-2 tw-md:grid-cols-6 tw-gap-3">
             <div>
                 <label class="tw-block tw-text-xs tw-font-semibold tw-mb-1">Data</label>
                 <input type="date" x-model="filters.date" @change="fullFetch()" class="tw-w-full tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm">
@@ -44,7 +44,7 @@ final class LogsPage extends AdminPage
             <div class="tw-relative">
                 <label class="tw-block tw-text-xs tw-font-semibold tw-mb-1">URL</label>
                 <input type="text" x-model="filters.uri" @input="onUriInput()" @focus="showSuggest=true" @blur="setTimeout(()=>showSuggest=false,200)" placeholder="pvz. /naujienos" class="tw-w-full tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm" autocomplete="off">
-                <div x-show="showSuggest && suggestions.length" class="tw-absolute tw-z-50 tw-bg-white tw-border tw-border-gray-200 tw-shadow-lg tw-rounded tw-mt-1 max-h-48 tw-overflow-auto tw-w-full">
+                <div x-show="showSuggest && suggestions.length" class="tw-absolute tw-z-50 tw-bg-white tw-border tw-border-gray-200 tw-shadow-lg tw-rounded tw-mt-1 tw-max-h-48 tw-overflow-auto tw-w-full">
                     <template x-for="s in suggestions" :key="s">
                         <div @mousedown.prevent="filters.uri=s;showSuggest=false;fullFetch()" class="tw-px-2 tw-py-1 tw-text-xs tw-cursor-pointer hover:tw-bg-blue-50" x-text="s"></div>
                     </template>
@@ -75,7 +75,7 @@ final class LogsPage extends AdminPage
             <span>Santykis: <strong x-text="meta.ratio+'%'"></strong></span>
         </div>
 
-        <div x-show="loading" class="py-8 tw-text-center tw-text-gray-500">Kraunama...</div>
+        <div x-show="loading" class="tw-py-8 tw-text-center tw-text-gray-500">Kraunama...</div>
 
         <!-- Grouped view -->
         <template x-if="groupFields.length > 0 && !loading">
@@ -92,7 +92,7 @@ final class LogsPage extends AdminPage
                 <tbody>
                     <template x-for="(row, idx) in sortedRows" :key="idx">
                         <tr>
-                            <td colspan="6" class="p-0">
+                            <td colspan="6" class="tw-p-0">
                                 <div class="tw-flex tw-items-center tw-px-3 tw-py-2 tw-border-b tw-border-gray-100 tw-cursor-pointer hover:tw-bg-gray-50" @click="row._open=!row._open">
                                     <span class="tw-w-8 tw-text-gray-400" x-text="row._open?'▾':'▸'"></span>
                                     <span class="tw-flex-1 tw-font-semibold" x-text="row.label"></span>
@@ -114,7 +114,7 @@ final class LogsPage extends AdminPage
                                         </select>
                                     </div>
                                     <template x-for="(c, ci) in filteredChildren(row)" :key="ci">
-                                        <div class="tw-grid grid-cols-6 tw-gap-2 tw-px-6 tw-py-1 tw-text-xs tw-border-b border-gray-50">
+                                        <div class="tw-grid tw-grid-cols-6 tw-gap-2 tw-px-6 tw-py-1 tw-text-xs tw-border-b tw-border-gray-50">
                                             <span x-text="c.timestamp"></span>
                                             <span><span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-xs" :style="'background:'+typeColor(c.type)" x-text="c.type"></span></span>
                                             <span class="tw-text-right" x-text="c.hits||'—'"></span>
@@ -137,28 +137,28 @@ final class LogsPage extends AdminPage
         <template x-if="groupFields.length === 0 && !loading">
             <div>
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-hidden">
-                <div class="tw-grid grid-cols-12 tw-gap-1 tw-bg-gray-50 tw-px-3 tw-py-2 tw-text-xs tw-font-semibold tw-border-b tw-border-gray-200">
-                    <div class="col-span-2 tw-cursor-pointer" @click="toggleSort('timestamp')">Laikas <span x-text="sortIcon('timestamp')"></span></div>
-                    <div class="col-span-1 tw-cursor-pointer" @click="toggleSort('type')">Tipas <span x-text="sortIcon('type')"></span></div>
-                    <div class="col-span-1 tw-text-right tw-cursor-pointer" @click="toggleSort('hits')">Hit <span x-text="sortIcon('hits')"></span></div>
-                    <div class="col-span-1 tw-text-right tw-cursor-pointer" @click="toggleSort('misses')">Miss <span x-text="sortIcon('misses')"></span></div>
-                    <div class="col-span-2 tw-cursor-pointer" @click="toggleSort('uri')">URI <span x-text="sortIcon('uri')"></span></div>
-                    <div class="col-span-1 tw-cursor-pointer" @click="toggleSort('ip')">IP <span x-text="sortIcon('ip')"></span></div>
-                    <div class="col-span-2 tw-cursor-pointer" @click="toggleSort('user_name')">Vartotojas <span x-text="sortIcon('user_name')"></span></div>
-                    <div class="col-span-2">Detalės</div>
+                <div class="tw-grid tw-grid-cols-12 tw-gap-1 tw-bg-gray-50 tw-px-3 tw-py-2 tw-text-xs tw-font-semibold tw-border-b tw-border-gray-200">
+                    <div class="tw-col-span-2 tw-cursor-pointer" @click="toggleSort('timestamp')">Laikas <span x-text="sortIcon('timestamp')"></span></div>
+                    <div class="tw-col-span-1 tw-cursor-pointer" @click="toggleSort('type')">Tipas <span x-text="sortIcon('type')"></span></div>
+                    <div class="tw-col-span-1 tw-text-right tw-cursor-pointer" @click="toggleSort('hits')">Hit <span x-text="sortIcon('hits')"></span></div>
+                    <div class="tw-col-span-1 tw-text-right tw-cursor-pointer" @click="toggleSort('misses')">Miss <span x-text="sortIcon('misses')"></span></div>
+                    <div class="tw-col-span-2 tw-cursor-pointer" @click="toggleSort('uri')">URI <span x-text="sortIcon('uri')"></span></div>
+                    <div class="tw-col-span-1 tw-cursor-pointer" @click="toggleSort('ip')">IP <span x-text="sortIcon('ip')"></span></div>
+                    <div class="tw-col-span-2 tw-cursor-pointer" @click="toggleSort('user_name')">Vartotojas <span x-text="sortIcon('user_name')"></span></div>
+                    <div class="tw-col-span-2">Detalės</div>
                 </div>
                 <div class="tw-overflow-y-auto" style="height:600px" x-ref="scroller" @scroll="onScroll()">
                     <div :style="'height:'+totalHeight+'px;position:relative'">
                         <template x-for="(row, i) in visibleRows" :key="row._idx">
-                            <div class="tw-grid grid-cols-12 tw-gap-1 tw-px-3 tw-items-center tw-border-b border-gray-50 tw-text-xs tw-absolute tw-w-full" :style="'top:'+row._top+'px;height:40px;line-height:40px'">
-                                <div class="col-span-2 tw-truncate" x-text="row.timestamp"></div>
-                                <div class="col-span-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded" :style="'background:'+typeColor(row.type)" x-text="row.type"></span></div>
-                                <div class="col-span-1 tw-text-right" x-text="row.hits||'—'"></div>
-                                <div class="col-span-1 tw-text-right" x-text="row.misses||'—'"></div>
-                                <div class="col-span-2 tw-truncate"><code class="tw-text-xs" x-text="(row.uri||'').substring(0,60)"></code></div>
-                                <div class="col-span-1 tw-truncate" x-text="row.ip"></div>
-                                <div class="col-span-2 tw-truncate tw-leading-tight" style="line-height:1.3;padding:4px 0" x-html="userHtml(row)"></div>
-                                <div class="col-span-2 tw-truncate tw-text-gray-500" x-text="(row.details_str||'').substring(0,80)"></div>
+                            <div class="tw-grid tw-grid-cols-12 tw-gap-1 tw-px-3 tw-items-center tw-border-b tw-border-gray-50 tw-text-xs tw-absolute tw-w-full" :style="'top:'+row._top+'px;height:40px;line-height:40px'">
+                                <div class="tw-col-span-2 tw-truncate" x-text="row.timestamp"></div>
+                                <div class="tw-col-span-1"><span class="tw-px-1.5 tw-py-0.5 tw-rounded" :style="'background:'+typeColor(row.type)" x-text="row.type"></span></div>
+                                <div class="tw-col-span-1 tw-text-right" x-text="row.hits||'—'"></div>
+                                <div class="tw-col-span-1 tw-text-right" x-text="row.misses||'—'"></div>
+                                <div class="tw-col-span-2 tw-truncate"><code class="tw-text-xs" x-text="(row.uri||'').substring(0,60)"></code></div>
+                                <div class="tw-col-span-1 tw-truncate" x-text="row.ip"></div>
+                                <div class="tw-col-span-2 tw-truncate tw-leading-tight" style="line-height:1.3;padding:4px 0" x-html="userHtml(row)"></div>
+                                <div class="tw-col-span-2 tw-truncate tw-text-gray-500" x-text="(row.details_str||'').substring(0,80)"></div>
                             </div>
                         </template>
                     </div>
@@ -292,7 +292,7 @@ final class LogsPage extends AdminPage
 
                 userHtml(row) {
                     if (row.user_id && row.user_id > 0 && row.profile_url) {
-                        return '<a href="'+this.esc(row.profile_url)+'" class="text-blue-600 hover:underline">'+this.esc(row.user_name)+'</a><br><span class="tw-text-gray-400 tw-text-xs">'+this.esc(row.user_email||'')+'</span>';
+                        return '<a href="'+this.esc(row.profile_url)+'" class="tw-text-blue-600 tw-hover:underline">'+this.esc(row.user_name)+'</a><br><span class="tw-text-gray-400 tw-text-xs">'+this.esc(row.user_email||'')+'</span>';
                     }
                     return this.esc(row.user_name || '—');
                 },
