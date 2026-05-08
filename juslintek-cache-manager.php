@@ -21,12 +21,13 @@ if (!defined('VLT_CM_NGINX_CACHE')) {
 
 require_once __DIR__ . '/autoload.php';
 
-// Tracer — always on, captures all requests
-if (!defined('SAVEQUERIES')) {
-    define('SAVEQUERIES', true);
-}
-
-\VLT\CacheManager\Tracer\Tracer::boot();
+// Tracer — skip on admin action requests (purge, etc.) to avoid OOM
+$_vlt_skip_tracer = isset($_GET['action']) && str_starts_with($_GET['action'] ?? '', 'vlt_');
+if (!$_vlt_skip_tracer) {
+    if (!defined('SAVEQUERIES')) {
+        define('SAVEQUERIES', true);
+    }
+    \VLT\CacheManager\Tracer\Tracer::boot();
 
 add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::begin('plugins_loaded'), -9999);
 add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
@@ -59,6 +60,7 @@ add_filter('template_include', function ($tpl) {
 }, PHP_INT_MAX);
 
 add_action('shutdown', [\VLT\CacheManager\Tracer\Tracer::class, 'finish'], 0);
+} // end if (!$_vlt_skip_tracer)
 
 // Boot the plugin
 add_action('plugins_loaded', [\VLT\CacheManager\Plugin::class, 'boot']);

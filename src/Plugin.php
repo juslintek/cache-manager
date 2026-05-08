@@ -225,20 +225,13 @@ final class Plugin
         $action = $_GET['action'] ?? '';
 
         if ($action === 'vlt_purge') {
-            @ini_set('memory_limit', '512M');
+            @ini_set('memory_limit', '768M');
             if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_purge') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
-            $type = sanitize_key($_GET['type'] ?? 'all');
-            if ($type === 'all') {
-                // Use generator to purge one strategy at a time with GC between each
-                foreach ($this->purge->purgeAllGenerator() as $purged) {
-                    // gc between strategies
-                }
-            } else {
-                $this->purge->purge($type);
-            }
-            wp_safe_redirect(add_query_arg('vlt_purged', '1', wp_get_referer() ?: admin_url()));
+            // Redirect to dashboard — purging now happens via SSE stream from the UI
+            // This prevents the old direct URL from crashing with OOM
+            wp_safe_redirect(admin_url('admin.php?page=vlt-cache&vlt_purge_redirect=1'));
             exit;
         }
 
