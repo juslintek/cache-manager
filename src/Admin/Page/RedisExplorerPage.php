@@ -71,7 +71,11 @@ final class RedisExplorerPage extends AdminPage
         </div>
 
         <!-- Groups - collapsible -->
-        <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4" x-data="{open:secOpen('groups')}" x-init="$watch('open',v=>secSave('groups',v))">
+        <!-- Groups + Browse side-by-side -->
+        <div class="tw-flex tw-gap-4 tw-items-start tw-mb-4">
+
+        <!-- Groups list -->
+        <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4" :class="browsing ? 'tw-w-1/2' : 'tw-w-full'" x-data="{open:secOpen('groups')}" x-init="$watch('open',v=>secSave('groups',v))" style="transition:width .3s ease;min-width:0">
             <h3 class="tw-font-semibold tw-mb-3 tw-cursor-pointer tw-flex tw-items-center tw-gap-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grupės</h3>
             <div x-show="open" class="tw-overflow-x-auto">
             <table class="tw-w-full tw-text-sm">
@@ -83,12 +87,12 @@ final class RedisExplorerPage extends AdminPage
                 </tr></thead>
                 <tbody>
                     <template x-for="g in sortedGroups" :key="g.name">
-                        <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50">
+                        <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-gray-50" :class="browseGroupName===g.name&&browsing?'tw-bg-blue-50':''">
                             <td class="tw-px-3 tw-py-2 tw-font-semibold" x-text="g.name"></td>
                             <td class="tw-px-3 tw-py-2 tw-text-right" x-text="g.count"></td>
                             <td class="tw-px-3 tw-py-2 tw-text-right" x-text="formatSize(g.size)"></td>
                             <td class="tw-px-3 tw-py-2 tw-text-right tw-space-x-2">
-                                <a href="#" @click.prevent="browseGroup(g.name)" class="tw-text-blue-600 tw-hover:underline tw-text-xs">Naršyti</a>
+                                <a href="#" @click.prevent="browseGroup(g.name)" class="tw-text-blue-600 tw-hover:underline tw-text-xs" :class="browseGroupName===g.name&&browsing?'tw-font-bold':''">Naršyti</a>
                                 <a href="#" @click.prevent="if(confirm('Ištrinti visus '+g.name+' raktus?'))deleteGroup(g.name)" class="tw-text-red-600 tw-hover:underline tw-text-xs">Trinti</a>
                             </td>
                         </tr>
@@ -98,7 +102,8 @@ final class RedisExplorerPage extends AdminPage
             </div>
         </div>
 
-        <div x-show="browsing" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4">
+        <!-- Browse panel — slides in on the right -->
+        <div x-show="browsing" x-transition:enter="tw-transition tw-ease-out tw-duration-200" x-transition:enter-start="tw-opacity-0 tw-translate-x-4" x-transition:enter-end="tw-opacity-100 tw-translate-x-0" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-w-1/2" style="min-width:0" x-cloak>
             <div class="tw-flex tw-flex-wrap tw-justify-between tw-items-center tw-mb-3 tw-gap-2">
                 <h3 class="tw-font-semibold">Grupė: <span x-text="browseGroupName"></span> (<span x-text="browseKeys.length"></span> raktų)</h3>
                 <div class="tw-flex tw-gap-2 tw-items-center">
@@ -137,6 +142,8 @@ final class RedisExplorerPage extends AdminPage
                 </div>
             </div>
         </div>
+
+        </div><!-- end groups+browse flex -->
 
         <div x-show="previewVisible" class="tw-fixed tw-inset-0 tw-bg-black/50 tw-z-[100000] tw-flex tw-items-center tw-justify-center" @click.self="previewVisible=false">
             <div class="tw-bg-white tw-rounded-lg w-11/12 tw-max-w-3xl tw-max-h-[80vh] tw-overflow-auto tw-p-5">
