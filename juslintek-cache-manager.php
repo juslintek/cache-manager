@@ -21,8 +21,12 @@ if (!defined('VLT_CM_NGINX_CACHE')) {
 
 require_once __DIR__ . '/autoload.php';
 
-// Tracer — skip on admin action requests (purge, etc.) to avoid OOM
-$_vlt_skip_tracer = isset($_GET['action']) && str_starts_with($_GET['action'] ?? '', 'vlt_');
+// Tracer — skip on admin/cron/CLI/REST to avoid OOM
+$_vlt_skip_tracer = is_admin()
+    || (isset($_GET['action']) && str_starts_with($_GET['action'] ?? '', 'vlt_'))
+    || (defined('REST_REQUEST') && REST_REQUEST)
+    || (defined('DOING_CRON') && DOING_CRON)
+    || (defined('WP_CLI') && WP_CLI);
 if (!$_vlt_skip_tracer) {
     if (!defined('SAVEQUERIES')) {
         define('SAVEQUERIES', true);
