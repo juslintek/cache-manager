@@ -94,96 +94,111 @@ final class DashboardPage extends AdminPage
         $restUrl = esc_js(rest_url('vlt-cache/v1'));
         $nonce   = wp_create_nonce('wp_rest');
         ?>
-        <div id="vlt-purge-wrap">
+
+        <!-- Purge buttons -->
+        <p>
             <button id="vlt-purge-all" class="button button-primary">🗑 Valyti viską</button>
             <?php foreach ($types as $type): ?>
             <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" style="margin-left:4px">
                 Valyti <?php echo esc_html($type); ?>
             </button>
             <?php endforeach; ?>
+        </p>
 
-            <div id="vlt-purge-progress" style="display:none;margin-top:12px;max-width:500px">
-                <div style="background:#e0e0e0;border-radius:4px;height:20px;overflow:hidden">
-                    <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .3s;border-radius:4px"></div>
+        <!-- SSE popup overlay -->
+        <div id="vlt-purge-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:none;align-items:center;justify-content:center">
+            <div style="background:#fff;border-radius:8px;padding:28px 32px;min-width:380px;max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+                <h3 style="margin:0 0 16px;font-size:16px">🗑 Valoma talpykla…</h3>
+                <!-- Progress bar -->
+                <div style="background:#e0e0e0;border-radius:4px;height:12px;overflow:hidden;margin-bottom:10px">
+                    <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:4px"></div>
                 </div>
-                <div id="vlt-purge-status" style="font-size:12px;margin-top:6px;color:#666"></div>
-                <div id="vlt-purge-log" style="margin-top:8px;font-family:monospace;font-size:11px;max-height:120px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:6px;border-radius:4px"></div>
+                <div id="vlt-purge-pct" style="font-size:12px;color:#666;margin-bottom:12px">0%</div>
+                <!-- Rolling log -->
+                <div id="vlt-purge-items" style="font-family:monospace;font-size:11px;max-height:140px;overflow-y:auto;background:#f9f9f9;border:1px solid #e0e0e0;padding:8px;border-radius:4px"></div>
+                <div id="vlt-purge-done-msg" style="display:none;margin-top:12px;color:#46b450;font-weight:600">✅ Viskas išvalyta!</div>
             </div>
+        </div>
+
+        <!-- Purge history -->
+        <h3 style="margin-top:20px">Valymo žurnalas</h3>
+        <div id="vlt-purge-history" style="font-size:11px;font-family:monospace;max-height:180px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px;border-radius:4px">
+            <em style="color:#999">Kraunama…</em>
         </div>
 
         <script>
         (function() {
             const restUrl = '<?php echo $restUrl; ?>';
             const nonce   = '<?php echo $nonce; ?>';
-            const types   = <?php echo json_encode($types); ?>;
 
-            async function purgeTypes(list) {
-                const wrap = document.getElementById('vlt-purge-progress');
-                const bar  = document.getElementById('vlt-purge-bar');
-                const status = document.getElementById('vlt-purge-status');
-                const log  = document.getElementById('vlt-purge-log');
-                wrap.style.display = 'block';
-                log.innerHTML = '';
-                let done = 0;
+            function loadHistory() {
+                fetch(restUrl + '/purge-log', {headers: {'X-WP-Nonce': nonce}})
+                .then(r => r.json()).then(entries => {
+                    const el = document.getElementById('vlt-purge-history');
+                    if (!entries || !entries.length) { el.innerHTML = '<em style="color:#999">Nėra įrašų</em>'; return; }
+                    el.innerHTML = entries.map(e => {
+                        const d = new Date((e.ts||0) * 1000).toLocaleString();
+                        return '<div><span style="color:#888">' + d + '</span> <strong style="color:#2271b1">' + (e.type||'?') + '</strong>'
+                            + (e.ms ? ' <span style="color:#666">' + e.ms + 'ms</span>' : '')
+                            + ' <span style="color:#aaa">(' + (e.user||'?') + ')</span></div>';
+                    }).join('');
+                });
+            }
 
-                for (const type of list) {
-                    status.textContent = 'Valoma: ' + type + '…';
-                    bar.style.width = Math.round(done / list.length * 100) + '%';
+            function startPurge(types) {
+                const overlay = document.getElementById('vlt-purge-overlay');
+                const bar     = document.getElementById('vlt-purge-bar');
+                const pct     = document.getElementById('vlt-purge-pct');
+                const items   = document.getElementById('vlt-purge-items');
+                const doneMsg = document.getElementById('vlt-purge-done-msg');
+
+                // Reset
+                bar.style.width = '0'; bar.style.background = '#2271b1';
+                pct.textContent = '0%'; items.innerHTML = ''; doneMsg.style.display = 'none';
+                overlay.style.display = 'flex';
+
+                const typeParam = types ? '?types=' + encodeURIComponent(types.join(',')) : '';
+                const es = new EventSource(restUrl + '/purge-stream' + typeParam + (typeParam ? '&' : '?') + '_wpnonce=' + nonce);
+
+                es.onmessage = function(ev) {
                     try {
-                        const r = await fetch(restUrl + '/purge/' + type, {
-                            method: 'POST',
-                            headers: {'X-WP-Nonce': nonce}
-                        });
-                        const d = await r.json();
-                        const line = document.createElement('div');
-                        line.style.color = d.ok ? '#46b450' : '#d63638';
-                        line.textContent = '✓ ' + type + ' — ' + (d.ms || '?') + 'ms';
-                        log.appendChild(line);
-                        log.scrollTop = log.scrollHeight;
-                    } catch(e) {
-                        const line = document.createElement('div');
-                        line.style.color = '#d63638';
-                        line.textContent = '✗ ' + type + ' — klaida';
-                        log.appendChild(line);
-                    }
-                    done++;
-                    bar.style.width = Math.round(done / list.length * 100) + '%';
-                }
-                status.textContent = '✅ Išvalyta ' + done + ' talpyklų';
-                bar.style.background = '#46b450';
+                        const d = JSON.parse(ev.data);
+                        if (d.event === 'progress') {
+                            bar.style.width = d.pct + '%';
+                            pct.textContent = d.pct + '% — ' + d.type;
+                            const line = document.createElement('div');
+                            line.innerHTML = '<span style="color:#46b450">✓</span> <strong>' + d.type + '</strong>'
+                                + (d.ms ? ' <span style="color:#888">' + d.ms + 'ms</span>' : '');
+                            items.appendChild(line);
+                            items.scrollTop = items.scrollHeight;
+                        } else if (d.event === 'done') {
+                            bar.style.width = '100%'; bar.style.background = '#46b450';
+                            pct.textContent = '100%';
+                            doneMsg.style.display = 'block';
+                            es.close();
+                            setTimeout(() => {
+                                overlay.style.display = 'none';
+                                loadHistory();
+                            }, 1800);
+                        }
+                    } catch(e) {}
+                };
+                es.onerror = function() { es.close(); overlay.style.display = 'none'; };
             }
 
             document.getElementById('vlt-purge-all').addEventListener('click', function() {
-                this.disabled = true;
-                purgeTypes(types).finally(() => { this.disabled = false; });
+                startPurge(null);
             });
-
             document.querySelectorAll('.vlt-purge-one').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    this.disabled = true;
-                    purgeTypes([this.dataset.type]).finally(() => { this.disabled = false; });
+                    startPurge([this.dataset.type]);
                 });
             });
+
+            loadHistory();
         })();
         </script>
 
-        <!-- Purge history log -->
-        <h3 style="margin-top:20px">Valymo istorija</h3>
-        <div id="vlt-purge-history" style="font-size:11px;font-family:monospace;max-height:200px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px;border-radius:4px">
-            <em style="color:#999">Kraunama…</em>
-        </div>
-        <script>
-        fetch('<?php echo esc_js(rest_url('vlt-cache/v1/purge-log')); ?>', {
-            headers: {'X-WP-Nonce': '<?php echo $nonce; ?>'}
-        }).then(r => r.json()).then(entries => {
-            const el = document.getElementById('vlt-purge-history');
-            if (!entries.length) { el.innerHTML = '<em style="color:#999">Nėra įrašų</em>'; return; }
-            el.innerHTML = entries.map(e => {
-                const d = new Date(e.ts * 1000).toLocaleString();
-                return '<div><span style="color:#666">' + d + '</span> <strong>' + e.type + '</strong> ' + e.ms + 'ms <span style="color:#999">(' + (e.user||'?') + ')</span></div>';
-            }).join('');
-        });
-        </script>
         <?php
         echo '</div>';
     }

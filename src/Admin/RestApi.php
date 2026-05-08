@@ -144,6 +144,10 @@ final class RestApi
             'methods' => 'GET', 'callback' => [self::class, 'purgeLog'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/purge-stream', [
+            'methods' => 'GET', 'callback' => [self::class, 'purgeStream'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Image optimization
         register_rest_route(self::NS, '/img-optm/status', [
@@ -642,6 +646,61 @@ final class RestApi
         }
 
         return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
+    }
+
+    public static function purgeStream(): void
+    {
+        @ini_set('memory_limit', '512M');
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, no-store');
+        header('X-Accel-Buffering: no');
+        while (ob_get_level()) ob_end_clean();
+        set_time_limit(0);
+
+        $purge   = \VLT\CacheManager\Plugin::instance()->purge();
+        $allTypes = $purge->types();
+
+        // Optional filter: ?types=redis,opcache
+        $filter = sanitize_text_field($_GET['types'] ?? '');
+        $types  = $filter ? array_intersect(explode(',', $filter), $allTypes) : $allTypes;
+        $types  = array_values($types);
+        $total  = count($types);
+        $done   = 0;
+        $user   = wp_get_current_user()->user_login;
+        $session = uniqid('purge_', true);
+
+        self::sse(['event' => 'start', 'session' => $session, 'total' => $total, 'types' => $types]);
+        flush();
+
+        foreach ($types as $type) {
+            $start = microtime(true);
+            $purge->purge($type);
+            $ms = round((microtime(true) - $start) * 1000, 1);
+            $done++;
+
+            $entry = ['event' => 'progress', 'type' => $type, 'ms' => $ms, 'done' => $done, 'total' => $total, 'pct' => round($done / $total * 100), 'ts' => time(), 'user' => $user, 'session' => $session];
+
+            // Persist to Redis log
+            $r = \VLT\CacheManager\Redis\RedisFactory::create(0.3);
+            if ($r) {
+                $r->lPush('vlt_purge_log', json_encode(array_diff_key($entry, ['event' => 1])));
+                $r->lTrim('vlt_purge_log', 0, 199);
+                $r->close();
+            }
+
+            self::sse($entry);
+            flush();
+            gc_collect_cycles();
+        }
+
+        self::sse(['event' => 'done', 'session' => $session, 'total' => $total, 'done' => $done]);
+        flush();
+        exit;
+    }
+
+    private static function sse(array $data): void
+    {
+        echo 'data: ' . json_encode($data) . "\n\n";
     }
 
     public static function purgeLog(): \WP_REST_Response
