@@ -16,9 +16,6 @@ final class OpcacheExplorerPage extends AdminPage
         $status = function_exists('opcache_get_status') ? opcache_get_status(false) : null;
         $config = function_exists('opcache_get_configuration') ? opcache_get_configuration() : null;
         ?>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
-
         <div class="wrap text-sm" x-data="vltOpc()" x-cloak>
         <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — OPcache</h1>
 

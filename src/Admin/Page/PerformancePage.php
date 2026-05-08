@@ -33,8 +33,8 @@ final class PerformancePage extends AdminPage
 
         // Stats bar
         $stats = $gc['stats'];
-        echo '<table class="widefat fixed striped" style="max-width:700px;margin-bottom:16px"><tbody>';
-        echo '<tr><td><strong>GC būsena</strong></td><td>' . (gc_enabled() ? '<span style="color:#46b450">✅ Įjungtas</span>' : '<span style="color:#d63638">❌ Išjungtas</span>') . '</td></tr>';
+        echo '<table class="widefat fixed striped" class="max-w-2xl mb-4"><tbody>';
+        echo '<tr><td><strong>GC būsena</strong></td><td>' . (gc_enabled() ? '<span class="text-green-600">✅ Įjungtas</span>' : '<span class="text-red-600">❌ Išjungtas</span>') . '</td></tr>';
         echo '<tr><td><strong>GC paleidimų</strong></td><td>' . number_format($stats['runs']) . '</td></tr>';
         echo '<tr><td><strong>Surinkta ciklų</strong></td><td>' . number_format($stats['collected']) . '</td></tr>';
         echo '<tr><td><strong>Šaknų buferis</strong></td><td>' . number_format($stats['roots']) . ' / ' . number_format($stats['threshold']) . ' (slenkstis)</td></tr>';
@@ -52,7 +52,7 @@ final class PerformancePage extends AdminPage
                     'warning'  => 'warning',
                     default    => 'info',
                 };
-                echo '<div class="notice notice-' . $color . ' inline" style="margin:4px 0"><p>';
+                echo '<div class="notice notice-' . $color . ' inline" class="my-1"><p>';
                 echo '<strong>' . esc_html($issue['title']) . '</strong> — ' . esc_html($issue['detail']);
                 if (($issue['fix'] ?? '') === 'suggest' && !empty($issue['suggestion'])) {
                     echo '<br><em>' . esc_html($issue['suggestion']) . '</em>';
@@ -65,7 +65,7 @@ final class PerformancePage extends AdminPage
         $autoFixable = array_filter($gc['issues'], fn($i) => ($i['fix'] ?? '') === 'auto');
         if ($autoFixable) {
             echo '<p><button type="button" id="vlt-gc-fix" class="button button-primary">🔧 Automatiškai taisyti (' . count($autoFixable) . ')</button> ';
-            echo '<span id="vlt-gc-fix-status" style="margin-left:8px;color:#666"></span></p>';
+            echo '<span id="vlt-gc-fix-status" class="ml-2 text-gray-500"></span></p>';
             echo '<script>
             document.getElementById("vlt-gc-fix").addEventListener("click", function() {
                 const s = document.getElementById("vlt-gc-fix-status");
@@ -83,17 +83,17 @@ final class PerformancePage extends AdminPage
         echo '<h2>Asinchroninė eilė (Redis)</h2>';
         $qStatus = AsyncQueue::status();
 
-        echo '<table class="widefat fixed striped" style="max-width:700px;margin-bottom:16px"><tbody>';
-        echo '<tr><td><strong>Redis</strong></td><td>' . ($qStatus['redis'] ? '<span style="color:#46b450">✅ Prijungtas</span>' : '<span style="color:#d63638">❌ Neprijungtas</span>') . '</td></tr>';
+        echo '<table class="widefat fixed striped" class="max-w-2xl mb-4"><tbody>';
+        echo '<tr><td><strong>Redis</strong></td><td>' . ($qStatus['redis'] ? '<span class="text-green-600">✅ Prijungtas</span>' : '<span class="text-red-600">❌ Neprijungtas</span>') . '</td></tr>';
         echo '<tr><td><strong>Eilėje laukia</strong></td><td>' . $qStatus['queue_length'] . ' darbų</td></tr>';
-        echo '<tr><td><strong>Vykdoma</strong></td><td>' . ($qStatus['running'] ? '<span style="color:#dba617">⚙ Taip</span>' : 'Ne') . '</td></tr>';
-        echo '<tr><td><strong>PHP Fibers</strong></td><td>' . (class_exists('Fiber') ? '<span style="color:#46b450">✅ PHP ' . PHP_VERSION . '</span>' : '<span style="color:#d63638">❌ Reikia PHP 8.1+</span>') . '</td></tr>';
+        echo '<tr><td><strong>Vykdoma</strong></td><td>' . ($qStatus['running'] ? '<span class="text-yellow-600">⚙ Taip</span>' : 'Ne') . '</td></tr>';
+        echo '<tr><td><strong>PHP Fibers</strong></td><td>' . (class_exists('Fiber') ? '<span class="text-green-600">✅ PHP ' . PHP_VERSION . '</span>' : '<span class="text-red-600">❌ Reikia PHP 8.1+</span>') . '</td></tr>';
         echo '</tbody></table>';
 
         // Cron offload settings
         echo '<form method="post">';
         wp_nonce_field('vlt_perf_settings');
-        echo '<table class="form-table" style="max-width:700px">';
+        echo '<table class="form-table" class="max-w-2xl">';
         echo '<tr><th>WP-Cron → Redis eilė</th><td>';
         echo '<label><input type="checkbox" name="vlt_async_offload_cron" value="1"' . checked(get_option('vlt_async_offload_cron'), true, false) . '> Įjungti</label>';
         echo '<p class="description">WP-Cron užduotys bus vykdomos per Redis eilę, o ne sinchroniškai su HTTP užklausa. Sumažina puslapio įkėlimo laiką. Reikia Redis.</p>';
@@ -105,7 +105,7 @@ final class PerformancePage extends AdminPage
         // Manual queue trigger
         echo '<p>';
         echo '<button type="button" id="vlt-queue-run" class="button">▶ Vykdyti eilę dabar</button> ';
-        echo '<span id="vlt-queue-status" style="margin-left:8px;color:#666"></span>';
+        echo '<span id="vlt-queue-status" class="ml-2 text-gray-500"></span>';
         echo '</p>';
         echo '<script>
         document.getElementById("vlt-queue-run").addEventListener("click", function() {
@@ -148,23 +148,23 @@ final class PerformancePage extends AdminPage
         // Left: live log
         echo '<div>';
         echo '<h3 style="margin:0 0 8px">Vykdymo žurnalas <span id="vlt-cron-live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ccc;margin-left:4px"></span></h3>';
-        echo '<div id="vlt-cron-log" style="height:300px;overflow-y:auto;background:#1e1e1e;color:#d4d4d4;font-family:monospace;font-size:11px;padding:8px;border-radius:4px"></div>';
+        echo '<div id="vlt-cron-log" class="h-[300px] overflow-y-auto bg-gray-900 text-gray-300 font-mono text-[11px] p-2 rounded"></div>';
         echo '</div>';
 
         // Right: per-hook stats
         echo '<div>';
         echo '<h3 style="margin:0 0 8px">Statistika pagal hook</h3>';
-        echo '<div id="vlt-cron-stats" style="height:300px;overflow-y:auto"></div>';
+        echo '<div id="vlt-cron-stats" class="h-[300px] overflow-y-auto"></div>';
         echo '</div>';
 
         echo '</div>';
 
         // Scheduled table
         echo '<h3>Suplanuotos užduotys</h3>';
-        echo '<table class="widefat fixed striped" style="max-width:900px"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
+        echo '<table class="widefat fixed striped" class="max-w-4xl"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
         foreach (array_slice($scheduled, 0, 30) as $job) {
             $diff    = $job['ts'] - $now;
-            $timeStr = $diff < 0 ? '<span style="color:#d63638">Vėluoja ' . human_time_diff($job['ts'], $now) . '</span>' : 'Po ' . human_time_diff($now, $job['ts']);
+            $timeStr = $diff < 0 ? '<span class="text-red-600">Vėluoja ' . human_time_diff($job['ts'], $now) . '</span>' : 'Po ' . human_time_diff($now, $job['ts']);
             echo '<tr id="cron-row-' . esc_attr($job['hook']) . '">';
             echo '<td><code>' . esc_html($job['hook']) . '</code></td>';
             echo '<td>' . $timeStr . '</td>';

@@ -18,9 +18,6 @@ final class LogsPage extends AdminPage
         $nonce    = wp_create_nonce('wp_rest');
         $sse_url  = esc_js(rest_url('vlt-cache/v1/logs/stream') . '?_wpnonce=' . $nonce);
         ?>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
-
         <div class="wrap" x-data="vltLogs()" x-init="init()" x-cloak>
         <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — Žurnalai</h1>
 

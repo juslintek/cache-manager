@@ -16,10 +16,7 @@ final class RedisExplorerPage extends AdminPage
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');
         ?>
-        <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
-
         <div class="wrap" x-data="vltRedis()" x-init="init()" x-cloak>
         <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — Redis naršyklė</h1>
 

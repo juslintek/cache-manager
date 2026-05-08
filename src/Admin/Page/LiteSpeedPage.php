@@ -35,7 +35,7 @@ final class LiteSpeedPage extends AdminPage
         echo '<div class="wrap"><h1>Podėlio Valdymas — ' . esc_html($label) . '</h1>';
 
         // ── Status ────────────────────────────────────────────────────────────
-        echo '<table class="widefat fixed striped" style="max-width:700px;margin:20px 0"><tbody>';
+        echo '<table class="widefat fixed striped" class="max-w-2xl my-5"><tbody>';
         echo '<tr><td><strong>Serveris</strong></td><td>' . esc_html($label) . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td></tr>';
         echo '<tr><td><strong>Konfigūracijos failas</strong></td><td><code>' . esc_html($info['config']['config_file'] ?? '—') . '</code></td></tr>';
 
@@ -43,7 +43,7 @@ final class LiteSpeedPage extends AdminPage
         echo '<tr><td><strong>LSCache modulis</strong></td><td>';
         $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
         if ($info['config']['lscache'] ?? false) {
-            echo '<span style="color:#46b450">✅ Modulis rastas</span>';
+            echo '<span class="text-green-600">✅ Modulis rastas</span>';
             $signals = [];
             if ($info['config']['lscache_php_api'] ?? false)  $signals[] = 'PHP API';
             if ($info['config']['lscache_headers'] ?? false)   $signals[] = 'HTTP antraštės';
@@ -51,20 +51,20 @@ final class LiteSpeedPage extends AdminPage
             if ($info['config']['lscache_conf'] ?? false)      $signals[] = 'konfigūracija';
             if ($info['config']['lscache_module'] ?? false)    $signals[] = 'ls_enabled=1';
             if ($info['config']['lscache_storage'] ?? false)   $signals[] = 'talpyklos katalogas';
-            if ($signals) echo ' <small style="color:#666">(' . implode(', ', $signals) . ')</small>';
+            if ($signals) echo ' <small class="text-gray-500">(' . implode(', ', $signals) . ')</small>';
         } elseif ($lscacheSo) {
-            echo '<span style="color:#dba617">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
+            echo '<span class="text-yellow-600">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
         } else {
-            echo '<span style="color:#d63638">❌ Nerastas</span>';
+            echo '<span class="text-red-600">❌ Nerastas</span>';
         }
         echo '</td></tr>';
 
         // enableCache status — separate from module presence
         echo '<tr><td><strong>Talpykla įjungta</strong></td><td>';
         if ($info['config']['lscache_active'] ?? false) {
-            echo '<span style="color:#46b450">✅ enableCache = 1</span>';
+            echo '<span class="text-green-600">✅ enableCache = 1</span>';
         } else {
-            echo '<span style="color:#d63638">❌ enableCache = 0</span>';
+            echo '<span class="text-red-600">❌ enableCache = 0</span>';
             echo ' <small>— talpykla išjungta. Pakeiskite <code>httpd-lscache.conf</code>: <code>enableCache 1</code></small>';
         }
         echo '</td></tr>';
@@ -76,16 +76,16 @@ final class LiteSpeedPage extends AdminPage
         $lscwpActive = defined('LSCWP_V') || class_exists('LiteSpeed\Core');
         echo '<tr><td><strong>LSCWP įskiepis</strong></td><td>';
         if ($lscwpActive) {
-            echo '<span style="color:#dba617">⚠ Aktyvus — gali konfliktuoti su šio įskiepio talpyklos valdymu</span>';
+            echo '<span class="text-yellow-600">⚠ Aktyvus — gali konfliktuoti su šio įskiepio talpyklos valdymu</span>';
         } else {
-            echo '<span style="color:#46b450">✅ Neaktyvus — šis įskiepis valdo talpyklą</span>';
+            echo '<span class="text-green-600">✅ Neaktyvus — šis įskiepis valdo talpyklą</span>';
         }
         echo '</td></tr>';
         echo '</tbody></table>';
 
         // ── Cache settings ────────────────────────────────────────────────────
         echo '<h2>Talpyklos nustatymai</h2>';
-        echo '<p style="color:#666">Šis įskiepis siunčia <code>X-LiteSpeed-Cache-Control</code> antraštes — tą patį mechanizmą naudoja LSCWP. Nereikia jokio papildomo įskiepio.</p>';
+        echo '<p class="text-gray-500">Šis įskiepis siunčia <code>X-LiteSpeed-Cache-Control</code> antraštes — tą patį mechanizmą naudoja LSCWP. Nereikia jokio papildomo įskiepio.</p>';
 
         echo '<form method="post">';
         wp_nonce_field('vlt_ls_settings');
@@ -98,7 +98,7 @@ final class LiteSpeedPage extends AdminPage
         );
         self::row(
             'Talpyklos gyvavimo laikas (TTL)',
-            '<input type="number" name="vlt_ls_cache_ttl" value="' . esc_attr($ttl) . '" min="60" style="width:100px"> sekundžių',
+            '<input type="number" name="vlt_ls_cache_ttl" value="' . esc_attr($ttl) . '" min="60" class="w-24"> sekundžių',
             'Kiek laiko puslapis laikomas talpykloje. Rekomenduojama: 86400 (1 diena). Po turinio keitimo talpykla išvaloma automatiškai.'
         );
         self::row(
@@ -153,7 +153,7 @@ final class LiteSpeedPage extends AdminPage
                 $path     = $entry['path'];
                 $safeId   = 'cfg-' . md5($path);
 
-                echo '<div style="margin-bottom:16px;border:1px solid #ddd;border-radius:4px;overflow:hidden">';
+                echo '<div class="mb-4 border border-gray-200 rounded overflow-hidden">';
 
                 // Header bar
                 $roleColors = [
@@ -166,8 +166,8 @@ final class LiteSpeedPage extends AdminPage
                 ];
                 $color = $roleColors[$entry['role']] ?? '#666';
                 echo '<div style="background:' . $color . ';color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
-                echo '<div><strong>' . esc_html($entry['label']) . '</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px;font-size:11px">' . esc_html($path) . '</code></div>';
-                echo '<div style="display:flex;gap:6px;align-items:center">';
+                echo '<div><strong>' . esc_html($entry['label']) . '</strong> <code class="bg-black/20 px-1.5 py-0.5 rounded text-[11px]">' . esc_html($path) . '</code></div>';
+                echo '<div class="flex gap-1.5 items-center">';
                 if (!$exists) {
                     echo '<span style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:3px;font-size:11px">Neegzistuoja</span>';
                 } else {
@@ -180,12 +180,12 @@ final class LiteSpeedPage extends AdminPage
                 echo '</div></div>';
 
                 // Note
-                echo '<div style="padding:6px 12px;background:#f9f9f9;font-size:12px;color:#666;border-bottom:1px solid #eee">' . esc_html($entry['note']) . '</div>';
+                echo '<div class="px-3 py-1.5 bg-gray-50 text-xs text-gray-500 border-b border-gray-100">' . esc_html($entry['note']) . '</div>';
 
                 // Content panel (hidden by default)
                 if ($exists && $readable) {
                     $content = esc_attr(@file_get_contents($path) ?: '');
-                    echo '<div id="' . esc_attr($safeId) . '" style="display:none">';
+                    echo '<div id="' . esc_attr($safeId) . '" class="hidden">';
                     if ($writable) {
                         echo '<textarea id="' . esc_attr($safeId) . '-ta" style="width:100%;height:400px;font-family:monospace;font-size:12px;border:none;padding:12px;background:#1e1e1e;color:#d4d4d4;box-sizing:border-box" spellcheck="false">' . esc_textarea(@file_get_contents($path) ?: '') . '</textarea>';
                         echo '<div style="padding:8px 12px;background:#f0f0f0;display:flex;gap:8px;align-items:center">';
@@ -239,7 +239,7 @@ final class LiteSpeedPage extends AdminPage
 
     private static function row(string $label, string $input, string $desc): void
     {
-        echo '<tr><th style="width:250px">' . esc_html($label) . '</th><td>';
+        echo '<tr><th class="w-64">' . esc_html($label) . '</th><td>';
         echo '<label>' . $input . '</label>';
         echo '<p class="description">' . $desc . '</p>';
         echo '</td></tr>';

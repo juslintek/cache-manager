@@ -19,12 +19,12 @@ final class ApachePage extends AdminPage
         Plugin::notice();
         echo '<div class="wrap"><h1>Podėlio Valdymas — Apache</h1>';
 
-        echo '<table class="widefat fixed striped" style="max-width:700px;margin:20px 0"><tbody>';
+        echo '<table class="widefat fixed striped" class="max-w-2xl my-5"><tbody>';
         echo '<tr><td><strong>Serveris</strong></td><td>Apache' . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td></tr>';
         echo '<tr><td><strong>Konfigūracijos failas</strong></td><td><code>' . esc_html($info['config']['config_file'] ?? '—') . '</code></td></tr>';
-        echo '<tr><td><strong>mod_cache</strong></td><td>' . (($info['config']['mod_cache'] ?? false) ? '<span style="color:#46b450">✅</span>' : '<span style="color:#d63638">❌</span>') . '</td></tr>';
-        echo '<tr><td><strong>mod_deflate</strong></td><td>' . (($info['config']['mod_deflate'] ?? false) ? '<span style="color:#46b450">✅</span>' : '<span style="color:#d63638">❌</span>') . '</td></tr>';
-        echo '<tr><td><strong>mod_expires</strong></td><td>' . (($info['config']['mod_expires'] ?? false) ? '<span style="color:#46b450">✅</span>' : '<span style="color:#d63638">❌</span>') . '</td></tr>';
+        echo '<tr><td><strong>mod_cache</strong></td><td>' . (($info['config']['mod_cache'] ?? false) ? '<span class="text-green-600">✅</span>' : '<span class="text-red-600">❌</span>') . '</td></tr>';
+        echo '<tr><td><strong>mod_deflate</strong></td><td>' . (($info['config']['mod_deflate'] ?? false) ? '<span class="text-green-600">✅</span>' : '<span class="text-red-600">❌</span>') . '</td></tr>';
+        echo '<tr><td><strong>mod_expires</strong></td><td>' . (($info['config']['mod_expires'] ?? false) ? '<span class="text-green-600">✅</span>' : '<span class="text-red-600">❌</span>') . '</td></tr>';
         echo '</tbody></table>';
 
         if (!empty($info['recommendations'])) {
@@ -43,7 +43,7 @@ final class ApachePage extends AdminPage
         $configFile = $info['config']['config_file'] ?? '';
         if ($configFile && @is_readable($configFile)) {
             echo '<h2>Konfigūracijos failas</h2>';
-            echo '<pre style="background:#1e1e1e;color:#d4d4d4;padding:15px;overflow:auto;max-height:400px;font-size:12px">';
+            echo '<pre class="bg-gray-900 text-gray-300 p-4 overflow-auto max-h-[400px] text-xs rounded">';
             echo esc_html(substr(@file_get_contents($configFile) ?: '', 0, 50000));
             echo '</pre>';
         }

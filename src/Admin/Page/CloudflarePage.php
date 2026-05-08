@@ -18,9 +18,6 @@ final class CloudflarePage extends AdminPage
         $sse_url  = esc_js(rest_url('vlt-cache/v1/cloudflare/stream') . '?_wpnonce=' . $nonce);
         $date     = gmdate('Y-m-d');
         ?>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
-
         <div class="wrap text-sm" x-data="vltCf()" x-init="init()" x-cloak>
         <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — Cloudflare</h1>
 

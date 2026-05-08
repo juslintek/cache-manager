@@ -85,7 +85,7 @@ final class SettingsPage extends AdminPage
         $cf_behind = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
         echo '<label><input type="checkbox" name="vlt_cm_cf_tracking" id="vlt_cm_cf_tracking" value="1"' . checked($cf_track, true, false) . '> Įjungtas</label>';
         if (!$cf_behind) {
-            echo '<p class="description" style="color:#d63638" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
+            echo '<p class="description" class="text-red-600" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
         }
         echo '</td></tr>';
         echo '<script>
@@ -98,7 +98,7 @@ final class SettingsPage extends AdminPage
             }
         });
         </script>';
-        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" style="width:80px"></td></tr>';
+        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" class="w-20"></td></tr>';
 
         $logPath   = get_option('vlt_cm_log_path', WP_CONTENT_DIR . '/uploads/vlt-cache-logs');
         $tracePath = get_option('vlt_cm_trace_path', WP_CONTENT_DIR . '/uploads/vlt-traces');
@@ -107,8 +107,8 @@ final class SettingsPage extends AdminPage
 
         $logMaxMb   = (int) get_option('vlt_cm_log_max_mb', 500);
         $traceMaxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
-        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" style="width:80px"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
-        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" style="width:80px"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" class="w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" class="w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
 
         $traceHooks = get_option('vlt_trace_hooks', false);
         $traceHookMs = (float) get_option('vlt_trace_hook_threshold_ms', 1.0);
@@ -117,7 +117,7 @@ final class SettingsPage extends AdminPage
         echo '<p class="description">Fiksuoja kiekvieno WP hook iškvietimą su argumentais, laiku ir iškvietimo vieta. ⚠ Padidina apkrovą — naudokite tik derinimui.</p>';
         echo '</td></tr>';
         echo '<tr><th>Hook sekimo slenkstis (ms)</th><td>';
-        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" style="width:80px"> ms';
+        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" class="w-20"> ms';
         echo '<p class="description">Fiksuojami tik lėtesni nei nurodytas laikas hook\'ai. Rekomenduojama: 1ms.</p>';
         echo '</td></tr>';
 
@@ -126,19 +126,19 @@ final class SettingsPage extends AdminPage
         // ── Redis connection section ──────────────────────────────────────────
         ?>
         <h2>Redis ryšys</h2>
-        <div style="margin-bottom:12px">
+        <div class="mb-3">
             <button type="button" id="vlt-redis-detect-btn" class="button button-primary">🔍 Aptikti Redis automatiškai</button>
-            <span id="vlt-redis-detect-status" style="margin-left:10px;color:#666"></span>
+            <span id="vlt-redis-detect-status" class="ml-2.5 text-gray-500"></span>
             <div id="vlt-redis-detect-result" style="margin-top:8px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:none;white-space:pre-wrap;font-family:monospace;font-size:12px"></div>
         </div>
 
         <?php
         $mode = $redis_socket ? 'socket' : 'tcp';
         ?>
-        <div style="margin-bottom:8px">
-            <label style="margin-right:16px">
+        <div class="mb-2">
+            <label class="mr-4">
                 <input type="radio" name="vlt_redis_mode" value="socket" <?php checked($mode, 'socket'); ?> onchange="vltRedisMode(this.value)">
-                Unix Socket <small style="color:#666">(greičiau, rekomenduojama)</small>
+                Unix Socket <small class="text-gray-500">(greičiau, rekomenduojama)</small>
             </label>
             <label>
                 <input type="radio" name="vlt_redis_mode" value="tcp" <?php checked($mode, 'tcp'); ?> onchange="vltRedisMode(this.value)">
@@ -147,18 +147,18 @@ final class SettingsPage extends AdminPage
         </div>
 
         <table class="form-table">
-        <tbody id="vlt-redis-socket-row" <?php echo $mode === 'tcp' ? 'style="display:none"' : ''; ?>>
+        <tbody id="vlt-redis-socket-row" <?php echo $mode === 'tcp' ? 'class="hidden"' : ''; ?>>
         <tr><th>Unix socket kelias</th><td>
             <input type="text" name="vlt_redis_socket" id="vlt_redis_socket" value="<?php echo esc_attr($redis_socket); ?>" class="regular-text" placeholder="/home/user/.redis/redis.sock">
             <p class="description">Jei nurodyta — naudojamas socket (greičiau). Palikite tuščią naudoti TCP.</p>
         </td></tr>
         </tbody>
-        <tbody id="vlt-redis-tcp-row" <?php echo $mode === 'socket' ? 'style="display:none"' : ''; ?>>
+        <tbody id="vlt-redis-tcp-row" <?php echo $mode === 'socket' ? 'class="hidden"' : ''; ?>>
         <tr><th>Host</th><td>
             <input type="text" name="vlt_redis_host" id="vlt_redis_host" value="<?php echo esc_attr($redis_host); ?>" class="regular-text" placeholder="127.0.0.1">
         </td></tr>
         <tr><th>Port</th><td>
-            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" style="width:100px" placeholder="6379">
+            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" class="w-24" placeholder="6379">
             <p class="description">Palikite tuščią — bus naudojamas automatinis aptikimas.</p>
         </td></tr>
         </tbody>
@@ -216,7 +216,7 @@ final class SettingsPage extends AdminPage
         $ls_detected = \VLT\CacheManager\Redis\RedisDetector::detectLiteSpeed();
         echo '<h2>LiteSpeed / OpenLiteSpeed talpykla</h2>';
         echo '<table class="form-table">';
-        echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span style="color:#46b450">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
+        echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span class="text-green-600">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
         echo '<tr><th>Valyti LiteSpeed talpyklą</th><td><label><input type="checkbox" name="vlt_litespeed_purge" value="1"' . checked($ls_purge, true, false) . '> Įjungti LiteSpeed talpyklos valymą po publikavimo</label>';
         echo '<p class="description">Naudoja <code>litespeed_purge_all()</code> arba <code>do_action("litespeed_purge_all")</code>.</p></td></tr>';
         echo '</table>';
@@ -246,7 +246,7 @@ final class SettingsPage extends AdminPage
             echo '<button type="button" id="vlt-img-optm-run" class="button button-primary" '
                 . ($imgStatus['pending'] === 0 ? 'disabled' : '') . '>'
                 . 'Optimizuoti laukiančius (' . $imgStatus['pending'] . ')</button> '
-                . '<span id="vlt-img-optm-status" style="margin-left:10px;color:#666"></span>';
+                . '<span id="vlt-img-optm-status" class="ml-2.5 text-gray-500"></span>';
             ?>
             <script>
             document.getElementById('vlt-img-optm-run')?.addEventListener('click', function() {
@@ -277,7 +277,7 @@ final class SettingsPage extends AdminPage
         wp_nonce_field('vlt_cm_settings');
         echo '<tr><th>Įjungti WebP konvertavimą</th><td><label><input type="checkbox" name="vlt_img_optm_enabled" value="1"' . checked($img_enabled, true, false) . '> Konvertuoti JPEG/PNG į WebP įkeliant</label></td></tr>';
         echo '<tr><th>Pateikti WebP naršyklėms</th><td><label><input type="checkbox" name="vlt_img_optm_serve_webp" value="1"' . checked($img_webp, true, false) . '> Pakeisti paveikslėlių URL į .webp (jei failas egzistuoja)</label></td></tr>';
-        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" style="width:70px"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
+        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" class="w-[70px]"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
         echo '</table>';
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
         echo '</form>';
@@ -287,7 +287,7 @@ final class SettingsPage extends AdminPage
         echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_install_dropin'), 'vlt_install_dropin')) . '" class="button">' . ($dropin_ok ? 'Perdiegti object-cache.php' : 'Įdiegti object-cache.php') . '</a> ';
         $srv = \VLT\CacheManager\ServerDetector::detect();
         echo '<button type="button" id="vlt-server-redetect" class="button">🔍 Iš naujo aptikti serverį (' . esc_html($srv['server']) . ')</button>';
-        echo '<span id="vlt-server-redetect-status" style="margin-left:8px;color:#666"></span>';
+        echo '<span id="vlt-server-redetect-status" class="ml-2 text-gray-500"></span>';
         echo '</p>';
         echo '<script>
         document.getElementById("vlt-server-redetect").addEventListener("click", function() {
@@ -356,9 +356,6 @@ final class SettingsPage extends AdminPage
         rsort($logFiles);
         rsort($traceFiles);
         ?>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>
-
         <h2 class="mt-6 mb-2 text-lg font-semibold">Žurnalų failai</h2>
         <div x-data="vltLogs()" class="text-xs">
             <div class="grid grid-cols-2 gap-4">

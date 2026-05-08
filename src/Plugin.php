@@ -81,6 +81,7 @@ final class Plugin
             add_action('admin_bar_menu', [$self, 'adminBar'], 100);
             add_action('admin_init', [$self, 'handleActions']);
             add_action('wp_dashboard_setup', [$self, 'dashboardWidget']);
+            add_action('admin_enqueue_scripts', [$self, 'enqueueAdminAssets']);
 
             if (!function_exists('simdjson_decode')) {
                 add_action('admin_notices', [$self, 'simdjsonNotice']);
@@ -150,6 +151,18 @@ final class Plugin
         if ($maxMb > 0) {
             \VLT\CacheManager\Log\Logger::enforceMaxSize($dir, 'trace-*.json', $maxMb * 1048576);
         }
+    }
+
+    public function enqueueAdminAssets(string $hook): void
+    {
+        // Only on our plugin pages
+        if (!str_contains($hook, 'vlt-cache')) {
+            return;
+        }
+        wp_enqueue_script('vlt-tailwind', 'https://cdn.tailwindcss.com', [], null, false);
+        wp_enqueue_script('vlt-alpine', 'https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js', [], null, false);
+        // Tailwind config: extend with WP admin colors
+        wp_add_inline_script('vlt-tailwind', 'tailwind.config={theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
     }
 
     public function registerMenu(): void

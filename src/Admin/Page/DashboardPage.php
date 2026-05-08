@@ -50,21 +50,21 @@ final class DashboardPage extends AdminPage
         $nonce   = wp_create_nonce('wp_rest');
         ?>
         <div class="wrap">
-        <h1 style="margin-bottom:16px">Podėlio Valdymas — Suvestinė</h1>
+        <h1 class="mb-4">Podėlio Valdymas — Suvestinė</h1>
 
         <!-- Cache status cards -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+        <div class="grid gap-3 mb-6" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
 
         <?php
         // Helper: render a card
         $card = function(string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
-            $bar = '<div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:8px"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
-            echo '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
-            echo '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-            echo '<div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">' . esc_html($title) . '</div>';
-            echo '<div style="font-size:20px;font-weight:700;margin-top:2px;color:#1d2327">' . $value . '</div>';
-            echo '<div style="font-size:11px;color:#666;margin-top:2px">' . $sub . '</div></div>';
-            echo '<span style="font-size:24px;opacity:.7">' . $icon . '</span></div>';
+            $bar = '<div class="h-1 bg-gray-200 rounded mt-2"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
+            echo '<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">';
+            echo '<div class="flex justify-between items-start">';
+            echo '<div><div class="text-[11px] text-gray-400 uppercase tracking-wide">' . esc_html($title) . '</div>';
+            echo '<div class="text-xl font-bold mt-0.5 text-gray-900">' . $value . '</div>';
+            echo '<div class="text-[11px] text-gray-500 mt-0.5">' . $sub . '</div></div>';
+            echo '<span class="text-2xl opacity-70">' . $icon . '</span></div>';
             echo $bar;
             echo '</div>';
         };
@@ -132,36 +132,36 @@ final class DashboardPage extends AdminPage
         </div>
 
         <!-- Purge section with SSE progress -->
-        <h2 style="margin-bottom:8px">Greitas valymas</h2>
-        <p style="margin-bottom:12px">
-            <button id="vlt-purge-all" class="button button-primary" style="height:34px;padding:0 16px">
+        <h2 class="mb-2">Greitas valymas</h2>
+        <p class="mb-3">
+            <button id="vlt-purge-all" class="button button-primary" class="!h-[34px] !px-4">
                 🗑 Valyti viską
             </button>
             <?php foreach ($types as $type): ?>
-            <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" style="margin-left:4px;height:34px">
+            <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" class="!ml-1 !h-[34px]">
                 <?php echo esc_html(ucfirst($type)); ?>
             </button>
             <?php endforeach; ?>
         </p>
 
         <!-- SSE popup overlay -->
-        <div id="vlt-purge-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
-            <div style="background:#fff;border-radius:10px;padding:28px 32px;min-width:400px;max-width:520px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-                    <h3 style="margin:0;font-size:16px">🗑 Valoma talpykla</h3>
-                    <span id="vlt-purge-pct-label" style="font-size:13px;color:#666;font-weight:600">0%</span>
+        <div id="vlt-purge-overlay" class="hidden fixed inset-0 bg-black/55 z-[99999] items-center justify-center">
+            <div class="bg-white rounded-xl p-8 min-w-[400px] max-w-[520px] shadow-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="m-0 text-base font-semibold">🗑 Valoma talpykla</h3>
+                    <span id="vlt-purge-pct-label" class="text-sm text-gray-500 font-semibold">0%</span>
                 </div>
-                <div style="background:#e8e8e8;border-radius:6px;height:10px;overflow:hidden;margin-bottom:14px">
+                <div class="bg-gray-200 rounded-md h-2.5 overflow-hidden mb-3.5">
                     <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:6px"></div>
                 </div>
-                <div id="vlt-purge-items" style="font-family:monospace;font-size:11px;max-height:150px;overflow-y:auto;background:#f6f7f7;border:1px solid #e0e0e0;padding:8px 10px;border-radius:6px;line-height:1.8"></div>
-                <div id="vlt-purge-done-msg" style="display:none;margin-top:14px;color:#46b450;font-weight:700;font-size:14px;text-align:center">✅ Viskas išvalyta!</div>
+                <div id="vlt-purge-items" class="font-mono text-[11px] max-h-[150px] overflow-y-auto bg-gray-50 border border-gray-200 px-2.5 py-2 rounded-md leading-relaxed"></div>
+                <div id="vlt-purge-done-msg" class="hidden mt-3.5 text-green-600 font-bold text-sm text-center">✅ Viskas išvalyta!</div>
             </div>
         </div>
 
         <!-- Purge history -->
-        <h3 style="margin-top:20px;margin-bottom:8px">Valymo žurnalas</h3>
-        <div id="vlt-purge-history" style="font-size:11px;font-family:monospace;max-height:200px;overflow-y:auto;background:#f6f7f7;border:1px solid #e0e0e0;padding:8px 10px;border-radius:6px;line-height:1.8">
+        <h3 class="mt-5 mb-2">Valymo žurnalas</h3>
+        <div id="vlt-purge-history" class="text-[11px] font-mono max-h-[200px] overflow-y-auto bg-gray-50 border border-gray-200 px-2.5 py-2 rounded-md leading-relaxed">
             <em style="color:#aaa">Kraunama…</em>
         </div>
 
