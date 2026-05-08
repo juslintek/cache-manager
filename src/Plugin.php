@@ -7,6 +7,7 @@ namespace VLT\CacheManager;
 use VLT\CacheManager\Admin\AdminAjax;
 use VLT\CacheManager\Admin\Page\ApachePage;
 use VLT\CacheManager\Admin\Page\CloudflarePage;
+use VLT\CacheManager\Admin\Page\CloudLinuxPage;
 use VLT\CacheManager\Admin\Page\DashboardPage;
 use VLT\CacheManager\Admin\Page\LiteSpeedPage;
 use VLT\CacheManager\Admin\Page\LogsPage;
@@ -85,6 +86,10 @@ final class Plugin
 
             if (!function_exists('simdjson_decode')) {
                 add_action('admin_notices', [$self, 'simdjsonNotice']);
+            }
+
+            if (\VLT\CacheManager\CloudLinuxDetector::isCloudLinux()) {
+                add_action('admin_notices', [$self, 'cloudLinuxNotice']);
             }
 
             add_action('admin_notices', [$self, 'imgOptmNotice']);
@@ -197,6 +202,9 @@ final class Plugin
         $pages[] = new RedisExplorerPage();
         $pages[] = new TracerPage();
         $pages[] = new PerformancePage();
+        if (\VLT\CacheManager\CloudLinuxDetector::isCloudLinux()) {
+            $pages[] = new CloudLinuxPage();
+        }
         $pages[] = new SettingsPage();
 
         add_menu_page('Podėlio Valdymas', 'Podėlio Valdymas', 'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80);
@@ -441,6 +449,27 @@ final class Plugin
             }
         }
         return false;
+    }
+
+    public function cloudLinuxNotice(): void
+    {
+        if (!current_user_can('manage_options') || get_option('vlt_cl_notice_dismissed')) {
+            return;
+        }
+        $missing = [];
+        if (!\VLT\CacheManager\CloudLinuxDetector::redisEnabled()) {
+            $missing[] = 'Redis object cache';
+        }
+        if (empty($missing)) {
+            return;
+        }
+        $nonce = wp_create_nonce('wp_rest');
+        $url   = esc_js(rest_url('vlt-cache/v1/dismiss-notice'));
+        echo '<div class="notice notice-info is-dismissible" id="vlt-cl-notice"><p>';
+        echo '☁ <strong>CloudLinux aptiktas.</strong> Neaktyvios optimizacijos: <strong>' . implode(', ', $missing) . '</strong>. ';
+        echo '<a href="' . esc_url(admin_url('admin.php?page=vlt-cache-cloudlinux')) . '">Žiūrėti CloudLinux puslapį →</a>';
+        echo '</p></div>';
+        echo '<script>document.querySelector("#vlt-cl-notice .notice-dismiss")?.addEventListener("click",()=>{fetch("' . $url . '",{method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_cl_notice_dismissed"})});});</script>';
     }
 
     public function simdjsonNotice(): void
