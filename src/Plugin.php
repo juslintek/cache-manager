@@ -114,6 +114,16 @@ final class Plugin
         // Cron execution monitoring
         \VLT\CacheManager\Async\CronMonitor::register();
 
+        // Trace worker keepalive — check every 5 minutes via WP-Cron
+        add_action('vlt_trace_worker_check', [\VLT\CacheManager\Tracer\TraceWorker::class, 'ensureRunning']);
+        if (!wp_next_scheduled('vlt_trace_worker_check')) {
+            wp_schedule_event(time(), 'vlt_five_minutes', 'vlt_trace_worker_check');
+        }
+        add_filter('cron_schedules', function ($s) {
+            $s['vlt_five_minutes'] = ['interval' => 300, 'display' => 'Every 5 minutes'];
+            return $s;
+        });
+
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
         }

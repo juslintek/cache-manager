@@ -288,6 +288,7 @@ final class Tracer
             $r = RedisFactory::create(0.2);
             if ($r) {
                 $json = json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                // Live view list (for real-time Tracer page)
                 $r->lPush(TracerConfig::VLT_TR_KEY, $json);
                 $r->lTrim(TracerConfig::VLT_TR_KEY, 0, TracerConfig::getMaxTraces() - 1);
                 $r->expire(TracerConfig::VLT_TR_KEY, TracerConfig::VLT_TR_TTL);
@@ -296,15 +297,8 @@ final class Tracer
         } catch (\Throwable $e) {
         }
 
-        $dir = TracerConfig::getDir();
-        if (!is_dir($dir)) {
-            wp_mkdir_p($dir);
-            @file_put_contents($dir . '/.htaccess', "Deny from all\n");
-        }
-        @file_put_contents(
-            $dir . '/trace-' . gmdate('Y-m-d') . '.json',
-            json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n",
-            FILE_APPEND | LOCK_EX
-        );
+        // Push to background worker stream for disk persistence (non-blocking)
+        // Worker consumes this and writes to daily JSON files
+        TraceWorker::push($trace);
     }
 }

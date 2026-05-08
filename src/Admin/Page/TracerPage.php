@@ -31,6 +31,36 @@ final class TracerPage extends AdminPage
         } else {
             echo '<div class="notice notice-success inline"><p>✅ <strong>Excimer</strong> įdiegtas — tikslus mėginių profiliavimas aktyvus (~2% apkrova).</p></div>';
         }
+
+        // ── Trace worker status ───────────────────────────────────────────────
+        $workerStatus = \VLT\CacheManager\Tracer\TraceWorker::status();
+        echo '<div style="margin:8px 0;padding:8px 12px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;gap:12px;font-size:12px">';
+        echo '<strong>Trace Worker:</strong> ';
+        if ($workerStatus['running']) {
+            echo '<span style="color:#46b450">● Veikia</span>';
+            echo ' &nbsp; Eilėje: <strong>' . $workerStatus['queue_len'] . '</strong>';
+            echo ' &nbsp; Heartbeat: ' . esc_html($workerStatus['heartbeat'] ?? '—');
+            echo ' &nbsp; <button type="button" id="vlt-worker-stop" class="button button-small">⏹ Sustabdyti</button>';
+        } else {
+            echo '<span style="color:#d63638">● Sustabdytas</span>';
+            echo ' &nbsp; Eilėje: <strong>' . $workerStatus['queue_len'] . '</strong>';
+            echo ' &nbsp; <button type="button" id="vlt-worker-start" class="button button-small button-primary">▶ Paleisti</button>';
+        }
+        echo '<span id="vlt-worker-status" style="color:#666"></span>';
+        echo '</div>';
+        echo '<script>
+        ["vlt-worker-start","vlt-worker-stop"].forEach(id => {
+            document.getElementById(id)?.addEventListener("click", function() {
+                const action = id.includes("start") ? "start" : "stop";
+                const s = document.getElementById("vlt-worker-status");
+                this.disabled = true; s.textContent = "...";
+                fetch("' . esc_js(rest_url('vlt-cache/v1/trace-worker/')) . '" + action, {
+                    method: "POST", headers: {"X-WP-Nonce": "' . $nonce . '"}
+                }).then(r=>r.json()).then(()=>{ s.textContent="✅"; setTimeout(()=>location.reload(),1000); })
+                .catch(()=>{ s.textContent="❌"; this.disabled=false; });
+            });
+        });
+        </script>';
         ?>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js" defer></script>

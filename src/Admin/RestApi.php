@@ -148,6 +148,18 @@ final class RestApi
             'methods' => 'GET', 'callback' => [self::class, 'purgeStream'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/trace-worker', [
+            'methods' => 'GET', 'callback' => [self::class, 'traceWorkerStatus'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+        register_rest_route(self::NS, '/trace-worker/start', [
+            'methods' => 'POST', 'callback' => [self::class, 'traceWorkerStart'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
+        register_rest_route(self::NS, '/trace-worker/stop', [
+            'methods' => 'POST', 'callback' => [self::class, 'traceWorkerStop'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Image optimization
         register_rest_route(self::NS, '/img-optm/status', [
@@ -646,6 +658,24 @@ final class RestApi
         }
 
         return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
+    }
+
+    public static function traceWorkerStatus(): \WP_REST_Response
+    {
+        return new \WP_REST_Response(\VLT\CacheManager\Tracer\TraceWorker::status());
+    }
+
+    public static function traceWorkerStart(): \WP_REST_Response
+    {
+        \VLT\CacheManager\Tracer\TraceWorker::spawn();
+        sleep(1);
+        return new \WP_REST_Response(\VLT\CacheManager\Tracer\TraceWorker::status());
+    }
+
+    public static function traceWorkerStop(): \WP_REST_Response
+    {
+        \VLT\CacheManager\Tracer\TraceWorker::stop();
+        return new \WP_REST_Response(['ok' => true]);
     }
 
     public static function purgeStream(): void
