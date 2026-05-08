@@ -166,8 +166,9 @@ final class Plugin
         }
         wp_enqueue_script('vlt-tailwind', 'https://cdn.tailwindcss.com', [], null, false);
         wp_enqueue_script('vlt-alpine', 'https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js', [], null, false);
-        // Tailwind config: extend with WP admin colors
-        wp_add_inline_script('vlt-tailwind', 'tailwind.config={theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
+        // Prefix all Tailwind utilities with tw- to avoid conflicts with WP admin classes
+        // e.g. WP uses .fixed for table-layout:fixed, Tailwind uses .fixed for position:fixed
+        wp_add_inline_script('vlt-tailwind', 'tailwind.config={prefix:"tw-",theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
     }
 
     public function registerMenu(): void

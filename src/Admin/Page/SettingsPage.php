@@ -85,7 +85,7 @@ final class SettingsPage extends AdminPage
         $cf_behind = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
         echo '<label><input type="checkbox" name="vlt_cm_cf_tracking" id="vlt_cm_cf_tracking" value="1"' . checked($cf_track, true, false) . '> Įjungtas</label>';
         if (!$cf_behind) {
-            echo '<p class="description" class="text-red-600" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
+            echo '<p class="description" class="tw-text-red-600" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
         }
         echo '</td></tr>';
         echo '<script>
@@ -98,7 +98,7 @@ final class SettingsPage extends AdminPage
             }
         });
         </script>';
-        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" class="w-20"></td></tr>';
+        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" class="tw-w-20"></td></tr>';
 
         $logPath   = get_option('vlt_cm_log_path', WP_CONTENT_DIR . '/uploads/vlt-cache-logs');
         $tracePath = get_option('vlt_cm_trace_path', WP_CONTENT_DIR . '/uploads/vlt-traces');
@@ -107,8 +107,8 @@ final class SettingsPage extends AdminPage
 
         $logMaxMb   = (int) get_option('vlt_cm_log_max_mb', 500);
         $traceMaxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
-        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" class="w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
-        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" class="w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
 
         $traceHooks = get_option('vlt_trace_hooks', false);
         $traceHookMs = (float) get_option('vlt_trace_hook_threshold_ms', 1.0);
@@ -117,7 +117,7 @@ final class SettingsPage extends AdminPage
         echo '<p class="description">Fiksuoja kiekvieno WP hook iškvietimą su argumentais, laiku ir iškvietimo vieta. ⚠ Padidina apkrovą — naudokite tik derinimui.</p>';
         echo '</td></tr>';
         echo '<tr><th>Hook sekimo slenkstis (ms)</th><td>';
-        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" class="w-20"> ms';
+        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" class="tw-w-20"> ms';
         echo '<p class="description">Fiksuojami tik lėtesni nei nurodytas laikas hook\'ai. Rekomenduojama: 1ms.</p>';
         echo '</td></tr>';
 
@@ -126,19 +126,19 @@ final class SettingsPage extends AdminPage
         // ── Redis connection section ──────────────────────────────────────────
         ?>
         <h2>Redis ryšys</h2>
-        <div class="mb-3">
+        <div class="tw-mb-3">
             <button type="button" id="vlt-redis-detect-btn" class="button button-primary">🔍 Aptikti Redis automatiškai</button>
-            <span id="vlt-redis-detect-status" class="ml-2.5 text-gray-500"></span>
+            <span id="vlt-redis-detect-status" class="tw-ml-2.5 tw-text-gray-500"></span>
             <div id="vlt-redis-detect-result" style="margin-top:8px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:none;white-space:pre-wrap;font-family:monospace;font-size:12px"></div>
         </div>
 
         <?php
         $mode = $redis_socket ? 'socket' : 'tcp';
         ?>
-        <div class="mb-2">
-            <label class="mr-4">
+        <div class="tw-mb-2">
+            <label class="tw-mr-4">
                 <input type="radio" name="vlt_redis_mode" value="socket" <?php checked($mode, 'socket'); ?> onchange="vltRedisMode(this.value)">
-                Unix Socket <small class="text-gray-500">(greičiau, rekomenduojama)</small>
+                Unix Socket <small class="tw-text-gray-500">(greičiau, rekomenduojama)</small>
             </label>
             <label>
                 <input type="radio" name="vlt_redis_mode" value="tcp" <?php checked($mode, 'tcp'); ?> onchange="vltRedisMode(this.value)">
@@ -147,18 +147,18 @@ final class SettingsPage extends AdminPage
         </div>
 
         <table class="form-table">
-        <tbody id="vlt-redis-socket-row" <?php echo $mode === 'tcp' ? 'class="hidden"' : ''; ?>>
+        <tbody id="vlt-redis-socket-row" <?php echo $mode === 'tcp' ? 'class="tw-hidden"' : ''; ?>>
         <tr><th>Unix socket kelias</th><td>
             <input type="text" name="vlt_redis_socket" id="vlt_redis_socket" value="<?php echo esc_attr($redis_socket); ?>" class="regular-text" placeholder="/home/user/.redis/redis.sock">
             <p class="description">Jei nurodyta — naudojamas socket (greičiau). Palikite tuščią naudoti TCP.</p>
         </td></tr>
         </tbody>
-        <tbody id="vlt-redis-tcp-row" <?php echo $mode === 'socket' ? 'class="hidden"' : ''; ?>>
+        <tbody id="vlt-redis-tcp-row" <?php echo $mode === 'socket' ? 'class="tw-hidden"' : ''; ?>>
         <tr><th>Host</th><td>
             <input type="text" name="vlt_redis_host" id="vlt_redis_host" value="<?php echo esc_attr($redis_host); ?>" class="regular-text" placeholder="127.0.0.1">
         </td></tr>
         <tr><th>Port</th><td>
-            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" class="w-24" placeholder="6379">
+            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" class="tw-w-24" placeholder="6379">
             <p class="description">Palikite tuščią — bus naudojamas automatinis aptikimas.</p>
         </td></tr>
         </tbody>
@@ -216,7 +216,7 @@ final class SettingsPage extends AdminPage
         $ls_detected = \VLT\CacheManager\Redis\RedisDetector::detectLiteSpeed();
         echo '<h2>LiteSpeed / OpenLiteSpeed talpykla</h2>';
         echo '<table class="form-table">';
-        echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span class="text-green-600">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
+        echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span class="tw-text-green-600">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
         echo '<tr><th>Valyti LiteSpeed talpyklą</th><td><label><input type="checkbox" name="vlt_litespeed_purge" value="1"' . checked($ls_purge, true, false) . '> Įjungti LiteSpeed talpyklos valymą po publikavimo</label>';
         echo '<p class="description">Naudoja <code>litespeed_purge_all()</code> arba <code>do_action("litespeed_purge_all")</code>.</p></td></tr>';
         echo '</table>';
@@ -240,13 +240,13 @@ final class SettingsPage extends AdminPage
                 . 'Optimizuota: <strong>' . $imgStatus['optimized'] . '</strong> &nbsp; '
                 . 'Laukia: <strong>' . $imgStatus['pending'] . '</strong></p>';
             if (!$imgStatus['gd'] && !$imgStatus['imagick']) {
-                echo '<div class="notice notice-warning inline"><p>WebP konvertavimui reikalingas GD su WebP palaikymu arba Imagick. '
+                echo '<div class="notice notice-warning tw-inline"><p>WebP konvertavimui reikalingas GD su WebP palaikymu arba Imagick. '
                     . 'Įdiekite <code>php-gd</code> arba <code>php-imagick</code>.</p></div>';
             }
             echo '<button type="button" id="vlt-img-optm-run" class="button button-primary" '
                 . ($imgStatus['pending'] === 0 ? 'disabled' : '') . '>'
                 . 'Optimizuoti laukiančius (' . $imgStatus['pending'] . ')</button> '
-                . '<span id="vlt-img-optm-status" class="ml-2.5 text-gray-500"></span>';
+                . '<span id="vlt-img-optm-status" class="tw-ml-2.5 tw-text-gray-500"></span>';
             ?>
             <script>
             document.getElementById('vlt-img-optm-run')?.addEventListener('click', function() {
@@ -277,7 +277,7 @@ final class SettingsPage extends AdminPage
         wp_nonce_field('vlt_cm_settings');
         echo '<tr><th>Įjungti WebP konvertavimą</th><td><label><input type="checkbox" name="vlt_img_optm_enabled" value="1"' . checked($img_enabled, true, false) . '> Konvertuoti JPEG/PNG į WebP įkeliant</label></td></tr>';
         echo '<tr><th>Pateikti WebP naršyklėms</th><td><label><input type="checkbox" name="vlt_img_optm_serve_webp" value="1"' . checked($img_webp, true, false) . '> Pakeisti paveikslėlių URL į .webp (jei failas egzistuoja)</label></td></tr>';
-        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" class="w-[70px]"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
+        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" class="tw-w-[70px]"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
         echo '</table>';
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
         echo '</form>';
@@ -287,7 +287,7 @@ final class SettingsPage extends AdminPage
         echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_install_dropin'), 'vlt_install_dropin')) . '" class="button">' . ($dropin_ok ? 'Perdiegti object-cache.php' : 'Įdiegti object-cache.php') . '</a> ';
         $srv = \VLT\CacheManager\ServerDetector::detect();
         echo '<button type="button" id="vlt-server-redetect" class="button">🔍 Iš naujo aptikti serverį (' . esc_html($srv['server']) . ')</button>';
-        echo '<span id="vlt-server-redetect-status" class="ml-2 text-gray-500"></span>';
+        echo '<span id="vlt-server-redetect-status" class="tw-ml-2 tw-text-gray-500"></span>';
         echo '</p>';
         echo '<script>
         document.getElementById("vlt-server-redetect").addEventListener("click", function() {
@@ -356,67 +356,67 @@ final class SettingsPage extends AdminPage
         rsort($logFiles);
         rsort($traceFiles);
         ?>
-        <h2 class="mt-6 mb-2 text-lg font-semibold">Žurnalų failai</h2>
-        <div x-data="vltLogs()" class="text-xs">
-            <div class="grid grid-cols-2 gap-4">
+        <h2 class="tw-mt-6 tw-mb-2 tw-text-lg tw-font-semibold">Žurnalų failai</h2>
+        <div x-data="vltLogs()" class="tw-text-xs">
+            <div class="tw-grid grid-cols-2 tw-gap-4">
                 <!-- Cache logs -->
                 <div>
-                    <h3 class="font-semibold mb-2">Talpyklos žurnalai</h3>
-                    <div class="bg-white border border-gray-200 rounded max-h-48 overflow-auto">
+                    <h3 class="tw-font-semibold tw-mb-2">Talpyklos žurnalai</h3>
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded max-h-48 tw-overflow-auto">
                         <?php foreach ($logFiles as $f): ?>
-                        <div class="flex justify-between items-center px-3 py-1.5 border-b border-gray-50 hover:bg-gray-50 cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'log')">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'log')">
                             <span><?php echo esc_html(basename($f)); ?></span>
-                            <span class="text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
+                            <span class="tw-text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
                         </div>
                         <?php endforeach; ?>
-                        <?php if (!$logFiles): ?><p class="p-3 text-gray-400">Nėra failų</p><?php endif; ?>
+                        <?php if (!$logFiles): ?><p class="tw-p-3 tw-text-gray-400">Nėra failų</p><?php endif; ?>
                     </div>
                 </div>
                 <!-- Trace logs -->
                 <div>
-                    <h3 class="font-semibold mb-2">Pėdsakų žurnalai</h3>
-                    <div class="bg-white border border-gray-200 rounded max-h-48 overflow-auto">
+                    <h3 class="tw-font-semibold tw-mb-2">Pėdsakų žurnalai</h3>
+                    <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded max-h-48 tw-overflow-auto">
                         <?php foreach ($traceFiles as $f): ?>
-                        <div class="flex justify-between items-center px-3 py-1.5 border-b border-gray-50 hover:bg-gray-50 cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'trace')">
+                        <div class="tw-flex tw-justify-between tw-items-center tw-px-3 tw-py-1.5 tw-border-b border-gray-50 hover:tw-bg-gray-50 tw-cursor-pointer" @click="loadFile('<?php echo esc_js(basename($f)); ?>', 'trace')">
                             <span><?php echo esc_html(basename($f)); ?></span>
-                            <span class="text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
+                            <span class="tw-text-gray-400"><?php echo esc_html(size_format(filesize($f))); ?></span>
                         </div>
                         <?php endforeach; ?>
-                        <?php if (!$traceFiles): ?><p class="p-3 text-gray-400">Nėra failų</p><?php endif; ?>
+                        <?php if (!$traceFiles): ?><p class="tw-p-3 tw-text-gray-400">Nėra failų</p><?php endif; ?>
                     </div>
                 </div>
             </div>
 
             <!-- JSON Viewer -->
-            <div x-show="viewing" class="mt-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-semibold" x-text="'📄 '+currentFile"></h3>
-                    <div class="flex gap-2">
-                        <span class="text-gray-500" x-text="entries.length+' įrašų'"></span>
-                        <input type="text" class="border border-gray-300 rounded px-2 py-0.5 w-48" x-model="search" placeholder="Filtruoti...">
-                        <button class="px-2 py-0.5 bg-gray-200 rounded hover:bg-gray-300" @click="viewing=false">✕ Uždaryti</button>
+            <div x-show="viewing" class="tw-mt-4">
+                <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
+                    <h3 class="tw-font-semibold" x-text="'📄 '+currentFile"></h3>
+                    <div class="tw-flex tw-gap-2">
+                        <span class="tw-text-gray-500" x-text="entries.length+' įrašų'"></span>
+                        <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-0.5 tw-w-48" x-model="search" placeholder="Filtruoti...">
+                        <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-rounded hover:bg-gray-300" @click="viewing=false">✕ Uždaryti</button>
                     </div>
                 </div>
-                <div class="bg-white border border-gray-200 rounded overflow-auto" style="max-height:500px">
+                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded tw-overflow-auto" style="max-height:500px">
                     <template x-for="(e,i) in filteredEntries" :key="i">
-                        <div class="border-b border-gray-100">
-                            <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50" @click="e._open=!e._open">
-                                <span class="text-gray-400 w-4" x-text="e._open?'▾':'▸'"></span>
-                                <span class="text-gray-500 w-40 shrink-0" x-text="e.timestamp||e.ts||''"></span>
-                                <span class="px-1.5 py-0.5 rounded text-[10px]" :class="{'bg-yellow-50':e.type==='purge','bg-green-50':e.type==='stats','bg-blue-50':e.type==='cloudflare','bg-red-50':e.type==='error','bg-purple-50':e.method}" x-text="e.type||e.method||'—'"></span>
-                                <span class="truncate text-gray-600" x-text="e.uri||e.details_str||JSON.stringify(e.details||'').substring(0,80)"></span>
+                        <div class="tw-border-b tw-border-gray-100">
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-px-3 tw-py-1.5 tw-cursor-pointer hover:tw-bg-gray-50" @click="e._open=!e._open">
+                                <span class="tw-text-gray-400 tw-w-4" x-text="e._open?'▾':'▸'"></span>
+                                <span class="tw-text-gray-500 w-40 tw-shrink-0" x-text="e.timestamp||e.ts||''"></span>
+                                <span class="tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[10px]" :class="{'bg-yellow-50':e.type==='purge','bg-green-50':e.type==='stats','bg-blue-50':e.type==='cloudflare','bg-red-50':e.type==='error','bg-purple-50':e.method}" x-text="e.type||e.method||'—'"></span>
+                                <span class="tw-truncate tw-text-gray-600" x-text="e.uri||e.details_str||JSON.stringify(e.details||'').substring(0,80)"></span>
                             </div>
-                            <div x-show="e._open" class="px-3 pb-2">
-                                <pre class="bg-gray-900 text-green-300 p-3 rounded text-[10px] overflow-auto max-h-64 whitespace-pre-wrap" x-text="JSON.stringify(e,null,2)"></pre>
+                            <div x-show="e._open" class="tw-px-3 pb-2">
+                                <pre class="tw-bg-gray-900 text-green-300 tw-p-3 tw-rounded tw-text-[10px] tw-overflow-auto max-h-64 tw-whitespace-pre-wrap" x-text="JSON.stringify(e,null,2)"></pre>
                             </div>
                         </div>
                     </template>
-                    <p x-show="filteredEntries.length===0" class="p-3 text-gray-400">Nėra įrašų</p>
+                    <p x-show="filteredEntries.length===0" class="tw-p-3 tw-text-gray-400">Nėra įrašų</p>
                 </div>
-                <div class="mt-2 flex gap-2" x-show="entries.length>pageSize">
-                    <button class="px-2 py-0.5 bg-gray-200 rounded" :disabled="page<=1" @click="page--">←</button>
-                    <span class="text-gray-500 py-0.5" x-text="page+'/'+Math.ceil(entries.length/pageSize)"></span>
-                    <button class="px-2 py-0.5 bg-gray-200 rounded" :disabled="page>=Math.ceil(entries.length/pageSize)" @click="page++">→</button>
+                <div class="tw-mt-2 tw-flex tw-gap-2" x-show="entries.length>pageSize">
+                    <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-rounded" :disabled="page<=1" @click="page--">←</button>
+                    <span class="tw-text-gray-500 tw-py-0.5" x-text="page+'/'+Math.ceil(entries.length/pageSize)"></span>
+                    <button class="tw-px-2 tw-py-0.5 tw-bg-gray-200 tw-rounded" :disabled="page>=Math.ceil(entries.length/pageSize)" @click="page++">→</button>
                 </div>
             </div>
         </div>

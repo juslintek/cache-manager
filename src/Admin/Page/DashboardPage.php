@@ -50,21 +50,21 @@ final class DashboardPage extends AdminPage
         $nonce   = wp_create_nonce('wp_rest');
         ?>
         <div class="wrap">
-        <h1 class="mb-4">Podėlio Valdymas — Suvestinė</h1>
+        <h1 class="tw-mb-4">Podėlio Valdymas — Suvestinė</h1>
 
         <!-- Cache status cards -->
-        <div class="grid gap-3 mb-6" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+        <div class="tw-grid tw-gap-3 tw-mb-6" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
 
         <?php
         // Helper: render a card
         $card = function(string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
-            $bar = '<div class="h-1 bg-gray-200 rounded mt-2"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
-            echo '<div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">';
-            echo '<div class="flex justify-between items-start">';
-            echo '<div><div class="text-[11px] text-gray-400 uppercase tracking-wide">' . esc_html($title) . '</div>';
-            echo '<div class="text-xl font-bold mt-0.5 text-gray-900">' . $value . '</div>';
-            echo '<div class="text-[11px] text-gray-500 mt-0.5">' . $sub . '</div></div>';
-            echo '<span class="text-2xl opacity-70">' . $icon . '</span></div>';
+            $bar = '<div class="tw-h-1 tw-bg-gray-200 tw-rounded tw-mt-2"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
+            echo '<div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-shadow-sm">';
+            echo '<div class="tw-flex tw-justify-between tw-items-start">';
+            echo '<div><div class="tw-text-[11px] tw-text-gray-400 tw-uppercase tw-tracking-wide">' . esc_html($title) . '</div>';
+            echo '<div class="tw-text-xl tw-font-bold mt-0.5 tw-text-gray-900">' . $value . '</div>';
+            echo '<div class="tw-text-[11px] tw-text-gray-500 mt-0.5">' . $sub . '</div></div>';
+            echo '<span class="tw-text-2xl tw-opacity-70">' . $icon . '</span></div>';
             echo $bar;
             echo '</div>';
         };
@@ -132,8 +132,8 @@ final class DashboardPage extends AdminPage
         </div>
 
         <!-- Purge section with SSE progress -->
-        <h2 class="mb-2">Greitas valymas</h2>
-        <p class="mb-3">
+        <h2 class="tw-mb-2">Greitas valymas</h2>
+        <p class="tw-mb-3">
             <button id="vlt-purge-all" class="button button-primary" class="!h-[34px] !px-4">
                 🗑 Valyti viską
             </button>
@@ -145,23 +145,23 @@ final class DashboardPage extends AdminPage
         </p>
 
         <!-- SSE popup overlay -->
-        <div id="vlt-purge-overlay" class="hidden fixed inset-0 bg-black/55 z-[99999] items-center justify-center">
-            <div class="bg-white rounded-xl p-8 min-w-[400px] max-w-[520px] shadow-2xl">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="m-0 text-base font-semibold">🗑 Valoma talpykla</h3>
-                    <span id="vlt-purge-pct-label" class="text-sm text-gray-500 font-semibold">0%</span>
+        <div id="vlt-purge-overlay" class="tw-hidden tw-fixed tw-inset-0 tw-bg-black/55 tw-z-[99999] tw-items-center tw-justify-center">
+            <div class="tw-bg-white tw-rounded-xl tw-p-8 tw-min-w-[400px] tw-max-w-[520px] tw-shadow-2xl">
+                <div class="tw-flex tw-justify-between tw-items-center tw-mb-4">
+                    <h3 class="tw-m-0 tw-text-base tw-font-semibold">🗑 Valoma talpykla</h3>
+                    <span id="vlt-purge-pct-label" class="tw-text-sm tw-text-gray-500 tw-font-semibold">0%</span>
                 </div>
-                <div class="bg-gray-200 rounded-md h-2.5 overflow-hidden mb-3.5">
+                <div class="tw-bg-gray-200 tw-rounded-md tw-h-2.5 tw-overflow-hidden mb-3.5">
                     <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:6px"></div>
                 </div>
-                <div id="vlt-purge-items" class="font-mono text-[11px] max-h-[150px] overflow-y-auto bg-gray-50 border border-gray-200 px-2.5 py-2 rounded-md leading-relaxed"></div>
-                <div id="vlt-purge-done-msg" class="hidden mt-3.5 text-green-600 font-bold text-sm text-center">✅ Viskas išvalyta!</div>
+                <div id="vlt-purge-items" class="tw-font-mono tw-text-[11px] tw-max-h-[150px] tw-overflow-y-auto tw-bg-gray-50 tw-border tw-border-gray-200 tw-px-2.5 tw-py-2 tw-rounded-md tw-leading-relaxed"></div>
+                <div id="vlt-purge-done-msg" class="tw-hidden mt-3.5 tw-text-green-600 tw-font-bold tw-text-sm tw-text-center">✅ Viskas išvalyta!</div>
             </div>
         </div>
 
         <!-- Purge history -->
-        <h3 class="mt-5 mb-2">Valymo žurnalas</h3>
-        <div id="vlt-purge-history" class="text-[11px] font-mono max-h-[200px] overflow-y-auto bg-gray-50 border border-gray-200 px-2.5 py-2 rounded-md leading-relaxed">
+        <h3 class="tw-mt-5 tw-mb-2">Valymo žurnalas</h3>
+        <div id="vlt-purge-history" class="tw-text-[11px] tw-font-mono tw-max-h-[200px] tw-overflow-y-auto tw-bg-gray-50 tw-border tw-border-gray-200 tw-px-2.5 tw-py-2 tw-rounded-md tw-leading-relaxed">
             <em style="color:#aaa">Kraunama…</em>
         </div>
 
@@ -183,7 +183,7 @@ final class DashboardPage extends AdminPage
         if ($groups) {
             echo '<h2 style="margin-top:24px">Paskutiniai valymo įvykiai</h2>';
             echo '<style>.vlt-purge-group{cursor:pointer;user-select:none}.vlt-purge-group.open+.vlt-purge-detail{display:table-row}</style>';
-            echo '<table class="widefat fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
+            echo '<table class="widefat tw-fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
             foreach ($groups as $g) {
                 $types_str  = implode(', ', $g['types']);
                 $user_label = esc_html($g['user_name']);

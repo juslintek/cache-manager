@@ -61,7 +61,7 @@ final class NginxExplorerPage extends AdminPage
         $total_pages = max(1, ceil(count($files) / $per_page));
         $files_page  = array_slice($files, ($page_num - 1) * $per_page, $per_page);
 
-        echo '<table class="widefat fixed striped"><thead><tr><th>URL / Raktas</th><th class="w-20">Statusas</th><th class="w-24">Dydis</th><th style="width:160px">Talpykloje nuo</th><th style="width:120px">Veiksmai</th></tr></thead><tbody>';
+        echo '<table class="widefat tw-fixed striped"><thead><tr><th>URL / Raktas</th><th class="tw-w-20">Statusas</th><th class="tw-w-24">Dydis</th><th style="width:160px">Talpykloje nuo</th><th style="width:120px">Veiksmai</th></tr></thead><tbody>';
         foreach ($files_page as $f) {
             $preview_url = wp_nonce_url(admin_url('admin.php?page=vlt-cache-nginx&preview=' . urlencode($f['path'])), 'vlt_nginx_preview');
             $url_display = $f['url'];
@@ -69,7 +69,7 @@ final class NginxExplorerPage extends AdminPage
                 $url_display = substr($url_display, 0, 77) . '...';
             }
             echo '<tr>';
-            echo '<td title="' . esc_attr($f['url']) . '"><code class="text-xs">' . esc_html($url_display) . '</code></td>';
+            echo '<td title="' . esc_attr($f['url']) . '"><code class="tw-text-xs">' . esc_html($url_display) . '</code></td>';
             echo '<td>' . esc_html($f['status']) . '</td>';
             echo '<td>' . esc_html(Plugin::formatSize($f['size'])) . '</td>';
             echo '<td>' . esc_html(date('Y-m-d H:i:s', $f['mtime'])) . '</td>';

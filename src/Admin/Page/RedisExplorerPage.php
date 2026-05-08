@@ -18,56 +18,56 @@ final class RedisExplorerPage extends AdminPage
         ?>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
         <div class="wrap" x-data="vltRedis()" x-init="init()" x-cloak>
-        <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — Redis naršyklė</h1>
+        <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Redis naršyklė</h1>
 
         <!-- Stats cards - collapsible -->
-        <div class="mb-4" x-data="{open:secOpen('stats')}" x-init="$watch('open',v=>secSave('stats',v))">
-            <h3 class="text-sm font-semibold cursor-pointer flex items-center gap-2 mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika</h3>
-            <div x-show="open" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="tw-mb-4" x-data="{open:secOpen('stats')}" x-init="$watch('open',v=>secSave('stats',v))">
+            <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Statistika</h3>
+            <div x-show="open" class="tw-grid grid-cols-2 md:grid-cols-4 tw-gap-3">
             <template x-for="c in cards" :key="c.label">
-                <div class="bg-white border border-gray-200 rounded-lg p-4">
-                    <div class="text-xs text-gray-500" x-text="c.label"></div>
-                    <div class="text-2xl font-bold mt-1" x-text="c.value"></div>
-                    <div class="text-xs text-gray-400 mt-0.5" x-text="c.sub" x-show="c.sub"></div>
+                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                    <div class="tw-text-xs tw-text-gray-500" x-text="c.label"></div>
+                    <div class="tw-text-2xl tw-font-bold tw-mt-1" x-text="c.value"></div>
+                    <div class="tw-text-xs tw-text-gray-400 mt-0.5" x-text="c.sub" x-show="c.sub"></div>
                 </div>
             </template>
             </div>
         </div>
 
         <!-- Charts - collapsible -->
-        <div class="mb-4" x-data="{open:secOpen('charts')}" x-init="$watch('open',v=>secSave('charts',v))">
-            <h3 class="text-sm font-semibold cursor-pointer flex items-center gap-2 mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grafikai</h3>
-            <div x-show="open" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 class="font-semibold mb-3">Raktų pasiskirstymas pagal grupę</h3>
+        <div class="tw-mb-4" x-data="{open:secOpen('charts')}" x-init="$watch('open',v=>secSave('charts',v))">
+            <h3 class="tw-text-sm tw-font-semibold tw-cursor-pointer tw-flex tw-items-center tw-gap-2 tw-mb-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grafikai</h3>
+            <div x-show="open" class="tw-grid grid-cols-1 md:grid-cols-2 tw-gap-4">
+            <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                <h3 class="tw-font-semibold tw-mb-3">Raktų pasiskirstymas pagal grupę</h3>
                 <canvas id="vlt-redis-groups-chart" height="250"></canvas>
             </div>
-            <div class="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 class="font-semibold mb-3">Atminties naudojimas</h3>
+            <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
+                <h3 class="tw-font-semibold tw-mb-3">Atminties naudojimas</h3>
                 <canvas id="vlt-redis-memory-chart" height="250"></canvas>
             </div>
         </div>
 
         <!-- Groups - collapsible -->
-        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4" x-data="{open:secOpen('groups')}" x-init="$watch('open',v=>secSave('groups',v))">
-            <h3 class="font-semibold mb-3 cursor-pointer flex items-center gap-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grupės</h3>
+        <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4" x-data="{open:secOpen('groups')}" x-init="$watch('open',v=>secSave('groups',v))">
+            <h3 class="tw-font-semibold tw-mb-3 tw-cursor-pointer tw-flex tw-items-center tw-gap-2" @click="open=!open"><span x-text="open?'▾':'▸'"></span> Grupės</h3>
             <div x-show="open" class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50"><tr>
-                    <th class="px-3 py-2 text-left cursor-pointer" @click="groupSort='name';groupDir=groupDir==='asc'?'desc':'asc'">Grupė <span x-text="groupSort==='name'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
-                    <th class="px-3 py-2 text-right w-24 cursor-pointer" @click="groupSort='count';groupDir=groupDir==='asc'?'desc':'asc'">Raktų <span x-text="groupSort==='count'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
-                    <th class="px-3 py-2 text-right w-24 cursor-pointer" @click="groupSort='size';groupDir=groupDir==='asc'?'desc':'asc'">Dydis <span x-text="groupSort==='size'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
-                    <th class="px-3 py-2 text-right w-32">Veiksmai</th>
+            <table class="tw-w-full tw-text-sm">
+                <thead class="tw-bg-gray-50"><tr>
+                    <th class="tw-px-3 tw-py-2 tw-text-left tw-cursor-pointer" @click="groupSort='name';groupDir=groupDir==='asc'?'desc':'asc'">Grupė <span x-text="groupSort==='name'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right tw-w-24 tw-cursor-pointer" @click="groupSort='count';groupDir=groupDir==='asc'?'desc':'asc'">Raktų <span x-text="groupSort==='count'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right tw-w-24 tw-cursor-pointer" @click="groupSort='size';groupDir=groupDir==='asc'?'desc':'asc'">Dydis <span x-text="groupSort==='size'?(groupDir==='asc'?'▲':'▼'):''"></span></th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right tw-w-32">Veiksmai</th>
                 </tr></thead>
                 <tbody>
                     <template x-for="g in sortedGroups" :key="g.name">
-                        <tr class="border-b border-gray-50 hover:bg-gray-50">
-                            <td class="px-3 py-2 font-semibold" x-text="g.name"></td>
-                            <td class="px-3 py-2 text-right" x-text="g.count"></td>
-                            <td class="px-3 py-2 text-right" x-text="formatSize(g.size)"></td>
-                            <td class="px-3 py-2 text-right space-x-2">
-                                <a href="#" @click.prevent="browseGroup(g.name)" class="text-blue-600 hover:underline text-xs">Naršyti</a>
-                                <a href="#" @click.prevent="if(confirm('Ištrinti visus '+g.name+' raktus?'))deleteGroup(g.name)" class="text-red-600 hover:underline text-xs">Trinti</a>
+                        <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50">
+                            <td class="tw-px-3 tw-py-2 tw-font-semibold" x-text="g.name"></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right" x-text="g.count"></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right" x-text="formatSize(g.size)"></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right space-x-2">
+                                <a href="#" @click.prevent="browseGroup(g.name)" class="text-blue-600 hover:underline tw-text-xs">Naršyti</a>
+                                <a href="#" @click.prevent="if(confirm('Ištrinti visus '+g.name+' raktus?'))deleteGroup(g.name)" class="tw-text-red-600 hover:underline tw-text-xs">Trinti</a>
                             </td>
                         </tr>
                     </template>
@@ -76,66 +76,66 @@ final class RedisExplorerPage extends AdminPage
             </div>
         </div>
 
-        <div x-show="browsing" class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-            <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
-                <h3 class="font-semibold">Grupė: <span x-text="browseGroupName"></span> (<span x-text="browseKeys.length"></span> raktų)</h3>
-                <div class="flex gap-2 items-center">
-                    <input type="text" x-model="keySearch" @input="filterKeys()" placeholder="Ieškoti rakto..." class="border border-gray-300 rounded px-2 py-1 text-sm w-48">
-                    <button @click="browsing=false" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">Uždaryti</button>
+        <div x-show="browsing" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4">
+            <div class="tw-flex tw-flex-wrap tw-justify-between tw-items-center tw-mb-3 tw-gap-2">
+                <h3 class="tw-font-semibold">Grupė: <span x-text="browseGroupName"></span> (<span x-text="browseKeys.length"></span> raktų)</h3>
+                <div class="tw-flex tw-gap-2 tw-items-center">
+                    <input type="text" x-model="keySearch" @input="filterKeys()" placeholder="Ieškoti rakto..." class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm tw-w-48">
+                    <button @click="browsing=false" class="tw-bg-gray-200 hover:bg-gray-300 tw-px-3 tw-py-1 tw-rounded tw-text-sm">Uždaryti</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50"><tr>
-                    <th class="px-3 py-2 text-left">Raktas</th>
-                    <th class="px-3 py-2 text-right w-20">Dydis</th>
-                    <th class="px-3 py-2 text-right w-20">TTL</th>
-                    <th class="px-3 py-2 text-right w-40">Veiksmai</th>
+            <table class="tw-w-full tw-text-sm">
+                <thead class="tw-bg-gray-50"><tr>
+                    <th class="tw-px-3 tw-py-2 tw-text-left">Raktas</th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right tw-w-20">Dydis</th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right tw-w-20">TTL</th>
+                    <th class="tw-px-3 tw-py-2 tw-text-right w-40">Veiksmai</th>
                 </tr></thead>
                 <tbody>
                     <template x-for="k in pagedKeys" :key="k.key">
-                        <tr class="border-b border-gray-50 hover:bg-gray-50">
-                            <td class="px-3 py-2"><code class="text-xs break-all" x-text="k.key"></code></td>
-                            <td class="px-3 py-2 text-right" x-text="formatSize(k.size)"></td>
-                            <td class="px-3 py-2 text-right" x-text="k.ttl===-1?'∞':k.ttl+'s'"></td>
-                            <td class="px-3 py-2 text-right space-x-2">
-                                <a href="#" @click.prevent="previewKey(k.key)" class="text-blue-600 hover:underline text-xs">Peržiūrėti</a>
-                                <a href="#" @click.prevent="if(confirm('Ištrinti?'))deleteKey(k.key)" class="text-red-600 hover:underline text-xs">Trinti</a>
+                        <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50">
+                            <td class="tw-px-3 tw-py-2"><code class="tw-text-xs tw-break-all" x-text="k.key"></code></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right" x-text="formatSize(k.size)"></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right" x-text="k.ttl===-1?'∞':k.ttl+'s'"></td>
+                            <td class="tw-px-3 tw-py-2 tw-text-right space-x-2">
+                                <a href="#" @click.prevent="previewKey(k.key)" class="text-blue-600 hover:underline tw-text-xs">Peržiūrėti</a>
+                                <a href="#" @click.prevent="if(confirm('Ištrinti?'))deleteKey(k.key)" class="tw-text-red-600 hover:underline tw-text-xs">Trinti</a>
                             </td>
                         </tr>
                     </template>
                 </tbody>
             </table>
             </div>
-            <div class="flex justify-between items-center mt-2" x-show="filteredKeys.length>keyPerPage">
-                <span class="text-sm text-gray-500">Puslapis <strong x-text="keyPage"></strong> / <strong x-text="Math.ceil(filteredKeys.length/keyPerPage)"></strong></span>
-                <div class="flex gap-1">
-                    <button @click="keyPage=Math.max(1,keyPage-1)" :disabled="keyPage<=1" class="bg-gray-200 hover:bg-gray-300 disabled:opacity-50 px-2 py-1 rounded text-sm">←</button>
-                    <button @click="keyPage=Math.min(Math.ceil(filteredKeys.length/keyPerPage),keyPage+1)" :disabled="keyPage>=Math.ceil(filteredKeys.length/keyPerPage)" class="bg-gray-200 hover:bg-gray-300 disabled:opacity-50 px-2 py-1 rounded text-sm">→</button>
+            <div class="tw-flex tw-justify-between tw-items-center tw-mt-2" x-show="filteredKeys.length>keyPerPage">
+                <span class="tw-text-sm tw-text-gray-500">Puslapis <strong x-text="keyPage"></strong> / <strong x-text="Math.ceil(filteredKeys.length/keyPerPage)"></strong></span>
+                <div class="tw-flex tw-gap-1">
+                    <button @click="keyPage=Math.max(1,keyPage-1)" :disabled="keyPage<=1" class="tw-bg-gray-200 hover:bg-gray-300 disabled:opacity-50 tw-px-2 tw-py-1 tw-rounded tw-text-sm">←</button>
+                    <button @click="keyPage=Math.min(Math.ceil(filteredKeys.length/keyPerPage),keyPage+1)" :disabled="keyPage>=Math.ceil(filteredKeys.length/keyPerPage)" class="tw-bg-gray-200 hover:bg-gray-300 disabled:opacity-50 tw-px-2 tw-py-1 tw-rounded tw-text-sm">→</button>
                 </div>
             </div>
         </div>
 
-        <div x-show="previewVisible" class="fixed inset-0 bg-black/50 z-[100000] flex items-center justify-center" @click.self="previewVisible=false">
-            <div class="bg-white rounded-lg w-11/12 max-w-3xl max-h-[80vh] overflow-auto p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <h3 class="font-semibold text-sm break-all pr-4" x-text="previewData.key"></h3>
-                    <button @click="previewVisible=false" class="bg-gray-200 hover:bg-gray-300 px-2 py-0.5 rounded text-sm shrink-0">✕</button>
+        <div x-show="previewVisible" class="tw-fixed tw-inset-0 tw-bg-black/50 tw-z-[100000] tw-flex tw-items-center tw-justify-center" @click.self="previewVisible=false">
+            <div class="tw-bg-white tw-rounded-lg w-11/12 tw-max-w-3xl tw-max-h-[80vh] tw-overflow-auto p-5">
+                <div class="tw-flex tw-justify-between tw-items-start tw-mb-3">
+                    <h3 class="tw-font-semibold tw-text-sm tw-break-all pr-4" x-text="previewData.key"></h3>
+                    <button @click="previewVisible=false" class="tw-bg-gray-200 hover:bg-gray-300 tw-px-2 tw-py-0.5 tw-rounded tw-text-sm tw-shrink-0">✕</button>
                 </div>
-                <div class="grid grid-cols-4 gap-2 text-sm mb-3 bg-gray-50 rounded p-3">
-                    <div><span class="text-gray-500">Tipas:</span> <span x-text="previewData.type"></span></div>
-                    <div><span class="text-gray-500">TTL:</span> <span x-text="previewData.ttl===-1?'Neribotas':previewData.ttl+' sek.'"></span></div>
-                    <div><span class="text-gray-500">Dydis:</span> <span x-text="formatSize(previewData.size)"></span></div>
-                    <div><span class="text-gray-500">Serializuota:</span> <span x-text="previewData.serialized?'Taip':'Ne'"></span></div>
+                <div class="tw-grid grid-cols-4 tw-gap-2 tw-text-sm tw-mb-3 tw-bg-gray-50 tw-rounded tw-p-3">
+                    <div><span class="tw-text-gray-500">Tipas:</span> <span x-text="previewData.type"></span></div>
+                    <div><span class="tw-text-gray-500">TTL:</span> <span x-text="previewData.ttl===-1?'Neribotas':previewData.ttl+' sek.'"></span></div>
+                    <div><span class="tw-text-gray-500">Dydis:</span> <span x-text="formatSize(previewData.size)"></span></div>
+                    <div><span class="tw-text-gray-500">Serializuota:</span> <span x-text="previewData.serialized?'Taip':'Ne'"></span></div>
                 </div>
-                <div class="flex gap-2 mb-2">
-                    <button :class="previewMode==='pretty'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='pretty'" class="px-3 py-1 rounded text-sm">Struktūra</button>
-                    <button :class="previewMode==='raw'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='raw'" class="px-3 py-1 rounded text-sm">Neapdorotas</button>
+                <div class="tw-flex tw-gap-2 tw-mb-2">
+                    <button :class="previewMode==='pretty'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='pretty'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Struktūra</button>
+                    <button :class="previewMode==='raw'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='raw'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Neapdorotas</button>
                 </div>
-                <pre x-show="previewMode==='raw'" class="bg-gray-900 text-gray-200 p-3 rounded overflow-auto max-h-96 text-xs whitespace-pre-wrap break-all" x-text="previewData.raw"></pre>
-                <pre x-show="previewMode==='pretty'" class="bg-gray-50 p-3 rounded overflow-auto max-h-96 text-xs whitespace-pre-wrap break-all" x-text="previewData.pretty"></pre>
-                <div class="mt-3 text-right">
-                    <button @click="if(confirm('Ištrinti šį raktą?')){deleteKey(previewData.key);previewVisible=false}" class="text-red-600 hover:underline text-sm">Ištrinti raktą</button>
+                <pre x-show="previewMode==='raw'" class="tw-bg-gray-900 text-gray-200 tw-p-3 tw-rounded tw-overflow-auto max-h-96 tw-text-xs tw-whitespace-pre-wrap tw-break-all" x-text="previewData.raw"></pre>
+                <pre x-show="previewMode==='pretty'" class="tw-bg-gray-50 tw-p-3 tw-rounded tw-overflow-auto max-h-96 tw-text-xs tw-whitespace-pre-wrap tw-break-all" x-text="previewData.pretty"></pre>
+                <div class="tw-mt-3 tw-text-right">
+                    <button @click="if(confirm('Ištrinti šį raktą?')){deleteKey(previewData.key);previewVisible=false}" class="tw-text-red-600 hover:underline tw-text-sm">Ištrinti raktą</button>
                 </div>
             </div>
         </div>

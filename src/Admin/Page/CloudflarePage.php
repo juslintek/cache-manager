@@ -18,62 +18,62 @@ final class CloudflarePage extends AdminPage
         $sse_url  = esc_js(rest_url('vlt-cache/v1/cloudflare/stream') . '?_wpnonce=' . $nonce);
         $date     = gmdate('Y-m-d');
         ?>
-        <div class="wrap text-sm" x-data="vltCf()" x-init="init()" x-cloak>
-        <h1 class="text-2xl font-bold mb-4">Podėlio Valdymas — Cloudflare</h1>
+        <div class="wrap tw-text-sm" x-data="vltCf()" x-init="init()" x-cloak>
+        <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Cloudflare</h1>
 
-        <div class="flex flex-wrap gap-3 items-end mb-4">
+        <div class="tw-flex tw-flex-wrap tw-gap-3 tw-items-end tw-mb-4">
             <div>
-                <label class="block text-xs font-semibold mb-1">Data</label>
-                <input type="date" x-model="date" @change="loadDate()" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                <label class="tw-block tw-text-xs tw-font-semibold tw-mb-1">Data</label>
+                <input type="date" x-model="date" @change="loadDate()" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm">
             </div>
             <div>
-                <label class="block text-xs font-semibold mb-1">Paieška</label>
-                <input type="text" x-model.debounce.300ms="search" placeholder="URI, IP, naršyklė..." class="border border-gray-300 rounded px-2 py-1 text-sm w-48">
+                <label class="tw-block tw-text-xs tw-font-semibold tw-mb-1">Paieška</label>
+                <input type="text" x-model.debounce.300ms="search" placeholder="URI, IP, naršyklė..." class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-sm tw-w-48">
             </div>
-            <div class="flex items-center gap-2 text-xs">
-                <span class="flex items-center gap-1" :class="sseConnected?'text-green-600':'text-red-500'">
-                    <span class="w-2 h-2 rounded-full" :class="sseConnected?'bg-green-500 animate-pulse':'bg-red-400'"></span>
+            <div class="tw-flex tw-items-center tw-gap-2 tw-text-xs">
+                <span class="tw-flex tw-items-center tw-gap-1" :class="sseConnected?'text-green-600':'text-red-500'">
+                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?'bg-green-500 animate-pulse':'bg-red-400'"></span>
                     <span x-text="sseConnected?'Gyvai':'Atsijungta'"></span>
                 </span>
-                <span class="text-gray-400" x-text="rows.length+' įrašų'"></span>
+                <span class="tw-text-gray-400" x-text="rows.length+' įrašų'"></span>
             </div>
         </div>
 
-        <div x-show="loading" class="py-8 text-center text-gray-500">Kraunama...</div>
+        <div x-show="loading" class="py-8 tw-text-center tw-text-gray-500">Kraunama...</div>
 
         <template x-if="!loading">
         <div>
             <!-- Logged users -->
-            <div class="mb-4">
-                <h2 class="text-base font-semibold mb-2 cursor-pointer flex items-center gap-2" @click="showLogged=!showLogged">
+            <div class="tw-mb-4">
+                <h2 class="tw-text-base tw-font-semibold tw-mb-2 tw-cursor-pointer tw-flex tw-items-center tw-gap-2" @click="showLogged=!showLogged">
                     <span x-text="showLogged?'▾':'▸'"></span> Prisijungę vartotojai (<span x-text="loggedRows.length"></span>)
                 </h2>
-                <div x-show="showLogged" class="bg-white border border-gray-200 rounded-lg overflow-auto max-h-[45vh]">
-                <table class="w-full text-xs">
-                    <thead class="bg-gray-50 sticky top-0"><tr>
-                        <th class="px-2 py-1.5 text-left w-36">Laikas</th>
-                        <th class="px-2 py-1.5 text-left w-40">Vartotojas</th>
-                        <th class="px-2 py-1.5 text-left w-24">IP</th>
-                        <th class="px-2 py-1.5 text-left w-10">🌍</th>
-                        <th class="px-2 py-1.5 text-left">URI</th>
-                        <th class="px-2 py-1.5 text-left w-36">CF-RAY</th>
-                        <th class="px-2 py-1.5 text-left w-12">Iššūkis</th>
-                        <th class="px-2 py-1.5 text-left w-40">Naršyklė</th>
+                <div x-show="showLogged" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-auto tw-max-h-[45vh]">
+                <table class="tw-w-full tw-text-xs">
+                    <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">Laikas</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-40">Vartotojas</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-24">IP</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-10">🌍</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left">URI</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">CF-RAY</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-12">Iššūkis</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-40">Naršyklė</th>
                     </tr></thead>
                     <tbody>
                         <template x-for="(r, i) in loggedRows" :key="r.ray||i">
-                            <tr class="border-b border-gray-50 hover:bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
-                                <td class="px-2 py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
-                                <td class="px-2 py-1 leading-tight">
+                            <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
+                                <td class="tw-px-2 tw-py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
+                                <td class="tw-px-2 tw-py-1 tw-leading-tight">
                                     <span class="text-blue-600" x-text="r.user_name"></span>
-                                    <br><span class="text-gray-400 text-[10px]" x-text="r.user_email"></span>
+                                    <br><span class="tw-text-gray-400 tw-text-[10px]" x-text="r.user_email"></span>
                                 </td>
-                                <td class="px-2 py-1" x-text="r.ip"></td>
-                                <td class="px-2 py-1" :title="countryName(r.country)"><span x-text="flag(r.country)"></span></td>
-                                <td class="px-2 py-1 truncate max-w-[200px]" :title="r.uri" x-text="r.uri"></td>
-                                <td class="px-2 py-1 font-mono text-[10px]" x-text="r.ray"></td>
-                                <td class="px-2 py-1" x-text="r.challenged?'⚠️':''" :title="r.challenged?'Iššūkis':'Ne'"></td>
-                                <td class="px-2 py-1 text-[10px] text-gray-400 truncate max-w-[180px]" :title="r.ua||''" x-text="shortUa(r.ua)"></td>
+                                <td class="tw-px-2 tw-py-1" x-text="r.ip"></td>
+                                <td class="tw-px-2 tw-py-1" :title="countryName(r.country)"><span x-text="flag(r.country)"></span></td>
+                                <td class="tw-px-2 tw-py-1 tw-truncate tw-max-w-[200px]" :title="r.uri" x-text="r.uri"></td>
+                                <td class="tw-px-2 tw-py-1 tw-font-mono tw-text-[10px]" x-text="r.ray"></td>
+                                <td class="tw-px-2 tw-py-1" x-text="r.challenged?'⚠️':''" :title="r.challenged?'Iššūkis':'Ne'"></td>
+                                <td class="tw-px-2 tw-py-1 tw-text-[10px] tw-text-gray-400 tw-truncate tw-max-w-[180px]" :title="r.ua||''" x-text="shortUa(r.ua)"></td>
                             </tr>
                         </template>
                     </tbody>
@@ -83,30 +83,30 @@ final class CloudflarePage extends AdminPage
 
             <!-- Anonymous -->
             <div>
-                <h2 class="text-base font-semibold mb-2 cursor-pointer flex items-center gap-2" @click="showAnon=!showAnon">
+                <h2 class="tw-text-base tw-font-semibold tw-mb-2 tw-cursor-pointer tw-flex tw-items-center tw-gap-2" @click="showAnon=!showAnon">
                     <span x-text="showAnon?'▾':'▸'"></span> Anoniminiai (<span x-text="anonRows.length"></span>)
                 </h2>
-                <div x-show="showAnon" class="bg-white border border-gray-200 rounded-lg overflow-auto max-h-[45vh]">
-                <table class="w-full text-xs">
-                    <thead class="bg-gray-50 sticky top-0"><tr>
-                        <th class="px-2 py-1.5 text-left w-36">Laikas</th>
-                        <th class="px-2 py-1.5 text-left w-24">IP</th>
-                        <th class="px-2 py-1.5 text-left w-10">🌍</th>
-                        <th class="px-2 py-1.5 text-left">URI</th>
-                        <th class="px-2 py-1.5 text-left w-36">CF-RAY</th>
-                        <th class="px-2 py-1.5 text-left w-12">Iššūkis</th>
-                        <th class="px-2 py-1.5 text-left w-40">Naršyklė</th>
+                <div x-show="showAnon" class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-auto tw-max-h-[45vh]">
+                <table class="tw-w-full tw-text-xs">
+                    <thead class="tw-bg-gray-50 tw-sticky top-0"><tr>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">Laikas</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-24">IP</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-10">🌍</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left">URI</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-36">CF-RAY</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-12">Iššūkis</th>
+                        <th class="tw-px-2 tw-py-1.5 tw-text-left w-40">Naršyklė</th>
                     </tr></thead>
                     <tbody>
                         <template x-for="(r, i) in anonRows" :key="r.ray||i">
-                            <tr class="border-b border-gray-50 hover:bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
-                                <td class="px-2 py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
-                                <td class="px-2 py-1" x-text="r.ip"></td>
-                                <td class="px-2 py-1" :title="countryName(r.country)"><span x-text="flag(r.country)"></span></td>
-                                <td class="px-2 py-1 truncate max-w-[250px]" :title="r.uri" x-text="r.uri"></td>
-                                <td class="px-2 py-1 font-mono text-[10px]" x-text="r.ray"></td>
-                                <td class="px-2 py-1" x-text="r.challenged?'⚠️':''" :title="r.challenged?'Iššūkis':'Ne'"></td>
-                                <td class="px-2 py-1 text-[10px] text-gray-400 truncate max-w-[180px]" :title="r.ua||''" x-text="shortUa(r.ua)"></td>
+                            <tr class="tw-border-b border-gray-50 hover:tw-bg-gray-50" :class="r.challenged?'bg-yellow-50':''">
+                                <td class="tw-px-2 tw-py-1" x-text="r.ts?.substring(11,19)||r.ts"></td>
+                                <td class="tw-px-2 tw-py-1" x-text="r.ip"></td>
+                                <td class="tw-px-2 tw-py-1" :title="countryName(r.country)"><span x-text="flag(r.country)"></span></td>
+                                <td class="tw-px-2 tw-py-1 tw-truncate tw-max-w-[250px]" :title="r.uri" x-text="r.uri"></td>
+                                <td class="tw-px-2 tw-py-1 tw-font-mono tw-text-[10px]" x-text="r.ray"></td>
+                                <td class="tw-px-2 tw-py-1" x-text="r.challenged?'⚠️':''" :title="r.challenged?'Iššūkis':'Ne'"></td>
+                                <td class="tw-px-2 tw-py-1 tw-text-[10px] tw-text-gray-400 tw-truncate tw-max-w-[180px]" :title="r.ua||''" x-text="shortUa(r.ua)"></td>
                             </tr>
                         </template>
                     </tbody>
