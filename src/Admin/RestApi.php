@@ -140,6 +140,10 @@ final class RestApi
             'methods' => 'POST', 'callback' => [self::class, 'purgeType'],
             'permission_callback' => [self::class, 'canManage'],
         ]);
+        register_rest_route(self::NS, '/purge-log', [
+            'methods' => 'GET', 'callback' => [self::class, 'purgeLog'],
+            'permission_callback' => [self::class, 'canManage'],
+        ]);
 
         // Image optimization
         register_rest_route(self::NS, '/img-optm/status', [
@@ -621,9 +625,35 @@ final class RestApi
     public static function purgeType(\WP_REST_Request $req): \WP_REST_Response
     {
         @ini_set('memory_limit', '512M');
-        $type = sanitize_key($req->get_param('type'));
+        $type  = sanitize_key($req->get_param('type'));
+        $start = microtime(true);
+
         \VLT\CacheManager\Plugin::instance()->purge()->purge($type);
-        return new \WP_REST_Response(['ok' => true, 'type' => $type]);
+
+        $ms    = round((microtime(true) - $start) * 1000, 1);
+        $entry = ['type' => $type, 'ms' => $ms, 'ts' => time(), 'user' => wp_get_current_user()->user_login];
+
+        // Store in Redis purge log (capped at 200 entries)
+        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        if ($r) {
+            $r->lPush('vlt_purge_log', json_encode($entry));
+            $r->lTrim('vlt_purge_log', 0, 199);
+            $r->close();
+        }
+
+        return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
+    }
+
+    public static function purgeLog(): \WP_REST_Response
+    {
+        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        if (!$r) {
+            return new \WP_REST_Response([]);
+        }
+        $raw = $r->lRange('vlt_purge_log', 0, 99);
+        $r->close();
+        $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
+        return new \WP_REST_Response(array_map(fn($j) => $decode($j, true), $raw));
     }
 
     public static function gcFix(): \WP_REST_Response
