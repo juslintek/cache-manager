@@ -33,6 +33,7 @@ final class LiteSpeedPage extends AdminPage
 
         Plugin::notice();
         echo '<div class="wrap"><h1>Podėlio Valdymas — ' . esc_html($label) . '</h1>';
+        echo '<div>'; // explicit block wrapper to prevent form/table nesting issues
 
         // ── Status ────────────────────────────────────────────────────────────
         echo '<table class="widefat fixed striped max-w-4xl my-5"><thead><tr><th style="width:200px">Parametras</th><th style="width:280px">Būsena</th><th>Kaip įjungti / taisyti</th></tr></thead><tbody>';
@@ -107,6 +108,7 @@ final class LiteSpeedPage extends AdminPage
             echo '<tr><td><strong>Talpyklos katalogas</strong></td><td><code class="text-xs">' . esc_html($info['config']['lscache_storage_path']) . '</code></td><td>—</td></tr>';
         }
         echo '</tbody></table>';
+        echo '</div>'; // end status block
 
         // ── Cache settings ────────────────────────────────────────────────────
         echo '<h2>Talpyklos nustatymai</h2>';
