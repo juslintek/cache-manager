@@ -165,8 +165,8 @@ final class ServerDetector
         $allContent = $content . "\n" . $lscacheConfContent;
         $moduleEnabled = (bool) preg_match('/ls_enabled\s+1/', $allContent);
         // enableCache 1 = caching active
-        $cacheEnabled  = (bool) preg_match('/enableCache\s+1/', $content);
-        $lscache       = $moduleEnabled || str_contains($content, 'lscache') || str_contains($content, 'LSCache');
+        $cacheEnabled  = (bool) preg_match('/enableCache\s+1/', $allContent);
+        $lscache       = $moduleEnabled || str_contains($allContent, 'lscache') || str_contains($allContent, 'LSCache');
 
         return [
             'lscache'        => $lscache,
