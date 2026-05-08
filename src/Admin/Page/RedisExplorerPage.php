@@ -17,6 +17,10 @@ final class RedisExplorerPage extends AdminPage
         $nonce    = wp_create_nonce('wp_rest');
         ?>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+        <script>
+        function secOpen(key){try{return localStorage.getItem('vlt_redis_'+key)!=='0'}catch(e){return true}}
+        function secSave(key,v){try{localStorage.setItem('vlt_redis_'+key,v?'1':'0')}catch(e){}}
+        </script>
         <div class="wrap" x-data="vltRedis()" x-init="init()" x-cloak>
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Redis naršyklė</h1>
 
@@ -144,8 +148,8 @@ final class RedisExplorerPage extends AdminPage
         <script>
         function secOpen(key){try{return localStorage.getItem('vlt_redis_'+key)!=='0'}catch(e){return true}}
         function secSave(key,v){try{localStorage.setItem('vlt_redis_'+key,v?'1':'0')}catch(e){}}
-        function vltRedis() {
-            return {
+        document.addEventListener('alpine:init', () => {
+        Alpine.data('vltRedis', () => ({
                 cards: [], groups: [], groupSort: 'count', groupDir: 'desc',
                 browsing: false, browseGroupName: '', browseKeys: [], filteredKeys: [], keySearch: '', keyPage: 1, keyPerPage: 50,
                 previewVisible: false, previewData: {}, previewMode: 'pretty',
@@ -263,8 +267,8 @@ final class RedisExplorerPage extends AdminPage
                     if (b>=1024) return (b/1024).toFixed(1)+' KB';
                     return b+' B';
                 }
-            };
-        }
+            }));
+        }); // alpine:init
         </script>
         <?php
     }
