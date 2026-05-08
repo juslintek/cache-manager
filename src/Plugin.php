@@ -225,6 +225,7 @@ final class Plugin
         $action = $_GET['action'] ?? '';
 
         if ($action === 'vlt_purge') {
+            @ini_set('memory_limit', '512M');
             if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_purge') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
