@@ -283,8 +283,10 @@ final class ServerDetector
 
         // LSCache check from dedicated file
         $lscacheContent = @file_get_contents('/etc/openlitespeed/httpd-lscache.conf') ?: '';
-        $lscacheConf    = str_contains($content, 'lscache') || str_contains($content, 'LSCache')
-            || str_contains($lscacheContent, 'lscache') || str_contains($lscacheContent, 'LSCache');
+        $allLsContent   = $content . "\n" . $lscacheContent;
+        $lscacheConf    = str_contains($allLsContent, 'lscache') || str_contains($allLsContent, 'LSCache');
+        $lscacheModule  = (bool) preg_match('/ls_enabled\s+1/', $allLsContent);
+        $lscacheCacheOn = (bool) preg_match('/enableCache\s+1/', $allLsContent);
 
         // DA template check
         if (!$lscacheConf) {
@@ -304,6 +306,8 @@ final class ServerDetector
 
         return [
             'lscache'              => $lscacheActive,
+            'lscache_module'       => $lscacheModule,
+            'lscache_active'       => $lscacheCacheOn,
             'lscache_php_api'      => $lscachePhpApi,
             'lscache_headers'      => $lscacheHeaders,
             'lscache_so'           => $lscacheSo,
