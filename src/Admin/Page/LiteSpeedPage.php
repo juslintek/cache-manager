@@ -67,6 +67,7 @@ final class LiteSpeedPage extends AdminPage
                 ($info['config']['lscache_php_api'] ?? false) ? 'PHP API' : '',
                 ($info['config']['lscache_module'] ?? false)  ? 'ls_enabled=1' : '',
                 ($info['config']['lscache_conf'] ?? false)    ? 'konfigūracija' : '',
+                ($info['config']['lscache_headers'] ?? false) ? 'HTTP antraštė' : '',
             ]);
             if ($signals) echo ' <small class="tw-text-gray-400">(' . implode(', ', $signals) . ')</small>';
         } else {
@@ -74,9 +75,7 @@ final class LiteSpeedPage extends AdminPage
         }
         echo '</td><td>';
         if (!$lscacheAny) {
-            echo '<small><strong>DirectAdmin:</strong> Extra Features → LSCache → Enable<br>';
-            echo '<strong>CloudLinux/DA:</strong><br><code>echo "lscache=yes" >> /usr/local/directadmin/custombuild/options.conf</code><br>';
-            echo '<code>cd /usr/local/directadmin/custombuild && ./build lscache</code></small>';
+            echo '<a href="https://docs.litespeedtech.com/lscache/lscwp/installation/" target="_blank" class="button button-small">📖 Įjungimo instrukcija →</a>';
         } else { echo '—'; }
         echo '</td></tr>';
 
@@ -88,11 +87,7 @@ final class LiteSpeedPage extends AdminPage
             : '<span class="tw-text-red-600">❌ enableCache = 0</span> — talpykla išjungta';
         echo '</td><td>';
         if (!$cacheActive) {
-            echo '<small><strong>1. DirectAdmin Custom HTTPD</strong> → domenui → pridėkite:<br>';
-            echo '<code>&lt;IfModule Litespeed&gt;<br>&nbsp;CacheRoot lscache<br>&lt;/IfModule&gt;</code><br>';
-            echo 'Tada: <code>da build rewrite_confs</code><br><br>';
-            echo '<strong>2. Arba tiesiai</strong> <code>/etc/openlitespeed/httpd-lscache.conf</code>:<br>';
-            echo '<code>enableCache 1</code> → <code>sudo /usr/local/lsws/bin/lswsctrl restart</code></small>';
+            echo '<a href="https://docs.litespeedtech.com/lscache/lscwp/installation/#directadmin" target="_blank" class="button button-small">📖 DirectAdmin instrukcija →</a>';
         } else { echo '—'; }
         echo '</td></tr>';
 
@@ -147,6 +142,27 @@ final class LiteSpeedPage extends AdminPage
         echo '</table>';
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti</button></p>';
         echo '</form>';
+
+
+        // ── Performance optimizations ─────────────────────────────────────────
+        echo '<h2>Papildomos optimizacijos</h2>';
+        echo '<table class="widefat fixed striped tw-max-w-4xl tw-mb-5"><thead><tr><th style="width:220px">Optimizacija</th><th style="width:100px">Būsena</th><th>Aprašymas</th></tr></thead><tbody>';
+        $htaccess = @file_get_contents(ABSPATH . '.htaccess') ?: '';
+        $opts = [
+            ['name'=>'Native Lazy Loading','enabled'=>(int)get_option('wp_lazy_loading_enabled',1)>0,'desc'=>'WordPress 5.5+ automatiškai prideda loading="lazy" paveikslėliams.','link'=>'https://make.wordpress.org/core/2020/07/14/lazy-loading-images-in-5-5/'],
+            ['name'=>'HTTP/3 (QUIC)','enabled'=>str_contains($htaccess,'QUIC')||str_contains($htaccess,'quic'),'desc'=>'LiteSpeed palaiko HTTP/3 — iki 3× greitesnis nei HTTP/2 mobiliuose tinkluose.','link'=>'https://docs.litespeedtech.com/lsws/http3/'],
+            ['name'=>'Browser Cache (Expires)','enabled'=>str_contains($htaccess,'ExpiresByType')||str_contains($htaccess,'Cache-Control'),'desc'=>'Naršyklės talpykla statiniams failams. Sumažina pakartotinių apsilankymų laiką.','link'=>'https://docs.litespeedtech.com/lscache/lscwp/cache/#browser-cache'],
+            ['name'=>'Gzip / Brotli','enabled'=>str_contains($htaccess,'mod_deflate')||str_contains($htaccess,'compress'),'desc'=>'LiteSpeed automatiškai suspaudžia atsakymus. Patikrinkite ar įjungta serverio lygiu.','link'=>'https://docs.litespeedtech.com/lsws/config/compression/'],
+            ['name'=>'Critical CSS','enabled'=>defined('LSCWP_V')||class_exists('LiteSpeed\\Core'),'desc'=>'Kritinis CSS įkelia puslapį be blokuojančių stilių.','link'=>'https://docs.litespeedtech.com/lscache/lscwp/pageopt/#css-settings'],
+            ['name'=>'DNS Prefetch','enabled'=>has_action('wp_head','wp_resource_hints'),'desc'=>'WordPress automatiškai prideda DNS prefetch antraštes.','link'=>'https://developer.wordpress.org/reference/functions/wp_resource_hints/'],
+        ];
+        foreach ($opts as $o) {
+            $c=$o['enabled']?'text-green-600':'text-yellow-600';
+            echo '<tr><td><strong>'.esc_html($o['name']).'</strong></td>';
+            echo '<td class="'.esc_attr($c).'">'.(($o['enabled'])?'✅ Aktyvus':'⚠ Patikrinti').'</td>';
+            echo '<td class="text-xs text-gray-600">'.esc_html($o['desc']).($o['link']?' <a href="'.esc_url($o['link']).'" target="_blank" class="text-blue-600">Dokumentacija →</a>':''). '</td></tr>';
+        }
+        echo '</tbody></table>';
 
         // ── Cache explorer ────────────────────────────────────────────────────
         $cacheDir = $info['cacheDir'] ?? '/usr/local/lsws/cachedata';

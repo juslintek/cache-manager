@@ -200,6 +200,20 @@ final class ServerDetector
             }
         }
 
+        // Probe via loopback HTTP request — most reliable when files aren't readable
+        // Check if the site itself returns x-litespeed-cache header
+        if (!$lscacheHeaders) {
+            $probe = @get_headers(home_url('/'), true);
+            if ($probe) {
+                foreach ($probe as $k => $v) {
+                    if (stripos((string)$k, 'x-litespeed-cache') !== false) {
+                        $lscacheHeaders = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         // 3. Module .so file
         $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
             || @file_exists('/usr/local/lsws/modules/lscache.so');
