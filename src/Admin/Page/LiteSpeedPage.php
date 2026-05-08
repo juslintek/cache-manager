@@ -43,18 +43,29 @@ final class LiteSpeedPage extends AdminPage
         echo '<tr><td><strong>LSCache modulis</strong></td><td>';
         $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
         if ($info['config']['lscache'] ?? false) {
-            echo '<span style="color:#46b450">✅ Aktyvus</span>';
+            echo '<span style="color:#46b450">✅ Modulis rastas</span>';
             $signals = [];
-            if ($info['config']['lscache_php_api'] ?? false) $signals[] = 'PHP API';
-            if ($info['config']['lscache_headers'] ?? false)  $signals[] = 'HTTP antraštės';
-            if ($info['config']['lscache_so'] ?? false)       $signals[] = 'modulis (.so)';
-            if ($info['config']['lscache_conf'] ?? false)     $signals[] = 'konfigūracija';
-            if ($info['config']['lscache_storage'] ?? false)  $signals[] = 'talpyklos katalogas';
+            if ($info['config']['lscache_php_api'] ?? false)  $signals[] = 'PHP API';
+            if ($info['config']['lscache_headers'] ?? false)   $signals[] = 'HTTP antraštės';
+            if ($info['config']['lscache_so'] ?? false)        $signals[] = '.so';
+            if ($info['config']['lscache_conf'] ?? false)      $signals[] = 'konfigūracija';
+            if ($info['config']['lscache_module'] ?? false)    $signals[] = 'ls_enabled=1';
+            if ($info['config']['lscache_storage'] ?? false)   $signals[] = 'talpyklos katalogas';
             if ($signals) echo ' <small style="color:#666">(' . implode(', ', $signals) . ')</small>';
         } elseif ($lscacheSo) {
             echo '<span style="color:#dba617">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
         } else {
             echo '<span style="color:#d63638">❌ Nerastas</span>';
+        }
+        echo '</td></tr>';
+
+        // enableCache status — separate from module presence
+        echo '<tr><td><strong>Talpykla įjungta</strong></td><td>';
+        if ($info['config']['lscache_active'] ?? false) {
+            echo '<span style="color:#46b450">✅ enableCache = 1</span>';
+        } else {
+            echo '<span style="color:#d63638">❌ enableCache = 0</span>';
+            echo ' <small>— talpykla išjungta. Pakeiskite <code>httpd-lscache.conf</code>: <code>enableCache 1</code></small>';
         }
         echo '</td></tr>';
 
@@ -110,8 +121,21 @@ final class LiteSpeedPage extends AdminPage
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti</button></p>';
         echo '</form>';
 
-        // ── Purge actions ─────────────────────────────────────────────────────
-        echo '<h2>Talpyklos valdymas</h2><p>';
+        // ── Cache explorer ────────────────────────────────────────────────────
+        $cacheDir = $info['cacheDir'] ?? '/usr/local/lsws/cachedata';
+        if ($cacheDir && @is_dir($cacheDir)) {
+            echo '<h2>Talpyklos naršyklė</h2>';
+            $it    = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($cacheDir, \FilesystemIterator::SKIP_DOTS));
+            $files = 0;
+            $size  = 0;
+            foreach ($it as $f) {
+                if ($f->isFile() && !str_starts_with($f->getFilename(), '.')) {
+                    $files++;
+                    $size += $f->getSize();
+                }
+            }
+            echo '<p>Failų: <strong>' . number_format($files) . '</strong> &nbsp; Dydis: <strong>' . Plugin::formatSize($size) . '</strong> &nbsp; Katalogas: <code>' . esc_html($cacheDir) . '</code></p>';
+        }
         echo Plugin::purgeButton('litespeed', 'Valyti LiteSpeed talpyklą');
         echo Plugin::purgeButton('all', 'Valyti viską');
         echo '</p>';

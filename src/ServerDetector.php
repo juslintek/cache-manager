@@ -139,20 +139,38 @@ final class ServerDetector
 
     private static function parseLsConfig(): array
     {
-        // LiteSpeed Enterprise config
-        $paths = ['/usr/local/lsws/conf/httpd_config.xml', '/usr/local/lsws/conf/httpd_config.conf'];
+        $paths = [
+            '/usr/local/lsws/conf/httpd_config.xml',
+            '/usr/local/lsws/conf/httpd_config.conf',
+            // DA+OLS uses /etc/openlitespeed/ even when detected as LiteSpeed Enterprise
+            '/etc/openlitespeed/httpd_config.conf',
+            '/etc/openlitespeed/httpd-lscache.conf',
+        ];
+
+        $content    = '';
+        $configFile = '';
         foreach ($paths as $p) {
             if (!@is_readable($p)) {
                 continue;
             }
-            $content = @file_get_contents($p) ?: '';
-            return [
-                'lscache'    => str_contains($content, 'lscache') || str_contains($content, 'LSCache'),
-                'config_file' => $p,
-                'version'    => self::extractValue($content, 'version'),
-            ];
+            $content   .= (@file_get_contents($p) ?: '') . "\n";
+            if (!$configFile) {
+                $configFile = $p;
+            }
         }
-        return ['config_file' => ''];
+
+        // ls_enabled 1 in module cache block = module present
+        $moduleEnabled = (bool) preg_match('/module\s+cache\s*\{[^}]*ls_enabled\s+1/s', $content);
+        // enableCache 1 = caching active
+        $cacheEnabled  = (bool) preg_match('/enableCache\s+1/', $content);
+        $lscache       = $moduleEnabled || str_contains($content, 'lscache') || str_contains($content, 'LSCache');
+
+        return [
+            'lscache'        => $lscache,
+            'lscache_module' => $moduleEnabled,
+            'lscache_active' => $cacheEnabled,
+            'config_file'    => $configFile,
+        ];
     }
 
     private static function parseOlsConfig(): array
@@ -191,6 +209,7 @@ final class ServerDetector
         $cacheStoragePath   = '';
         $cacheStorageExists = false;
         foreach (array_filter([
+            '/usr/local/lsws/cachedata',
             $user ? "/home/{$user}/lscache" : '',
             '/usr/local/lsws/sitecache',
             '/tmp/lscache',
@@ -326,9 +345,23 @@ final class ServerDetector
     {
         return match ($server) {
             self::NGINX => $config['fastcgi_cache_path'] ?: (defined('VLT_CM_NGINX_CACHE') ? VLT_CM_NGINX_CACHE : '/var/cache/nginx/wordpress'),
-            self::LITESPEED, self::OLS => '/tmp/lscache',
+            self::LITESPEED, self::OLS => self::lsCacheDir(),
             default => '',
         };
+    }
+
+    private static function lsCacheDir(): string
+    {
+        foreach ([
+            '/usr/local/lsws/cachedata',
+            '/tmp/lscache',
+            '/home/' . (defined('ABSPATH') && preg_match('#^/home/([^/]+)/#', ABSPATH, $m) ? $m[1] : '') . '/lscache',
+        ] as $dir) {
+            if ($dir && @is_dir($dir)) {
+                return $dir;
+            }
+        }
+        return '/usr/local/lsws/cachedata';
     }
 
     // ── Recommendations ───────────────────────────────────────────────────────
