@@ -178,7 +178,7 @@ final class RedisExplorerPage extends AdminPage
                 cards: [], groups: [], groupSort: 'count', groupDir: 'desc',
                 browsing: false, browseGroupName: '', browseKeys: [], filteredKeys: [], keySearch: '', keyPage: 1, keyPerPage: 50,
                 previewVisible: false, previewData: {}, previewMode: 'pretty',
-                charts: {}, pollTimer: null, chartModal: null, modalChart: null,
+                charts: {}, pollTimer: null, chartModal: null, modalChart: null, lastStats: null,
 
                 async init() {
                     this.$watch('chartModal', v => {
@@ -202,6 +202,7 @@ final class RedisExplorerPage extends AdminPage
                         {label:'Veikimo laikas', value:d.uptime, sub:''},
                     ];
                     this.groups = d.groups || [];
+                    this.lastStats = d;
                     this.$nextTick(() => this.waitForChart(() => this.drawCharts(d)));
                 },
 
@@ -223,7 +224,14 @@ final class RedisExplorerPage extends AdminPage
 
                     const gc = document.getElementById('vlt-redis-groups-chart');
                     const mc = document.getElementById('vlt-redis-memory-chart');
-                    if (!gc || !mc) { console.warn('VLT Redis: canvas elements not found'); return; }
+                    // Canvas hidden by x-show — retry after section becomes visible (max 10 attempts)
+                    if (!gc || !mc || gc.offsetParent === null) {
+                        if ((d._retries || 0) < 10) {
+                            d._retries = (d._retries || 0) + 1;
+                            setTimeout(() => this.drawCharts(d), 400);
+                        }
+                        return;
+                    }
 
                     if (this.charts.groups) this.charts.groups.destroy();
                     this.charts.groups = new Chart(gc, {
