@@ -183,7 +183,7 @@ final class DashboardPage extends AdminPage
         if ($groups) {
             echo '<h2 style="margin-top:24px">Paskutiniai valymo įvykiai</h2>';
             echo '<style>.vlt-purge-group{cursor:pointer;user-select:none}.vlt-purge-group.open+.vlt-purge-detail{display:table-row}</style>';
-            echo '<table class="widefat tw-fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
+            echo '<table class="widefat fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
             foreach ($groups as $g) {
                 $types_str  = implode(', ', $g['types']);
                 $user_label = esc_html($g['user_name']);

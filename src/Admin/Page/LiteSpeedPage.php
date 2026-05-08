@@ -36,7 +36,7 @@ final class LiteSpeedPage extends AdminPage
         echo '<div>'; // explicit block wrapper to prevent form/table nesting issues
 
         // ── Status ────────────────────────────────────────────────────────────
-        echo '<table class="widefat tw-fixed striped tw-max-w-4xl tw-my-5"><thead><tr><th style="width:200px">Parametras</th><th style="width:280px">Būsena</th><th>Kaip įjungti / taisyti</th></tr></thead><tbody>';
+        echo '<table class="widefat fixed striped tw-max-w-4xl tw-my-5"><thead><tr><th style="width:200px">Parametras</th><th style="width:280px">Būsena</th><th>Kaip įjungti / taisyti</th></tr></thead><tbody>';
         echo '<tr><td><strong>Serveris</strong></td><td>' . esc_html($label) . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td><td>—</td></tr>';
 
         // Config files — owned by lsadm:apache, PHP process (user) can't read them

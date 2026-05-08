@@ -19,7 +19,7 @@ final class ApachePage extends AdminPage
         Plugin::notice();
         echo '<div class="wrap"><h1>Podėlio Valdymas — Apache</h1>';
 
-        echo '<table class="widefat tw-fixed striped" class="tw-max-w-2xl tw-my-5"><tbody>';
+        echo '<table class="widefat fixed striped" class="tw-max-w-2xl tw-my-5"><tbody>';
         echo '<tr><td><strong>Serveris</strong></td><td>Apache' . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td></tr>';
         echo '<tr><td><strong>Konfigūracijos failas</strong></td><td><code>' . esc_html($info['config']['config_file'] ?? '—') . '</code></td></tr>';
         echo '<tr><td><strong>mod_cache</strong></td><td>' . (($info['config']['mod_cache'] ?? false) ? '<span class="tw-text-green-600">✅</span>' : '<span class="tw-text-red-600">❌</span>') . '</td></tr>';

@@ -21,7 +21,7 @@ final class CloudLinuxPage extends AdminPage
         $recs = CloudLinuxDetector::recommendations();
 
         // Status table
-        echo '<table class="widefat tw-fixed striped tw-max-w-4xl tw-my-5"><thead><tr><th style="width:220px">Funkcija</th><th style="width:200px">Būsena</th><th>Nauda / Kaip įjungti</th></tr></thead><tbody>';
+        echo '<table class="widefat fixed striped tw-max-w-4xl tw-my-5"><thead><tr><th style="width:220px">Funkcija</th><th style="width:200px">Būsena</th><th>Nauda / Kaip įjungti</th></tr></thead><tbody>';
 
         $rows = [
             ['CloudLinux versija',    $ver ?: '—',                                                    '—'],

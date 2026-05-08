@@ -61,7 +61,7 @@ final class NginxExplorerPage extends AdminPage
         $total_pages = max(1, ceil(count($files) / $per_page));
         $files_page  = array_slice($files, ($page_num - 1) * $per_page, $per_page);
 
-        echo '<table class="widefat tw-fixed striped"><thead><tr><th>URL / Raktas</th><th class="tw-w-20">Statusas</th><th class="tw-w-24">Dydis</th><th style="width:160px">Talpykloje nuo</th><th style="width:120px">Veiksmai</th></tr></thead><tbody>';
+        echo '<table class="widefat fixed striped"><thead><tr><th>URL / Raktas</th><th class="tw-w-20">Statusas</th><th class="tw-w-24">Dydis</th><th style="width:160px">Talpykloje nuo</th><th style="width:120px">Veiksmai</th></tr></thead><tbody>';
         foreach ($files_page as $f) {
             $preview_url = wp_nonce_url(admin_url('admin.php?page=vlt-cache-nginx&preview=' . urlencode($f['path'])), 'vlt_nginx_preview');
             $url_display = $f['url'];

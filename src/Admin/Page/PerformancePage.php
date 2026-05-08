@@ -33,7 +33,7 @@ final class PerformancePage extends AdminPage
 
         // Stats bar
         $stats = $gc['stats'];
-        echo '<table class="widefat tw-fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
+        echo '<table class="widefat fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
         echo '<tr><td><strong>GC būsena</strong></td><td>' . (gc_enabled() ? '<span class="tw-text-green-600">✅ Įjungtas</span>' : '<span class="tw-text-red-600">❌ Išjungtas</span>') . '</td></tr>';
         echo '<tr><td><strong>GC paleidimų</strong></td><td>' . number_format($stats['runs']) . '</td></tr>';
         echo '<tr><td><strong>Surinkta ciklų</strong></td><td>' . number_format($stats['collected']) . '</td></tr>';
@@ -83,7 +83,7 @@ final class PerformancePage extends AdminPage
         echo '<h2>Asinchroninė eilė (Redis)</h2>';
         $qStatus = AsyncQueue::status();
 
-        echo '<table class="widefat tw-fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
+        echo '<table class="widefat fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
         echo '<tr><td><strong>Redis</strong></td><td>' . ($qStatus['redis'] ? '<span class="tw-text-green-600">✅ Prijungtas</span>' : '<span class="tw-text-red-600">❌ Neprijungtas</span>') . '</td></tr>';
         echo '<tr><td><strong>Eilėje laukia</strong></td><td>' . $qStatus['queue_length'] . ' darbų</td></tr>';
         echo '<tr><td><strong>Vykdoma</strong></td><td>' . ($qStatus['running'] ? '<span class="tw-text-yellow-600">⚙ Taip</span>' : 'Ne') . '</td></tr>';
@@ -161,7 +161,7 @@ final class PerformancePage extends AdminPage
 
         // Scheduled table
         echo '<h3>Suplanuotos užduotys</h3>';
-        echo '<table class="widefat tw-fixed striped" class="tw-max-w-4xl"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
+        echo '<table class="widefat fixed striped" class="tw-max-w-4xl"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
         foreach (array_slice($scheduled, 0, 30) as $job) {
             $diff    = $job['ts'] - $now;
             $timeStr = $diff < 0 ? '<span class="tw-text-red-600">Vėluoja ' . human_time_diff($job['ts'], $now) . '</span>' : 'Po ' . human_time_diff($now, $job['ts']);
