@@ -35,52 +35,77 @@ final class LiteSpeedPage extends AdminPage
         echo '<div class="wrap"><h1>Podėlio Valdymas — ' . esc_html($label) . '</h1>';
 
         // ── Status ────────────────────────────────────────────────────────────
-        echo '<table class="widefat fixed striped" class="max-w-2xl my-5"><tbody>';
-        echo '<tr><td><strong>Serveris</strong></td><td>' . esc_html($label) . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td></tr>';
-        echo '<tr><td><strong>Konfigūracijos failas</strong></td><td><code>' . esc_html($info['config']['config_file'] ?? '—') . '</code></td></tr>';
+        echo '<table class="widefat fixed striped max-w-4xl my-5"><thead><tr><th style="width:200px">Parametras</th><th style="width:280px">Būsena</th><th>Kaip įjungti / taisyti</th></tr></thead><tbody>';
+        echo '<tr><td><strong>Serveris</strong></td><td>' . esc_html($label) . ($info['version'] ? ' v' . esc_html($info['version']) : '') . '</td><td>—</td></tr>';
 
-        // LSCache status with signal breakdown
+        // Config files — owned by lsadm:apache, PHP process (user) can't read them
+        $configFile    = $info['config']['config_file'] ?? '';
+        $knownConfigs  = ['/etc/openlitespeed/httpd_config.conf', '/etc/openlitespeed/httpd-lscache.conf'];
+        echo '<tr><td><strong>Konfigūracijos failai</strong></td><td>';
+        if ($configFile) {
+            echo '<code class="text-xs">' . esc_html($configFile) . '</code>';
+        } else {
+            echo '<span class="text-yellow-600">⚠ Nepasiekiami PHP procesui</span><br>';
+            foreach ($knownConfigs as $cf) {
+                echo '<code class="text-[10px] text-gray-400">' . esc_html($cf) . '</code><br>';
+            }
+        }
+        echo '</td><td>';
+        if (!$configFile) {
+            echo '<small>Failai priklauso <code>lsadm:apache</code> grupei. Norėdami leisti PHP skaityti:<br>';
+            echo '<code>sudo usermod -aG apache ' . esc_html(get_current_user()) . ' && sudo systemctl reload lsws</code></small>';
+        } else { echo '—'; }
+        echo '</td></tr>';
+
+        // LSCache module
+        $lscacheAny = $info['config']['lscache'] ?? false;
         echo '<tr><td><strong>LSCache modulis</strong></td><td>';
-        $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
-        if ($info['config']['lscache'] ?? false) {
-            echo '<span class="text-green-600">✅ Modulis rastas</span>';
-            $signals = [];
-            if ($info['config']['lscache_php_api'] ?? false)  $signals[] = 'PHP API';
-            if ($info['config']['lscache_headers'] ?? false)   $signals[] = 'HTTP antraštės';
-            if ($info['config']['lscache_so'] ?? false)        $signals[] = '.so';
-            if ($info['config']['lscache_conf'] ?? false)      $signals[] = 'konfigūracija';
-            if ($info['config']['lscache_module'] ?? false)    $signals[] = 'ls_enabled=1';
-            if ($info['config']['lscache_storage'] ?? false)   $signals[] = 'talpyklos katalogas';
-            if ($signals) echo ' <small class="text-gray-500">(' . implode(', ', $signals) . ')</small>';
-        } elseif ($lscacheSo) {
-            echo '<span class="text-yellow-600">⚠ Modulis rastas, bet neįjungtas konfigūracijoje</span>';
+        if ($lscacheAny) {
+            echo '<span class="text-green-600">✅ Rastas</span>';
+            $signals = array_filter([
+                ($info['config']['lscache_php_api'] ?? false) ? 'PHP API' : '',
+                ($info['config']['lscache_module'] ?? false)  ? 'ls_enabled=1' : '',
+                ($info['config']['lscache_conf'] ?? false)    ? 'konfigūracija' : '',
+            ]);
+            if ($signals) echo ' <small class="text-gray-400">(' . implode(', ', $signals) . ')</small>';
         } else {
             echo '<span class="text-red-600">❌ Nerastas</span>';
         }
+        echo '</td><td>';
+        if (!$lscacheAny) {
+            echo '<small><strong>DirectAdmin:</strong> Extra Features → LSCache → Enable<br>';
+            echo '<strong>CloudLinux/DA:</strong><br><code>echo "lscache=yes" >> /usr/local/directadmin/custombuild/options.conf</code><br>';
+            echo '<code>cd /usr/local/directadmin/custombuild && ./build lscache</code></small>';
+        } else { echo '—'; }
         echo '</td></tr>';
 
-        // enableCache status — separate from module presence
+        // enableCache
+        $cacheActive = $info['config']['lscache_active'] ?? false;
         echo '<tr><td><strong>Talpykla įjungta</strong></td><td>';
-        if ($info['config']['lscache_active'] ?? false) {
-            echo '<span class="text-green-600">✅ enableCache = 1</span>';
-        } else {
-            echo '<span class="text-red-600">❌ enableCache = 0</span>';
-            echo ' <small>— talpykla išjungta. Pakeiskite <code>httpd-lscache.conf</code>: <code>enableCache 1</code></small>';
-        }
+        echo $cacheActive
+            ? '<span class="text-green-600">✅ enableCache = 1</span>'
+            : '<span class="text-red-600">❌ enableCache = 0</span> — talpykla išjungta';
+        echo '</td><td>';
+        if (!$cacheActive) {
+            echo '<small><strong>1. DirectAdmin Custom HTTPD</strong> → domenui → pridėkite:<br>';
+            echo '<code>&lt;IfModule Litespeed&gt;<br>&nbsp;CacheRoot lscache<br>&lt;/IfModule&gt;</code><br>';
+            echo 'Tada: <code>da build rewrite_confs</code><br><br>';
+            echo '<strong>2. Arba tiesiai</strong> <code>/etc/openlitespeed/httpd-lscache.conf</code>:<br>';
+            echo '<code>enableCache 1</code> → <code>sudo /usr/local/lsws/bin/lswsctrl restart</code></small>';
+        } else { echo '—'; }
         echo '</td></tr>';
 
-        if (!empty($info['config']['lscache_storage_path'])) {
-            echo '<tr><td><strong>Talpyklos katalogas</strong></td><td><code>' . esc_html($info['config']['lscache_storage_path']) . '</code></td></tr>';
-        }
-
+        // LSCWP
         $lscwpActive = defined('LSCWP_V') || class_exists('LiteSpeed\Core');
         echo '<tr><td><strong>LSCWP įskiepis</strong></td><td>';
-        if ($lscwpActive) {
-            echo '<span class="text-yellow-600">⚠ Aktyvus — gali konfliktuoti su šio įskiepio talpyklos valdymu</span>';
-        } else {
-            echo '<span class="text-green-600">✅ Neaktyvus — šis įskiepis valdo talpyklą</span>';
+        echo $lscwpActive
+            ? '<span class="text-yellow-600">⚠ Aktyvus — gali konfliktuoti</span>'
+            : '<span class="text-green-600">✅ Neaktyvus — šis įskiepis valdo talpyklą</span>';
+        echo '</td><td>—</td></tr>';
+
+        if (!empty($info['config']['lscache_storage_path'])) {
+            echo '<tr><td><strong>Talpyklos katalogas</strong></td><td><code class="text-xs">' . esc_html($info['config']['lscache_storage_path']) . '</code></td><td>—</td></tr>';
         }
-        echo '</td></tr>';
         echo '</tbody></table>';
 
         // ── Cache settings ────────────────────────────────────────────────────
