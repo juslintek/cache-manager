@@ -24,35 +24,153 @@ final class DashboardPage extends AdminPage
         $ratio   = ($stats['hits'] + $stats['misses']) > 0
             ? round($stats['hits'] / ($stats['hits'] + $stats['misses']) * 100, 1) : 0;
 
-        Plugin::notice();
-        echo '<div class="wrap"><h1>Podėlio Valdymas — Suvestinė</h1>';
-
-        echo '<table class="widefat fixed striped" style="max-width:700px;margin:20px 0"><thead><tr><th>Talpykla</th><th>Būsena</th></tr></thead><tbody>';
-        echo '<tr><td>Redis</td><td>' . ($redis['connected'] ? 'Prijungtas — ' . esc_html($redis['memory']) . ', ' . $redis['keys'] . ' raktų' : '<span style="color:red">Nepasiekiamas</span>') . '</td></tr>';
-        if ($opcache) {
-            $oc_used  = Plugin::formatSize($opcache['memory_usage']['used_memory'] ?? 0);
-            $oc_files = $opcache['opcache_statistics']['num_cached_scripts'] ?? 0;
-            $oc_hit   = $opcache['opcache_statistics']['opcache_hit_rate'] ?? 0;
-            echo '<tr><td>OPcache</td><td>' . esc_html($oc_used) . ', ' . $oc_files . ' failų, ' . round($oc_hit, 1) . '% pataikymų</td></tr>';
-        } else {
-            echo '<tr><td>OPcache</td><td>Išjungtas</td></tr>';
+        // System stats
+        $ram_total = 0; $ram_used = 0;
+        if (is_readable('/proc/meminfo')) {
+            $mem = [];
+            foreach (file('/proc/meminfo', FILE_IGNORE_NEW_LINES) as $line) {
+                if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) $mem[$m[1]] = (int)$m[2];
+            }
+            $ram_total = ($mem['MemTotal'] ?? 0) / 1024;
+            $ram_used  = $ram_total - ($mem['MemAvailable'] ?? 0) / 1024;
         }
-        echo '<tr><td>Nginx FastCGI</td><td>' . esc_html(Plugin::formatSize($nginx_size)) . '</td></tr>';
-        echo '<tr><td>Elementor CSS</td><td>' . $el_count . ' failų</td></tr>';
-        echo '</tbody></table>';
+        $cpu_idle = 100.0;
+        if (is_readable('/proc/stat')) {
+            $stat = explode(' ', trim(file('/proc/stat')[0]));
+            array_shift($stat);
+            $total = array_sum($stat);
+            $idle  = (int)($stat[3] ?? 0);
+            $cpu_idle = $total > 0 ? round($idle / $total * 100, 1) : 100;
+        }
+        $cpu_used = round(100 - $cpu_idle, 1);
 
-        echo '<h2>Šiandienos statistika</h2>';
-        echo '<table class="widefat fixed striped" style="max-width:700px"><tbody>';
-        echo '<tr><td>Užklausų užregistruota</td><td>' . $stats['requests'] . '</td></tr>';
-        echo '<tr><td>Pataikymų santykis</td><td>' . $ratio . '%</td></tr>';
-        echo '<tr><td>Valymo įvykiai</td><td>' . $stats['purges'] . '</td></tr>';
-        echo '</tbody></table>';
+        Plugin::notice();
+        $types   = $p->purge()->types();
+        $restUrl = esc_js(rest_url('vlt-cache/v1'));
+        $nonce   = wp_create_nonce('wp_rest');
+        ?>
+        <div class="wrap">
+        <h1 style="margin-bottom:16px">Podėlio Valdymas — Suvestinė</h1>
 
+        <!-- Cache status cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+
+        <?php
+        // Helper: render a card
+        $card = function(string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
+            $bar = '<div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:8px"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
+            echo '<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+            echo '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+            echo '<div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px">' . esc_html($title) . '</div>';
+            echo '<div style="font-size:20px;font-weight:700;margin-top:2px;color:#1d2327">' . $value . '</div>';
+            echo '<div style="font-size:11px;color:#666;margin-top:2px">' . $sub . '</div></div>';
+            echo '<span style="font-size:24px;opacity:.7">' . $icon . '</span></div>';
+            echo $bar;
+            echo '</div>';
+        };
+
+        // Redis
+        if ($redis['connected']) {
+            $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+            $redisMemUsed = 0; $redisMemMax = 0;
+            if ($r) {
+                $info = $r->info('memory');
+                $redisMemUsed = (int)($info['used_memory'] ?? 0);
+                $redisMemMax  = (int)($info['maxmemory'] ?? 0);
+                $r->close();
+            }
+            $redisPct = $redisMemMax > 0 ? $redisMemUsed / $redisMemMax * 100 : 20;
+            $card('🔴', 'Redis', $redis['memory'], $redis['keys'] . ' raktų', $redisPct, '#dc3232');
+        } else {
+            $card('🔴', 'Redis', 'Neprijungtas', '—', 0, '#ccc');
+        }
+
+        // OPcache
+        if ($opcache) {
+            $oc_used  = $opcache['memory_usage']['used_memory'] ?? 0;
+            $oc_free  = $opcache['memory_usage']['free_memory'] ?? 1;
+            $oc_pct   = round($oc_used / ($oc_used + $oc_free) * 100, 1);
+            $oc_hit   = round($opcache['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
+            $oc_files = $opcache['opcache_statistics']['num_cached_scripts'] ?? 0;
+            $card('⚡', 'OPcache', Plugin::formatSize($oc_used), $oc_files . ' failų · ' . $oc_hit . '% hit', $oc_pct, '#f0b849');
+        }
+
+        // LiteSpeed / Nginx cache
+        $serverInfo = \VLT\CacheManager\ServerDetector::detect();
+        $isLS = \VLT\CacheManager\ServerDetector::isLiteSpeed();
+        if ($isLS) {
+            $lsCacheDir = $serverInfo['cacheDir'] ?? '/usr/local/lsws/cachedata';
+            $lsSize = Plugin::dirSize($lsCacheDir);
+            $lsFiles = 0;
+            if (is_dir($lsCacheDir)) {
+                $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($lsCacheDir, \FilesystemIterator::SKIP_DOTS));
+                foreach ($it as $f) { if ($f->isFile() && !str_starts_with($f->getFilename(), '.')) $lsFiles++; }
+            }
+            $card('🚀', 'LiteSpeed', Plugin::formatSize($lsSize), $lsFiles . ' failų', min(100, $lsSize / 1048576 / 10), '#2271b1');
+        } elseif ($nginx_size > 0 || is_dir(VLT_CM_NGINX_CACHE)) {
+            $card('🌐', 'Nginx FastCGI', Plugin::formatSize($nginx_size), 'Talpykla', min(100, $nginx_size / 1048576 / 10), '#2271b1');
+        }
+
+        // Elementor
+        $card('🎨', 'Elementor CSS', $el_count . ' failų', 'CSS talpykla', min(100, $el_count / 2), '#9b59b6');
+
+        // RAM
+        if ($ram_total > 0) {
+            $ram_pct = round($ram_used / $ram_total * 100, 1);
+            $ramColor = $ram_pct > 85 ? '#dc3232' : ($ram_pct > 65 ? '#f0b849' : '#46b450');
+            $card('💾', 'RAM', Plugin::formatSize((int)($ram_used * 1048576)), round($ram_used, 0) . ' / ' . round($ram_total, 0) . ' MB', $ram_pct, $ramColor);
+        }
+
+        // CPU
+        $cpuColor = $cpu_used > 80 ? '#dc3232' : ($cpu_used > 50 ? '#f0b849' : '#46b450');
+        $card('🖥', 'CPU', $cpu_used . '%', 'Naudojama', $cpu_used, $cpuColor);
+
+        // Hit rate
+        $hitColor = $ratio > 80 ? '#46b450' : ($ratio > 50 ? '#f0b849' : '#dc3232');
+        $card('📊', 'Hit Rate', $ratio . '%', $stats['requests'] . ' užklausų šiandien', $ratio, $hitColor);
+        ?>
+        </div>
+
+        <!-- Purge section with SSE progress -->
+        <h2 style="margin-bottom:8px">Greitas valymas</h2>
+        <p style="margin-bottom:12px">
+            <button id="vlt-purge-all" class="button button-primary" style="height:34px;padding:0 16px">
+                🗑 Valyti viską
+            </button>
+            <?php foreach ($types as $type): ?>
+            <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" style="margin-left:4px;height:34px">
+                <?php echo esc_html(ucfirst($type)); ?>
+            </button>
+            <?php endforeach; ?>
+        </p>
+
+        <!-- SSE popup overlay -->
+        <div id="vlt-purge-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center">
+            <div style="background:#fff;border-radius:10px;padding:28px 32px;min-width:400px;max-width:520px;box-shadow:0 12px 40px rgba(0,0,0,.25)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <h3 style="margin:0;font-size:16px">🗑 Valoma talpykla</h3>
+                    <span id="vlt-purge-pct-label" style="font-size:13px;color:#666;font-weight:600">0%</span>
+                </div>
+                <div style="background:#e8e8e8;border-radius:6px;height:10px;overflow:hidden;margin-bottom:14px">
+                    <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:6px"></div>
+                </div>
+                <div id="vlt-purge-items" style="font-family:monospace;font-size:11px;max-height:150px;overflow-y:auto;background:#f6f7f7;border:1px solid #e0e0e0;padding:8px 10px;border-radius:6px;line-height:1.8"></div>
+                <div id="vlt-purge-done-msg" style="display:none;margin-top:14px;color:#46b450;font-weight:700;font-size:14px;text-align:center">✅ Viskas išvalyta!</div>
+            </div>
+        </div>
+
+        <!-- Purge history -->
+        <h3 style="margin-top:20px;margin-bottom:8px">Valymo žurnalas</h3>
+        <div id="vlt-purge-history" style="font-size:11px;font-family:monospace;max-height:200px;overflow-y:auto;background:#f6f7f7;border:1px solid #e0e0e0;padding:8px 10px;border-radius:6px;line-height:1.8">
+            <em style="color:#aaa">Kraunama…</em>
+        </div>
+
+        <?php
+        // Recent purge events
         $entries = $p->logger()->readLog(gmdate('Y-m-d'));
         $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
         $purges  = array_reverse($purges);
-
-        $groups = [];
+        $groups  = [];
         foreach ($purges as $pg) {
             $key = substr($pg['timestamp'] ?? '', 0, 19) . '|' . ($pg['user_id'] ?? 0);
             if (!isset($groups[$key])) {
@@ -63,68 +181,22 @@ final class DashboardPage extends AdminPage
         $groups = array_slice($groups, 0, 10);
 
         if ($groups) {
-            echo '<h2>Paskutiniai valymo įvykiai</h2>';
-            echo '<style>.vlt-purge-group{cursor:pointer;user-select:none}.vlt-purge-detail{display:none;padding:5px 20px;background:#f9f9f9}.vlt-purge-group.open+.vlt-purge-detail{display:table-row}</style>';
+            echo '<h2 style="margin-top:24px">Paskutiniai valymo įvykiai</h2>';
+            echo '<style>.vlt-purge-group{cursor:pointer;user-select:none}.vlt-purge-group.open+.vlt-purge-detail{display:table-row}</style>';
             echo '<table class="widefat fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
             foreach ($groups as $g) {
                 $types_str  = implode(', ', $g['types']);
                 $user_label = esc_html($g['user_name']);
-                if ($g['user_id']) {
-                    $user_label .= ' (ID:' . $g['user_id'] . ')';
-                }
+                if ($g['user_id']) $user_label .= ' (ID:' . $g['user_id'] . ')';
                 echo '<tr class="vlt-purge-group" onclick="this.classList.toggle(\'open\')">';
                 echo '<td>▸ ' . esc_html($g['timestamp']) . '</td>';
                 echo '<td>' . $user_label . '</td>';
                 echo '<td>' . esc_html($types_str) . '</td></tr>';
-                echo '<tr class="vlt-purge-detail"><td colspan="3">';
-                echo '<strong>IP:</strong> ' . esc_html($g['ip']) . '<br>';
-                echo '<strong>Išvalytos talpyklos:</strong> ';
-                foreach ($g['types'] as $t) {
-                    echo '<span style="display:inline-block;background:#e0e0e0;padding:2px 8px;margin:2px;border-radius:3px">' . esc_html($t) . '</span>';
-                }
-                echo '</td></tr>';
+                echo '<tr class="vlt-purge-detail" style="display:none"><td colspan="3"><strong>IP:</strong> ' . esc_html($g['ip']) . '</td></tr>';
             }
             echo '</tbody></table>';
-            echo '<p><a href="' . esc_url(admin_url('admin.php?page=vlt-cache-logs&log_filter=purge')) . '">Žiūrėti visus valymo žurnalus →</a></p>';
         }
-
-        echo '<h2>Greitas valymas</h2>';
-
-        $types   = $p->purge()->types();
-        $restUrl = esc_js(rest_url('vlt-cache/v1'));
-        $nonce   = wp_create_nonce('wp_rest');
         ?>
-
-        <!-- Purge buttons -->
-        <p>
-            <button id="vlt-purge-all" class="button button-primary">🗑 Valyti viską</button>
-            <?php foreach ($types as $type): ?>
-            <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" style="margin-left:4px">
-                Valyti <?php echo esc_html($type); ?>
-            </button>
-            <?php endforeach; ?>
-        </p>
-
-        <!-- SSE popup overlay -->
-        <div id="vlt-purge-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:none;align-items:center;justify-content:center">
-            <div style="background:#fff;border-radius:8px;padding:28px 32px;min-width:380px;max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-                <h3 style="margin:0 0 16px;font-size:16px">🗑 Valoma talpykla…</h3>
-                <!-- Progress bar -->
-                <div style="background:#e0e0e0;border-radius:4px;height:12px;overflow:hidden;margin-bottom:10px">
-                    <div id="vlt-purge-bar" style="background:#2271b1;height:100%;width:0;transition:width .4s ease;border-radius:4px"></div>
-                </div>
-                <div id="vlt-purge-pct" style="font-size:12px;color:#666;margin-bottom:12px">0%</div>
-                <!-- Rolling log -->
-                <div id="vlt-purge-items" style="font-family:monospace;font-size:11px;max-height:140px;overflow-y:auto;background:#f9f9f9;border:1px solid #e0e0e0;padding:8px;border-radius:4px"></div>
-                <div id="vlt-purge-done-msg" style="display:none;margin-top:12px;color:#46b450;font-weight:600">✅ Viskas išvalyta!</div>
-            </div>
-        </div>
-
-        <!-- Purge history -->
-        <h3 style="margin-top:20px">Valymo žurnalas</h3>
-        <div id="vlt-purge-history" style="font-size:11px;font-family:monospace;max-height:180px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px;border-radius:4px">
-            <em style="color:#999">Kraunama…</em>
-        </div>
 
         <script>
         (function() {
@@ -135,71 +207,53 @@ final class DashboardPage extends AdminPage
                 fetch(restUrl + '/purge-log', {headers: {'X-WP-Nonce': nonce}})
                 .then(r => r.json()).then(entries => {
                     const el = document.getElementById('vlt-purge-history');
-                    if (!entries || !entries.length) { el.innerHTML = '<em style="color:#999">Nėra įrašų</em>'; return; }
+                    if (!entries || !entries.length) { el.innerHTML = '<em style="color:#aaa">Nėra įrašų</em>'; return; }
                     el.innerHTML = entries.map(e => {
-                        const d = new Date((e.ts||0) * 1000).toLocaleString();
-                        return '<div><span style="color:#888">' + d + '</span> <strong style="color:#2271b1">' + (e.type||'?') + '</strong>'
-                            + (e.ms ? ' <span style="color:#666">' + e.ms + 'ms</span>' : '')
-                            + ' <span style="color:#aaa">(' + (e.user||'?') + ')</span></div>';
+                        const d = new Date((e.ts||0)*1000).toLocaleString();
+                        const ms = e.ms ? ' <span style="color:#888">'+e.ms+'ms</span>' : '';
+                        return '<div><span style="color:#aaa">'+d+'</span> <strong style="color:#2271b1">'+e.type+'</strong>'+ms+' <span style="color:#bbb">('+e.user+')</span></div>';
                     }).join('');
-                });
+                }).catch(()=>{});
             }
 
             function startPurge(types) {
                 const overlay = document.getElementById('vlt-purge-overlay');
                 const bar     = document.getElementById('vlt-purge-bar');
-                const pct     = document.getElementById('vlt-purge-pct');
+                const pct     = document.getElementById('vlt-purge-pct-label');
                 const items   = document.getElementById('vlt-purge-items');
                 const doneMsg = document.getElementById('vlt-purge-done-msg');
+                bar.style.width='0'; bar.style.background='#2271b1';
+                pct.textContent='0%'; items.innerHTML=''; doneMsg.style.display='none';
+                overlay.style.display='flex';
 
-                // Reset
-                bar.style.width = '0'; bar.style.background = '#2271b1';
-                pct.textContent = '0%'; items.innerHTML = ''; doneMsg.style.display = 'none';
-                overlay.style.display = 'flex';
-
-                const typeParam = types ? '?types=' + encodeURIComponent(types.join(',')) : '';
-                const es = new EventSource(restUrl + '/purge-stream' + typeParam + (typeParam ? '&' : '?') + '_wpnonce=' + nonce);
-
-                es.onmessage = function(ev) {
+                const param = types ? '?types='+encodeURIComponent(types.join(','))+'&' : '?';
+                const es = new EventSource(restUrl+'/purge-stream'+param+'_wpnonce='+nonce);
+                es.onmessage = ev => {
                     try {
                         const d = JSON.parse(ev.data);
-                        if (d.event === 'progress') {
-                            bar.style.width = d.pct + '%';
-                            pct.textContent = d.pct + '% — ' + d.type;
-                            const line = document.createElement('div');
-                            line.innerHTML = '<span style="color:#46b450">✓</span> <strong>' + d.type + '</strong>'
-                                + (d.ms ? ' <span style="color:#888">' + d.ms + 'ms</span>' : '');
-                            items.appendChild(line);
-                            items.scrollTop = items.scrollHeight;
-                        } else if (d.event === 'done') {
-                            bar.style.width = '100%'; bar.style.background = '#46b450';
-                            pct.textContent = '100%';
-                            doneMsg.style.display = 'block';
+                        if (d.event==='progress') {
+                            bar.style.width=d.pct+'%';
+                            pct.textContent=d.pct+'%';
+                            const line=document.createElement('div');
+                            line.innerHTML='<span style="color:#46b450">✓</span> <strong>'+d.type+'</strong>'+(d.ms?' <span style="color:#888">'+d.ms+'ms</span>':'');
+                            items.appendChild(line); items.scrollTop=items.scrollHeight;
+                        } else if (d.event==='done') {
+                            bar.style.width='100%'; bar.style.background='#46b450';
+                            pct.textContent='100%'; doneMsg.style.display='block';
                             es.close();
-                            setTimeout(() => {
-                                overlay.style.display = 'none';
-                                loadHistory();
-                            }, 1800);
+                            setTimeout(()=>{ overlay.style.display='none'; loadHistory(); }, 1800);
                         }
-                    } catch(e) {}
+                    } catch(e){}
                 };
-                es.onerror = function() { es.close(); overlay.style.display = 'none'; };
+                es.onerror=()=>{ es.close(); overlay.style.display='none'; };
             }
 
-            document.getElementById('vlt-purge-all').addEventListener('click', function() {
-                startPurge(null);
-            });
-            document.querySelectorAll('.vlt-purge-one').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    startPurge([this.dataset.type]);
-                });
-            });
-
+            document.getElementById('vlt-purge-all').addEventListener('click', ()=>startPurge(null));
+            document.querySelectorAll('.vlt-purge-one').forEach(b=>b.addEventListener('click',function(){ startPurge([this.dataset.type]); }));
             loadHistory();
         })();
         </script>
-
+        </div>
         <?php
-        echo '</div>';
     }
 }
