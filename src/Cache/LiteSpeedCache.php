@@ -28,12 +28,32 @@ final class LiteSpeedCache
         // Never cache logged-in users or pages with active sessions
         add_action('wp', [self::class, 'checkNocache'], 10);
 
-        // Purge on content changes
+        // Purge on content changes (targeted — only affected URLs)
         add_action('save_post',    [self::class, 'purgePost'], 10, 1);
         add_action('delete_post',  [self::class, 'purgePost'], 10, 1);
         add_action('comment_post', [self::class, 'purgeOnComment'], 10, 2);
 
-        // Send cache headers at shutdown
+        // Purge on structural changes (home + archives, not full purge)
+        add_action('wp_update_nav_menu',  [self::class, 'purgeStructural']);
+        add_action('created_term',        [self::class, 'purgeStructural']);
+        add_action('edited_term',         [self::class, 'purgeStructural']);
+        add_action('delete_term',         [self::class, 'purgeStructural']);
+
+        // Purge all only on global changes (plugin/theme activation)
+        add_action('activated_plugin',          [self::class, 'purgeAll']);
+        add_action('deactivated_plugin',        [self::class, 'purgeAll']);
+        add_action('switch_theme',              [self::class, 'purgeAll']);
+        add_action('upgrader_process_complete', [self::class, 'purgeAll']);
+        add_action('customize_save_after',      [self::class, 'purgeAll']);
+
+        // Purge home on key option changes
+        add_action('update_option_show_on_front',    [self::class, 'purgeHome']);
+        add_action('update_option_page_on_front',    [self::class, 'purgeHome']);
+        add_action('update_option_page_for_posts',   [self::class, 'purgeHome']);
+        add_action('update_option_blogname',         [self::class, 'purgeHome']);
+        add_action('update_option_blogdescription',  [self::class, 'purgeHome']);
+
+        // Send cache headers at shutdown (after PHP has determined the response status)
         add_action('shutdown', [self::class, 'sendHeaders'], 0);
     }
 
@@ -97,6 +117,13 @@ final class LiteSpeedCache
             return;
         }
 
+        // CRITICAL: Never cache error responses (4xx/5xx)
+        $status = http_response_code();
+        if ($status >= 400) {
+            header('X-LiteSpeed-Cache-Control: no-cache');
+            return;
+        }
+
         $ttl = (int) get_option('vlt_ls_cache_ttl', 86400);
 
         // Vary cache by login status so logged-in users never get logged-out cached pages
@@ -136,6 +163,18 @@ final class LiteSpeedCache
         if ($comment) {
             self::purgePost((int) $comment->comment_post_ID);
         }
+    }
+
+    /** Purge home page and archive listings (menus, terms changed). */
+    public static function purgeStructural(): void
+    {
+        self::sendPurgeHeader('_H,_A');
+    }
+
+    /** Purge only the home/front page. */
+    public static function purgeHome(): void
+    {
+        self::sendPurgeHeader('_H');
     }
 
     public static function purgeAll(): void
