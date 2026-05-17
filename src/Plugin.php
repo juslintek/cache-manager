@@ -111,6 +111,9 @@ final class Plugin
             \VLT\CacheManager\Cache\LiteSpeedCache::register();
         }
 
+        // Error guard: prevent ALL cache layers from storing error responses
+        \VLT\CacheManager\Cache\ErrorGuard::register();
+
         // Async queue worker endpoint
         add_action('wp_ajax_nopriv_vlt_async_worker', [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
         add_action('wp_ajax_vlt_async_worker',        [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
