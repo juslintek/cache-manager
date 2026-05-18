@@ -136,6 +136,7 @@ final class Plugin
 
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
+            \WP_CLI::add_command('gratis-cache', \VLT\CacheManager\CLI\GratisCacheCommand::class);
         }
     }
 
