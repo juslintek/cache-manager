@@ -124,7 +124,7 @@ final class LiteSpeedCache
             return;
         }
 
-        $ttl = (int) get_option('vlt_ls_cache_ttl', 86400);
+        $ttl = (int) get_option('vlt_ls_cache_ttl', 3600);
 
         // Vary cache by login status so logged-in users never get logged-out cached pages
         $loggedIn = is_user_logged_in();
@@ -132,6 +132,8 @@ final class LiteSpeedCache
 
         if (self::isCacheable() && !$loggedIn) {
             header('X-LiteSpeed-Cache-Control: public,max-age=' . $ttl);
+            // Override server defaults — prevent stale serving beyond our TTL
+            header('Cache-Control: public, max-age=' . $ttl . ', must-revalidate', true);
             $tags = self::buildTags();
             if ($tags) {
                 header('X-LiteSpeed-Tag: ' . implode(',', $tags));
@@ -194,12 +196,14 @@ final class LiteSpeedCache
 
     private static function sendPurgeHeader(string $tags): void
     {
-        if (!headers_sent()) {
+        if (!headers_sent() && php_sapi_name() !== 'cli') {
             header('X-LiteSpeed-Purge: ' . $tags);
         } else {
-            // Loopback request to trigger purge
-            wp_remote_get(home_url('/'), [
+            // CLI or headers already sent — use loopback HTTP request to deliver purge
+            $url = home_url('/?_lscache_purge=' . urlencode($tags) . '&_t=' . time());
+            wp_remote_get($url, [
                 'timeout'   => 3,
+                'blocking'  => false,
                 'headers'   => ['X-LiteSpeed-Purge' => $tags],
                 'sslverify' => false,
             ]);
