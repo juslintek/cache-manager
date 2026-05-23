@@ -33,7 +33,7 @@ final class Logger
             'uri'       => $_SERVER['REQUEST_URI'] ?? '',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
         $file = $this->dir . '/cache-log-' . gmdate('Y-m-d') . '.json';
-        file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
         @chown($file, 'nginx');
         @chgrp($file, 'nginx');
         // Push to Redis for live SSE streaming
@@ -164,11 +164,12 @@ final class Logger
         if (is_dir($this->dir)) {
             return;
         }
-        wp_mkdir_p($this->dir);
-        @chown($this->dir, 'nginx');
-        @chgrp($this->dir, 'nginx');
-        file_put_contents($this->dir . '/.htaccess', "Deny from all\n", LOCK_EX);
-        file_put_contents($this->dir . '/index.php', "<?php\n// Silence.\n", LOCK_EX);
+        if (!@mkdir($this->dir, 0755, true) && !is_dir($this->dir)) {
+            return;
+        }
+        @chmod($this->dir, 0755);
+        @file_put_contents($this->dir . '/.htaccess', "Deny from all\n", LOCK_EX);
+        @file_put_contents($this->dir . '/index.php', "<?php\n// Silence.\n", LOCK_EX);
     }
 
     private function ip(): string

@@ -15,11 +15,31 @@ final class GratisCacheCommand
     public function status($args, $assoc_args): void
     {
         $caps = CapabilityDetector::detect();
+
         \WP_CLI::log("=== Gratis Cache Status ===");
-        \WP_CLI::log("Volatile backend: " . CapabilityDetector::bestVolatileBackend());
-        \WP_CLI::log("Persistent store: " . CapabilityDetector::bestPersistentStore());
-        \WP_CLI::log("Serializer: " . CapabilityDetector::bestSerializer());
         \WP_CLI::log("");
+        \WP_CLI::log("Environment:");
+        \WP_CLI::log("  PHP: " . PHP_VERSION);
+        \WP_CLI::log("  WordPress: " . get_bloginfo('version'));
+        \WP_CLI::log("  Theme: " . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
+        \WP_CLI::log("  Site URL: " . get_site_url());
+        \WP_CLI::log("");
+        \WP_CLI::log("Backends:");
+        \WP_CLI::log("  Volatile: " . CapabilityDetector::bestVolatileBackend());
+        \WP_CLI::log("  Persistent: " . CapabilityDetector::bestPersistentStore());
+        \WP_CLI::log("  Serializer: " . CapabilityDetector::bestSerializer());
+        \WP_CLI::log("");
+
+        $logger = new \VLT\CacheManager\Log\Logger();
+        $stats = $logger->getTodayStats();
+        $total = $stats['hits'] + $stats['misses'];
+        $ratio = $total > 0 ? round($stats['hits'] / $total * 100, 1) : 0;
+        \WP_CLI::log("Today's Stats:");
+        \WP_CLI::log("  Requests: {$stats['requests']}");
+        \WP_CLI::log("  Hits: {$stats['hits']} | Misses: {$stats['misses']} | Ratio: {$ratio}%");
+        \WP_CLI::log("  Purges: {$stats['purges']}");
+        \WP_CLI::log("");
+
         \WP_CLI::log("Extensions:");
         foreach ($caps as $ext => $available) {
             $icon = $available ? '✓' : '✗';
@@ -61,6 +81,7 @@ final class GratisCacheCommand
      * : Reason for purge.
      * ## EXAMPLES
      *     wp gratis-cache purge-url https://example.com/page/
+     * @subcommand purge-url
      * @when after_wp_load
      */
     public function purge_url($args, $assoc_args): void
@@ -78,6 +99,7 @@ final class GratisCacheCommand
      * : The URL to debug.
      * ## EXAMPLES
      *     wp gratis-cache debug-url https://example.com/patterns/
+     * @subcommand debug-url
      * @when after_wp_load
      */
     public function debug_url($args, $assoc_args): void
@@ -118,6 +140,7 @@ final class GratisCacheCommand
      * Scan for changed files since last scan.
      * ## EXAMPLES
      *     wp gratis-cache scan-files
+     * @subcommand scan-files
      * @when after_wp_load
      */
     public function scan_files($args, $assoc_args): void
