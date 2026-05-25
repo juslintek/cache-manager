@@ -232,34 +232,127 @@ final class GratisCacheCommand
     public function debug_url($args, $assoc_args): void
     {
         $url = $args[0];
-        \WP_CLI::log("=== Cache Debug: {$url} ===");
-        \WP_CLI::log("Active theme: " . get_stylesheet());
-        \WP_CLI::log("Theme version: " . wp_get_theme()->get('Version'));
+        \WP_CLI::log("=== Cache Debug: {$url} ===\n");
 
-        // Check which post/template renders this URL
-        $post_id = url_to_postid($url);
-        if ($post_id) {
-            \WP_CLI::log("Post ID: {$post_id}");
-            \WP_CLI::log("Post type: " . get_post_type($post_id));
-            \WP_CLI::log("Template: " . get_page_template_slug($post_id) ?: '(default)');
-        }
-
-        // Check LiteSpeed cache state
-        $headers = @get_headers($url, true);
-        if ($headers) {
-            $lsCache = $headers['X-Litespeed-Cache'] ?? $headers['x-litespeed-cache'] ?? 'unknown';
-            \WP_CLI::log("LiteSpeed cache: " . (is_array($lsCache) ? end($lsCache) : $lsCache));
-        }
-
-        // Patterns registered
-        $patterns = \WP_Block_Patterns_Registry::get_instance()->get_all_registered();
-        \WP_CLI::log("Patterns registered: " . count($patterns));
-
-        // Last file change
-        \WP_CLI::log("Theme path: " . get_stylesheet_directory());
+        // 1. Theme & Template
+        \WP_CLI::log("── Theme ──");
+        \WP_CLI::log("  Active: " . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
         $themeJson = get_stylesheet_directory() . '/theme.json';
         if (file_exists($themeJson)) {
-            \WP_CLI::log("theme.json modified: " . date('Y-m-d H:i:s', filemtime($themeJson)));
+            \WP_CLI::log("  theme.json: " . substr(md5_file($themeJson), 0, 8) . ' (modified ' . date('Y-m-d H:i:s', filemtime($themeJson)) . ')');
+        }
+
+        // 2. URL Resolution
+        \WP_CLI::log("\n── URL Resolution ──");
+        $post_id = url_to_postid($url);
+        if ($post_id) {
+            \WP_CLI::log("  Post ID: {$post_id}");
+            \WP_CLI::log("  Post type: " . get_post_type($post_id));
+            \WP_CLI::log("  Template: " . (get_page_template_slug($post_id) ?: '(default)'));
+        } else {
+            \WP_CLI::log("  Post ID: none (may be archive, taxonomy, or custom route)");
+        }
+
+        // 3. Object Cache Layer
+        \WP_CLI::log("\n── Object Cache ──");
+        $dropin = WP_CONTENT_DIR . '/object-cache.php';
+        if (file_exists($dropin)) {
+            $header = file_get_contents($dropin, false, null, 0, 300);
+            if (str_contains($header, 'VLT')) {
+                \WP_CLI::log("  Drop-in: Gratis/VLT (Redis)");
+                try {
+                    $host = defined('WP_REDIS_HOST') ? WP_REDIS_HOST : '127.0.0.1';
+                    $r = new \Redis();
+                    if ($r->connect($host, 6379, 1.0)) {
+                        $info = $r->info();
+                        $keys = $r->dbSize();
+                        \WP_CLI::log("  Redis: connected ({$info['used_memory_human']} used, {$keys} keys)");
+                        $r->close();
+                    } else {
+                        \WP_CLI::log("  Redis: connection failed");
+                    }
+                } catch (\Throwable $e) {
+                    \WP_CLI::log("  Redis: " . $e->getMessage());
+                }
+            } else {
+                \WP_CLI::log("  Drop-in: third-party");
+            }
+        } else {
+            \WP_CLI::log("  Drop-in: not installed (using WP default)");
+        }
+        if (function_exists('wp_cache_get')) {
+            $found = false;
+            wp_cache_get('alloptions', 'options', false, $found);
+            \WP_CLI::log("  alloptions cached: " . ($found ? 'yes (HIT)' : 'no (MISS)'));
+        }
+
+        // 4. OPcache
+        \WP_CLI::log("\n── OPcache ──");
+        if (function_exists('opcache_get_status')) {
+            $oc = @opcache_get_status(false);
+            if ($oc && ($oc['opcache_enabled'] ?? false)) {
+                $scripts = $oc['opcache_statistics']['num_cached_scripts'] ?? 0;
+                $hitRate = round($oc['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
+                \WP_CLI::log("  Status: enabled ({$scripts} scripts, {$hitRate}% hit rate)");
+            } else {
+                \WP_CLI::log("  Status: disabled");
+            }
+        } else {
+            \WP_CLI::log("  Status: not available");
+        }
+
+        // 5. Page Cache (Nginx/LiteSpeed/Cloudflare)
+        \WP_CLI::log("\n── Page Cache ──");
+        $headers = @get_headers($url, true);
+        if ($headers) {
+            // Nginx FastCGI
+            $nginx = $headers['X-FastCGI-Cache'] ?? $headers['x-fastcgi-cache'] ?? null;
+            if ($nginx) \WP_CLI::log("  Nginx FastCGI: " . (is_array($nginx) ? end($nginx) : $nginx));
+
+            // LiteSpeed
+            $ls = $headers['X-Litespeed-Cache'] ?? $headers['x-litespeed-cache'] ?? null;
+            if ($ls) \WP_CLI::log("  LiteSpeed: " . (is_array($ls) ? end($ls) : $ls));
+
+            // Cloudflare
+            $cf = $headers['CF-Cache-Status'] ?? $headers['cf-cache-status'] ?? null;
+            if ($cf) \WP_CLI::log("  Cloudflare: " . (is_array($cf) ? end($cf) : $cf));
+
+            // Generic cache-control
+            $cc = $headers['Cache-Control'] ?? $headers['cache-control'] ?? null;
+            if ($cc) \WP_CLI::log("  Cache-Control: " . (is_array($cc) ? end($cc) : $cc));
+
+            if (!$nginx && !$ls && !$cf) {
+                \WP_CLI::log("  No page cache headers detected");
+            }
+        } else {
+            \WP_CLI::log("  Could not fetch headers (URL may not be reachable from CLI)");
+        }
+
+        // 6. Patterns & Templates
+        \WP_CLI::log("\n── Patterns & Templates ──");
+        $patterns = \WP_Block_Patterns_Registry::get_instance()->get_all_registered();
+        \WP_CLI::log("  Patterns registered: " . count($patterns));
+        $themePatterns = array_filter($patterns, fn($p) => str_starts_with($p['name'] ?? '', 'gratis'));
+        \WP_CLI::log("  Gratis patterns: " . count($themePatterns));
+
+        // 7. File Change History
+        \WP_CLI::log("\n── Recent Changes ──");
+        $store = new \VLT\CacheManager\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/cache-manager-data');
+        $scanner = new \VLT\CacheManager\Storage\FileChangeScanner($store);
+        $last = $scanner->lastChange(get_stylesheet_directory());
+        if ($last) {
+            \WP_CLI::log("  Last theme change: " . date('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ")");
+        } else {
+            \WP_CLI::log("  No theme file changes recorded");
+        }
+
+        // 8. Debug meta from integrations
+        $meta = apply_filters('gratis_cache_debug_meta', []);
+        if (!empty($meta)) {
+            \WP_CLI::log("\n── Integration Meta ──");
+            foreach ($meta as $source => $data) {
+                \WP_CLI::log("  [{$source}] " . json_encode($data, JSON_UNESCAPED_SLASHES));
+            }
         }
     }
 
