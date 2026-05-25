@@ -138,6 +138,10 @@ final class GratisCacheCommand
 
     /**
      * Scan for changed files since last scan.
+     *
+     * [--dir=<directory>]
+     * : Additional directory to scan.
+     *
      * ## EXAMPLES
      *     wp gratis-cache scan-files
      * @subcommand scan-files
@@ -145,9 +149,33 @@ final class GratisCacheCommand
      */
     public function scan_files($args, $assoc_args): void
     {
+        $store = new \VLT\CacheManager\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/cache-manager-data');
+        $scanner = new \VLT\CacheManager\Storage\FileChangeScanner($store);
+
+        $dirs = null;
+        if (!empty($assoc_args['dir'])) {
+            $dirs = [realpath($assoc_args['dir']) ?: $assoc_args['dir']];
+        }
+
         \WP_CLI::log("Scanning for file changes...");
-        // TODO: implement file change detection
-        \WP_CLI::success("Scan complete.");
+        $changed = $scanner->scan($dirs);
+
+        if (empty($changed)) {
+            \WP_CLI::success("No changes detected since last scan.");
+            return;
+        }
+
+        \WP_CLI::log(count($changed) . " file(s) changed:");
+        foreach (array_slice($changed, 0, 50) as $path) {
+            $rel = str_replace(ABSPATH, '', $path);
+            \WP_CLI::log("  • {$rel}");
+        }
+        if (count($changed) > 50) {
+            \WP_CLI::log("  ... and " . (count($changed) - 50) . " more");
+        }
+
+        do_action('gratis_cache_files_changed', $changed);
+        \WP_CLI::success(count($changed) . " change(s) recorded.");
     }
 
     /**
