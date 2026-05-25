@@ -102,6 +102,7 @@ final class Plugin
 
         // REST API routes (available to logged-in admins)
         add_action('rest_api_init', [Admin\RestApi::class, 'register']);
+        add_action('rest_api_init', [GratisRestApi::class, 'register']);
 
         // Image optimization
         \VLT\CacheManager\Image\ImageOptimizer::register();
