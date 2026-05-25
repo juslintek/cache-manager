@@ -17,7 +17,7 @@ final class CacheCommand
     }
 
     /**
-     * Rodo visų talpyklų būseną.
+     * Show cache status across all layers.
      *
      * ## EXAMPLES
      *     wp vlt-cache status
@@ -30,10 +30,10 @@ final class CacheCommand
             $r = new \Redis();
             if ($r->connect('127.0.0.1', 6379, 1.0)) {
                 $info = $r->info();
-                WP_CLI::success('Redis: prijungtas, ' . ($info['used_memory_human'] ?? '?') . ' naudojama');
+                WP_CLI::success('Redis: connected, ' . ($info['used_memory_human'] ?? '?') . ' used');
                 $r->close();
             } else {
-                WP_CLI::warning('Redis: nepavyko prisijungti');
+                WP_CLI::warning('Redis: connection failed');
             }
         } catch (\Exception $e) {
             WP_CLI::warning('Redis: ' . $e->getMessage());
@@ -44,9 +44,9 @@ final class CacheCommand
             if ($oc) {
                 $scripts  = $oc['opcache_statistics']['num_cached_scripts'] ?? 0;
                 $hit_rate = round($oc['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
-                WP_CLI::success("OPcache: $scripts failų, {$hit_rate}% pataikymų");
+                WP_CLI::success("OPcache: {$scripts} scripts, {$hit_rate}% hit rate");
             } else {
-                WP_CLI::warning('OPcache: išjungtas');
+                WP_CLI::warning('OPcache: disabled');
             }
         }
 
@@ -58,22 +58,22 @@ final class CacheCommand
             $mb = round($size / 1048576, 1);
             WP_CLI::success("Nginx FastCGI: {$mb} MB");
         } else {
-            WP_CLI::warning('Nginx FastCGI: katalogas nerastas');
+            WP_CLI::warning('Nginx FastCGI: cache directory not found');
         }
 
         $el_dir = WP_CONTENT_DIR . '/uploads/elementor/css/';
         $count  = is_dir($el_dir) ? count(glob($el_dir . '*.css')) : 0;
-        WP_CLI::success("Elementor CSS: $count failų");
+        WP_CLI::success("Elementor CSS: {$count} files");
 
-        WP_CLI::log('Object-cache.php: ' . ($this->plugin->dropin()->isOurs() ? 'VLT (įdiegtas)' : 'kitas arba trūksta'));
+        WP_CLI::log('Object-cache.php: ' . ($this->plugin->dropin()->isOurs() ? 'installed (ours)' : 'missing or third-party'));
     }
 
     /**
-     * Valo talpyklas.
+     * Purge caches.
      *
      * ## OPTIONS
      * [--type=<type>]
-     * : Tipas: all, nginx, opcache, redis, elementor
+     * : Type: all, nginx, opcache, redis, elementor
      * ---
      * default: all
      * ---
@@ -92,11 +92,11 @@ final class CacheCommand
         } else {
             $this->plugin->purge()->purge($type);
         }
-        WP_CLI::success("Talpykla išvalyta: $type");
+        WP_CLI::success("Cache purged: {$type}");
     }
 
     /**
-     * Rodo šiandienos statistiką iš žurnalo.
+     * Show today's cache statistics.
      *
      * ## EXAMPLES
      *     wp vlt-cache stats
@@ -108,11 +108,11 @@ final class CacheCommand
         $stats = $this->plugin->logger()->getTodayStats();
         $total = $stats['hits'] + $stats['misses'];
         $ratio = $total > 0 ? round($stats['hits'] / $total * 100, 1) : 0;
-        WP_CLI::log("Šiandienos statistika:");
-        WP_CLI::log("  Užklausos: {$stats['requests']}");
-        WP_CLI::log("  Pataikymai: {$stats['hits']}");
-        WP_CLI::log("  Praleidmai: {$stats['misses']}");
-        WP_CLI::log("  Santykis: {$ratio}%");
-        WP_CLI::log("  Valymo įvykiai: {$stats['purges']}");
+        WP_CLI::log("Today's statistics:");
+        WP_CLI::log("  Requests: {$stats['requests']}");
+        WP_CLI::log("  Hits: {$stats['hits']}");
+        WP_CLI::log("  Misses: {$stats['misses']}");
+        WP_CLI::log("  Hit ratio: {$ratio}%");
+        WP_CLI::log("  Purge events: {$stats['purges']}");
     }
 }
