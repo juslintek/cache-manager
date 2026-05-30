@@ -114,6 +114,10 @@ final class Plugin
         \VLT\CacheManager\Performance\CriticalCSS::register();
         \VLT\CacheManager\Performance\Minifier::register();
         \VLT\CacheManager\Performance\ResourceHints::register();
+        \VLT\CacheManager\Performance\HeartbeatControl::register();
+        \VLT\CacheManager\Performance\LazyLoad::register();
+        \VLT\CacheManager\Performance\RedirectManager::register();
+        \VLT\CacheManager\Security\LoginProtection::register();
 
         // Native LiteSpeed cache control (sends X-LiteSpeed-Cache-Control headers)
         if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
