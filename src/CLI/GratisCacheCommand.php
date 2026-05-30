@@ -446,6 +446,13 @@ final class GratisCacheCommand
      *
      * ## OPTIONS
      * <action>
+     * : Action to perform (add, list, remove).
+     *
+     * [<from>]
+     * : Source path (for add).
+     *
+     * [<to>]
+     * : Destination (for add).
      * : Action: install, remove, status
      *
      * ## EXAMPLES
@@ -674,5 +681,57 @@ final class GratisCacheCommand
         }
 
         \WP_CLI::success("{$warmed}/" . count($urls) . " pages warmed.");
+    }
+
+    /**
+     * Manage URL redirects.
+     *
+     * ## OPTIONS
+     * <action>
+     * : Action to perform (add, list, remove).
+     *
+     * [<from>]
+     * : Source path (for add).
+     *
+     * [<to>]
+     * : Destination (for add).
+     * ## EXAMPLES
+     *     wp gratis-cache redirect add /old/ /new/
+     *     wp gratis-cache redirect list
+     *     wp gratis-cache redirect remove --index=0
+     *
+     * [--index=<index>]
+     * : Index of redirect to remove.
+     *
+     * [--code=<code>]
+     * : HTTP status code for add (default 301).
+     *
+     * @when after_wp_load
+     */
+    public function redirect($args, $assoc_args): void
+    {
+        $action = $args[0] ?? 'list';
+        if ($action === 'add') {
+            if (empty($args[1]) || empty($args[2])) {
+                \WP_CLI::error("Usage: redirect add <from> <to>");
+            }
+            $code = (int) ($assoc_args['code'] ?? 301);
+            \VLT\CacheManager\Performance\RedirectManager::add($args[1], $args[2], $code);
+            \WP_CLI::success("Redirect added: {$args[1]} → {$args[2]} ({$code})");
+        } elseif ($action === 'list') {
+            $all = \VLT\CacheManager\Performance\RedirectManager::all();
+            if (empty($all)) { \WP_CLI::log("No redirects."); return; }
+            $rows = [];
+            foreach ($all as $i => $r) {
+                $rows[] = ['#' => $i, 'From' => $r['from'], 'To' => $r['to'], 'Code' => $r['code']];
+            }
+            \WP_CLI\Utils\format_items('table', $rows, ['#', 'From', 'To', 'Code']);
+        } elseif ($action === 'remove') {
+            $idx = (int) ($assoc_args['index'] ?? -1);
+            if ($idx < 0) { \WP_CLI::error("Specify --index=N"); }
+            \VLT\CacheManager\Performance\RedirectManager::remove($idx)
+                ? \WP_CLI::success("Removed.")
+                : \WP_CLI::error("Not found.");
+        }
     }
 }
