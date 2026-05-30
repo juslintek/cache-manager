@@ -633,4 +633,46 @@ final class GratisCacheCommand
         \WP_CLI::log("  Tables optimized: " . ($result['tables_optimized'] ?? 0));
         \WP_CLI::success("Database optimized.");
     }
+
+    /**
+     * Warm up the page cache by pre-fetching all public URLs.
+     *
+     * ## OPTIONS
+     * [--limit=<n>]
+     * : Max pages to warm.
+     * ---
+     * default: 50
+     * ---
+     *
+     * ## EXAMPLES
+     *     wp gratis-cache warmup
+     *
+     * @when after_wp_load
+     */
+    public function warmup($args, $assoc_args): void
+    {
+        $limit = (int) ($assoc_args['limit'] ?? 50);
+        $urls = [home_url('/')];
+
+        // Get published pages
+        $pages = get_posts(['post_type' => 'page', 'post_status' => 'publish', 'posts_per_page' => $limit, 'fields' => 'ids']);
+        foreach ($pages as $id) $urls[] = get_permalink($id);
+
+        // Get recent posts
+        $posts = get_posts(['post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => $limit, 'fields' => 'ids']);
+        foreach ($posts as $id) $urls[] = get_permalink($id);
+
+        $urls = array_unique(array_slice($urls, 0, $limit));
+        \WP_CLI::log("Warming " . count($urls) . " URL(s)...");
+
+        $warmed = 0;
+        foreach ($urls as $url) {
+            $r = wp_remote_get($url, ['timeout' => 10, 'sslverify' => false]);
+            if (!is_wp_error($r) && wp_remote_retrieve_response_code($r) === 200) {
+                $warmed++;
+            }
+        }
+
+        \WP_CLI::success("{$warmed}/" . count($urls) . " pages warmed.");
+    }
 }

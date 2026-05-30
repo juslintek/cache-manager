@@ -107,6 +107,14 @@ final class Plugin
         // Image optimization
         \VLT\CacheManager\Image\ImageOptimizer::register();
 
+        // Page cache (full HTML caching)
+        \VLT\CacheManager\Cache\PageCache::register();
+
+        // Performance: Critical CSS, Minification, Resource Hints
+        \VLT\CacheManager\Performance\CriticalCSS::register();
+        \VLT\CacheManager\Performance\Minifier::register();
+        \VLT\CacheManager\Performance\ResourceHints::register();
+
         // Native LiteSpeed cache control (sends X-LiteSpeed-Cache-Control headers)
         if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
             \VLT\CacheManager\Cache\LiteSpeedCache::register();
