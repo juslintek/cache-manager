@@ -498,4 +498,139 @@ final class GratisCacheCommand
                 \WP_CLI::error("Unknown action: {$action}. Use: install, remove, status");
         }
     }
+
+    /**
+     * Optimize images: convert to WebP/AVIF.
+     *
+     * ## OPTIONS
+     * [--limit=<n>]
+     * : Max images to process.
+     * ---
+     * default: 50
+     * ---
+     *
+     * ## EXAMPLES
+     *     wp gratis-cache optimize-images
+     *     wp gratis-cache optimize-images --limit=200
+     *
+     * @subcommand optimize-images
+     * @when after_wp_load
+     */
+    public function optimize_images($args, $assoc_args): void
+    {
+        $limit = (int) ($assoc_args['limit'] ?? 50);
+        $attachments = get_posts([
+            'post_type'      => 'attachment',
+            'post_mime_type' => ['image/jpeg', 'image/png'],
+            'posts_per_page' => $limit,
+            'meta_query'     => [['key' => '_gratis_webp_done', 'compare' => 'NOT EXISTS']],
+        ]);
+
+        if (empty($attachments)) {
+            \WP_CLI::success("All images already optimized.");
+            return;
+        }
+
+        \WP_CLI::log("Optimizing " . count($attachments) . " image(s)...");
+        $saved = 0;
+
+        foreach ($attachments as $att) {
+            $file = get_attached_file($att->ID);
+            if (!$file || !file_exists($file)) continue;
+
+            $webp = preg_replace('/\.(jpe?g|png)$/i', '.webp', $file);
+            if (!file_exists($webp)) {
+                if (function_exists('imagewebp')) {
+                    $img = @imagecreatefromstring(file_get_contents($file));
+                    if ($img) {
+                        imagewebp($img, $webp, 82);
+                        imagedestroy($img);
+                        $saved += filesize($file) - filesize($webp);
+                    }
+                }
+            }
+            update_post_meta($att->ID, '_gratis_webp_done', time());
+        }
+
+        $mb = round($saved / 1048576, 2);
+        \WP_CLI::success(count($attachments) . " images processed. Saved ~{$mb} MB.");
+    }
+
+    /**
+     * Generate critical CSS for a URL.
+     *
+     * ## OPTIONS
+     * [<url>]
+     * : URL to generate critical CSS for. Defaults to homepage.
+     *
+     * ## EXAMPLES
+     *     wp gratis-cache critical-css
+     *     wp gratis-cache critical-css https://example.com/about/
+     *
+     * @subcommand critical-css
+     * @when after_wp_load
+     */
+    public function critical_css($args, $assoc_args): void
+    {
+        $url = $args[0] ?? home_url('/');
+        \WP_CLI::log("Generating critical CSS for: {$url}");
+
+        $css = \VLT\CacheManager\Performance\CriticalCSS::generate($url);
+        if (empty($css)) {
+            \WP_CLI::warning("Could not generate critical CSS (URL unreachable or no stylesheets found).");
+            return;
+        }
+
+        $kb = round(strlen($css) / 1024, 1);
+        \WP_CLI::success("Critical CSS generated: {$kb} KB. Enable with: wp option update vlt_critical_css_enabled 1");
+    }
+
+    /**
+     * Optimize database: clean revisions, transients, spam, trash.
+     *
+     * ## OPTIONS
+     * [--keep-revisions=<n>]
+     * : Revisions to keep per post.
+     * ---
+     * default: 5
+     * ---
+     * [--dry-run]
+     * : Show what would be cleaned without doing it.
+     *
+     * ## EXAMPLES
+     *     wp gratis-cache optimize-db
+     *     wp gratis-cache optimize-db --keep-revisions=3
+     *
+     * @subcommand optimize-db
+     * @when after_wp_load
+     */
+    public function optimize_db($args, $assoc_args): void
+    {
+        $dryRun = isset($assoc_args['dry-run']);
+
+        if ($dryRun) {
+            $stats = \VLT\CacheManager\Performance\DatabaseOptimizer::getStats();
+            \WP_CLI::log("=== Database Status (dry run) ===");
+            \WP_CLI::log("  Size: " . round(($stats['total_size'] ?? 0) / 1048576, 1) . " MB");
+            \WP_CLI::log("  Revisions: {$stats['revisions']}");
+            \WP_CLI::log("  Transients: {$stats['transients']}");
+            \WP_CLI::log("  Spam comments: {$stats['spam']}");
+            \WP_CLI::log("  Trash posts: {$stats['trash_posts']}");
+            \WP_CLI::log("  Tables: {$stats['tables']}");
+            return;
+        }
+
+        \WP_CLI::log("Optimizing database...");
+        $result = \VLT\CacheManager\Performance\DatabaseOptimizer::optimize([
+            'keep_revisions' => (int) ($assoc_args['keep-revisions'] ?? 5),
+        ]);
+
+        \WP_CLI::log("  Revisions deleted: " . ($result['revisions'] ?? 0));
+        \WP_CLI::log("  Transients cleaned: " . ($result['transients'] ?? 0));
+        \WP_CLI::log("  Spam removed: " . ($result['spam'] ?? 0));
+        \WP_CLI::log("  Trash emptied: " . ($result['trash'] ?? 0));
+        \WP_CLI::log("  Orphan meta removed: " . ($result['orphan_meta'] ?? 0));
+        \WP_CLI::log("  Tables optimized: " . ($result['tables_optimized'] ?? 0));
+        \WP_CLI::success("Database optimized.");
+    }
 }
