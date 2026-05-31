@@ -43,7 +43,7 @@ final class ResourceHints
 
         if ($wp_styles) {
             foreach ($wp_styles->registered as $style) {
-                if (!$style->src) continue;
+                if (!$style->src || !is_string($style->src)) continue;
                 $host = parse_url($style->src, PHP_URL_HOST);
                 if ($host && $host !== $siteHost) $domains[] = $host;
             }
@@ -51,7 +51,7 @@ final class ResourceHints
 
         if ($wp_scripts) {
             foreach ($wp_scripts->registered as $script) {
-                if (!$script->src) continue;
+                if (!$script->src || !is_string($script->src)) continue;
                 $host = parse_url($script->src, PHP_URL_HOST);
                 if ($host && $host !== $siteHost) $domains[] = $host;
             }
