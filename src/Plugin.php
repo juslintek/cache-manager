@@ -117,6 +117,8 @@ final class Plugin
         \VLT\CacheManager\Performance\HeartbeatControl::register();
         \VLT\CacheManager\Performance\LazyLoad::register();
         \VLT\CacheManager\Performance\RedirectManager::register();
+        \VLT\CacheManager\Search\SearchIndex::register();
+        \VLT\CacheManager\Admin\DashboardWidget::register();
         \VLT\CacheManager\Security\LoginProtection::register();
 
         // Native LiteSpeed cache control (sends X-LiteSpeed-Cache-Control headers)
