@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Contracts\Backup;
+namespace Gratis\Cache\Contracts\Backup;
 
 /** Stream-first backup source. Never loads full backup into memory. */
 interface BackupSourceInterface

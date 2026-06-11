@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\Tracer\TracerConfig;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\Tracer\TracerConfig;
 
 final class TracerPage extends AdminPage
 {
@@ -33,7 +33,7 @@ final class TracerPage extends AdminPage
         }
 
         // ── Trace worker status ───────────────────────────────────────────────
-        $workerStatus = \VLT\CacheManager\Tracer\TraceWorker::status();
+        $workerStatus = \Gratis\Cache\Tracer\TraceWorker::status();
         echo '<div style="margin:8px 0;padding:8px 12px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;gap:12px;font-size:12px">';
         echo '<strong>Trace Worker:</strong> ';
         if ($workerStatus['running']) {

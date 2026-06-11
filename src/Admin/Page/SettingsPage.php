@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\Plugin;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\Plugin;
 
 final class SettingsPage extends AdminPage
 {
@@ -213,7 +213,7 @@ final class SettingsPage extends AdminPage
 
         <?php
         // ── LiteSpeed section ─────────────────────────────────────────────────
-        $ls_detected = \VLT\CacheManager\Redis\RedisDetector::detectLiteSpeed();
+        $ls_detected = \Gratis\Cache\Redis\RedisDetector::detectLiteSpeed();
         echo '<h2>LiteSpeed / OpenLiteSpeed talpykla</h2>';
         echo '<table class="form-table">';
         echo '<tr><th>LiteSpeed aptiktas</th><td>' . ($ls_detected ? '<span class="tw-text-green-600">✅ Taip</span>' : '<span style="color:#999">Ne</span>') . '</td></tr>';
@@ -225,7 +225,7 @@ final class SettingsPage extends AdminPage
         echo '</form>';
 
         // ── Image optimization status + bulk run ──────────────────────────────
-        $imgStatus = \VLT\CacheManager\Image\ImageOptimizer::status();
+        $imgStatus = \Gratis\Cache\Image\ImageOptimizer::status();
         echo '<h2>Paveikslėlių optimizavimas</h2>';
         if ($imgStatus['lscwp']) {
             echo '<p>✅ LiteSpeed Cache įskiepis aktyvus — naudojamas QUIC.cloud paveikslėlių optimizavimas.</p>';
@@ -285,7 +285,7 @@ final class SettingsPage extends AdminPage
         echo '<h2>Veiksmai</h2><p>';
         echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?page=vlt-cache-settings&action=vlt_download_logs'), 'vlt_download_logs')) . '" class="button">Atsisiųsti žurnalus (ZIP)</a> ';
         echo '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_install_dropin'), 'vlt_install_dropin')) . '" class="button">' . ($dropin_ok ? 'Perdiegti object-cache.php' : 'Įdiegti object-cache.php') . '</a> ';
-        $srv = \VLT\CacheManager\ServerDetector::detect();
+        $srv = \Gratis\Cache\ServerDetector::detect();
         echo '<button type="button" id="vlt-server-redetect" class="button">🔍 Iš naujo aptikti serverį (' . esc_html($srv['server']) . ')</button>';
         echo '<span id="vlt-server-redetect-status" class="tw-ml-2 tw-text-gray-500"></span>';
         echo '</p>';

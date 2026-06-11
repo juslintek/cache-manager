@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin;
+namespace Gratis\Cache\Admin;
 
-use VLT\CacheManager\Plugin;
-use VLT\CacheManager\Redis\RedisFactory;
-use VLT\CacheManager\Tracer\TracerConfig;
+use Gratis\Cache\Plugin;
+use Gratis\Cache\Redis\RedisFactory;
+use Gratis\Cache\Tracer\TracerConfig;
 
 final class AdminAjax
 {

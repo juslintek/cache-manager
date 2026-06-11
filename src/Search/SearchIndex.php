@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Search;
+namespace Gratis\Cache\Search;
 
 /**
  * Local search indexing — what Elasticsearch/Algolia charge $29-99/mo for.

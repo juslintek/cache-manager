@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Security;
+namespace Gratis\Cache\Security;
 
 /**
  * Login security: rate limiting + lockout.

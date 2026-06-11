@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Contracts\Storage;
+namespace Gratis\Cache\Contracts\Storage;
 
 /** Durable local store (SQLite, file segments). Survives restarts. */
 interface PersistentStoreInterface extends StorageInterface

@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Admin;
+namespace Gratis\Cache\Admin;
 
 /**
  * Unified Gratis dashboard widget showing stats from all active plugins.
@@ -18,8 +18,8 @@ final class DashboardWidget
         echo '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">';
 
         // Cache stats
-        if (class_exists('VLT\CacheManager\Log\Logger')) {
-            $logger = new \VLT\CacheManager\Log\Logger();
+        if (class_exists('Gratis\Cache\Log\Logger')) {
+            $logger = new \Gratis\Cache\Log\Logger();
             $stats = $logger->getTodayStats();
             $total = $stats['hits'] + $stats['misses'];
             $ratio = $total > 0 ? round($stats['hits'] / $total * 100) : 0;

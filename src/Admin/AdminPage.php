@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin;
+namespace Gratis\Cache\Admin;
 
 abstract class AdminPage
 {

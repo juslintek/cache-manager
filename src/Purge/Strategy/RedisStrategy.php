@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Purge\Strategy;
+namespace Gratis\Cache\Purge\Strategy;
 
-use VLT\CacheManager\Contracts\PurgeStrategyInterface;
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Contracts\PurgeStrategyInterface;
+use Gratis\Cache\Redis\RedisFactory;
 
 final class RedisStrategy implements PurgeStrategyInterface
 {

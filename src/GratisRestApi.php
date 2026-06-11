@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager;
+namespace Gratis\Cache;
 
 /** REST API endpoints for Gratis Cache Manager admin dashboard. */
 final class GratisRestApi

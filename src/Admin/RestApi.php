@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin;
+namespace Gratis\Cache\Admin;
 
-use VLT\CacheManager\Plugin;
-use VLT\CacheManager\Redis\RedisFactory;
-use VLT\CacheManager\Tracer\TracerConfig;
+use Gratis\Cache\Plugin;
+use Gratis\Cache\Redis\RedisFactory;
+use Gratis\Cache\Tracer\TracerConfig;
 
 final class RestApi
 {
@@ -317,7 +317,7 @@ final class RestApi
 
     private static function redisDetect(): \WP_REST_Response
     {
-        return new \WP_REST_Response(\VLT\CacheManager\Redis\RedisDetector::detect());
+        return new \WP_REST_Response(\Gratis\Cache\Redis\RedisDetector::detect());
     }
 
     public static function redisSaveConfig(\WP_REST_Request $req): \WP_REST_Response
@@ -331,7 +331,7 @@ final class RestApi
         update_option('vlt_redis_port', $port);
 
         // Verify connection with new config
-        $r = \VLT\CacheManager\Redis\RedisFactory::create(2.0);
+        $r = \Gratis\Cache\Redis\RedisFactory::create(2.0);
         if (!$r) {
             return new \WP_REST_Response(['ok' => false, 'error' => 'Nepavyko prisijungti su naujais nustatymais'], 400);
         }
@@ -579,13 +579,13 @@ final class RestApi
 
     public static function imgOptmStatus(): \WP_REST_Response
     {
-        return new \WP_REST_Response(\VLT\CacheManager\Image\ImageOptimizer::status());
+        return new \WP_REST_Response(\Gratis\Cache\Image\ImageOptimizer::status());
     }
 
     public static function imgOptmRun(\WP_REST_Request $req): \WP_REST_Response
     {
         $limit = max(1, min(500, (int) ($req->get_param('limit') ?? 50)));
-        return new \WP_REST_Response(\VLT\CacheManager\Image\ImageOptimizer::runBulk($limit));
+        return new \WP_REST_Response(\Gratis\Cache\Image\ImageOptimizer::runBulk($limit));
     }
 
     public static function dismissNotice(\WP_REST_Request $req): \WP_REST_Response
@@ -599,7 +599,7 @@ final class RestApi
 
     public static function serverDetect(): \WP_REST_Response
     {
-        return new \WP_REST_Response(\VLT\CacheManager\ServerDetector::runAndStore());
+        return new \WP_REST_Response(\Gratis\Cache\ServerDetector::runAndStore());
     }
 
     public static function configSave(\WP_REST_Request $req): \WP_REST_Response
@@ -644,13 +644,13 @@ final class RestApi
         $type  = sanitize_key($req->get_param('type'));
         $start = microtime(true);
 
-        \VLT\CacheManager\Plugin::instance()->purge()->purge($type);
+        \Gratis\Cache\Plugin::instance()->purge()->purge($type);
 
         $ms    = round((microtime(true) - $start) * 1000, 1);
         $entry = ['type' => $type, 'ms' => $ms, 'ts' => time(), 'user' => wp_get_current_user()->user_login];
 
         // Store in Redis purge log (capped at 200 entries)
-        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if ($r) {
             $r->lPush('vlt_purge_log', json_encode($entry));
             $r->lTrim('vlt_purge_log', 0, 199);
@@ -662,19 +662,19 @@ final class RestApi
 
     public static function traceWorkerStatus(): \WP_REST_Response
     {
-        return new \WP_REST_Response(\VLT\CacheManager\Tracer\TraceWorker::status());
+        return new \WP_REST_Response(\Gratis\Cache\Tracer\TraceWorker::status());
     }
 
     public static function traceWorkerStart(): \WP_REST_Response
     {
-        \VLT\CacheManager\Tracer\TraceWorker::spawn();
+        \Gratis\Cache\Tracer\TraceWorker::spawn();
         sleep(1);
-        return new \WP_REST_Response(\VLT\CacheManager\Tracer\TraceWorker::status());
+        return new \WP_REST_Response(\Gratis\Cache\Tracer\TraceWorker::status());
     }
 
     public static function traceWorkerStop(): \WP_REST_Response
     {
-        \VLT\CacheManager\Tracer\TraceWorker::stop();
+        \Gratis\Cache\Tracer\TraceWorker::stop();
         return new \WP_REST_Response(['ok' => true]);
     }
 
@@ -687,7 +687,7 @@ final class RestApi
         while (ob_get_level()) ob_end_clean();
         set_time_limit(0);
 
-        $purge   = \VLT\CacheManager\Plugin::instance()->purge();
+        $purge   = \Gratis\Cache\Plugin::instance()->purge();
         $allTypes = $purge->types();
 
         // Optional filter: ?types=redis,opcache
@@ -711,7 +711,7 @@ final class RestApi
             $entry = ['event' => 'progress', 'type' => $type, 'ms' => $ms, 'done' => $done, 'total' => $total, 'pct' => round($done / $total * 100), 'ts' => time(), 'user' => $user, 'session' => $session];
 
             // Persist to Redis log
-            $r = \VLT\CacheManager\Redis\RedisFactory::create(0.3);
+            $r = \Gratis\Cache\Redis\RedisFactory::create(0.3);
             if ($r) {
                 $r->lPush('vlt_purge_log', json_encode(array_diff_key($entry, ['event' => 1])));
                 $r->lTrim('vlt_purge_log', 0, 199);
@@ -735,7 +735,7 @@ final class RestApi
 
     public static function purgeLog(): \WP_REST_Response
     {
-        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if (!$r) {
             return new \WP_REST_Response([]);
         }
@@ -747,23 +747,23 @@ final class RestApi
 
     public static function gcFix(): \WP_REST_Response
     {
-        $applied = \VLT\CacheManager\Performance\GCAnalyzer::applyAutoFixes();
+        $applied = \Gratis\Cache\Performance\GCAnalyzer::applyAutoFixes();
         return new \WP_REST_Response(['ok' => true, 'applied' => $applied]);
     }
 
     public static function queueRun(): \WP_REST_Response
     {
-        $before = \VLT\CacheManager\Async\AsyncQueue::status()['queue_length'];
-        \VLT\CacheManager\Async\AsyncQueue::processQueue();
-        $after  = \VLT\CacheManager\Async\AsyncQueue::status()['queue_length'];
+        $before = \Gratis\Cache\Async\AsyncQueue::status()['queue_length'];
+        \Gratis\Cache\Async\AsyncQueue::processQueue();
+        $after  = \Gratis\Cache\Async\AsyncQueue::status()['queue_length'];
         return new \WP_REST_Response(['ok' => true, 'processed' => max(0, $before - $after)]);
     }
 
     public static function cronStats(): \WP_REST_Response
     {
         return new \WP_REST_Response([
-            'log'   => \VLT\CacheManager\Async\CronMonitor::recentLog(50),
-            'stats' => \VLT\CacheManager\Async\CronMonitor::hookStats(),
+            'log'   => \Gratis\Cache\Async\CronMonitor::recentLog(50),
+            'stats' => \Gratis\Cache\Async\CronMonitor::hookStats(),
         ]);
     }
 
@@ -779,7 +779,7 @@ final class RestApi
         $lastTs = (float) ($_GET['since'] ?? 0);
 
         while (!connection_aborted()) {
-            $entries = \VLT\CacheManager\Async\CronMonitor::recentLog(20, (string) $lastTs);
+            $entries = \Gratis\Cache\Async\CronMonitor::recentLog(20, (string) $lastTs);
             if ($entries) {
                 echo 'data: ' . json_encode($entries) . "\n\n";
                 $lastTs = max(array_column($entries, 'ts'));

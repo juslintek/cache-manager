@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Tracer;
+namespace Gratis\Cache\Tracer;
 
 final class TracerConfig
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Redis;
+namespace Gratis\Cache\Redis;
 
 use Redis;
 

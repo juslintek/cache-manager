@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Performance;
+namespace Gratis\Cache\Performance;
 
 /**
  * Critical CSS extraction — inlines above-the-fold CSS and defers the rest.

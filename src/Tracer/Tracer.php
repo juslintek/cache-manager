@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Tracer;
+namespace Gratis\Cache\Tracer;
 
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Redis\RedisFactory;
 
 final class Tracer
 {

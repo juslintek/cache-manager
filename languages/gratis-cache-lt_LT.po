@@ -1,8 +1,8 @@
-# Lithuanian translation for Juslintek Cache Manager
+# Lithuanian translation for Gratis Cache
 # Copyright (C) 2026
 msgid ""
 msgstr ""
-"Project-Id-Version: Juslintek Cache Manager\n"
+"Project-Id-Version: Gratis Cache\n"
 "POT-Creation-Date: 2026-05-08\n"
 "PO-Revision-Date: 2026-05-08\n"
 "Language: lt_LT\n"

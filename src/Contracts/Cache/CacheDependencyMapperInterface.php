@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Contracts\Cache;
+namespace Gratis\Cache\Contracts\Cache;
 
 /** Maps what cache entries depend on what resources. */
 interface CacheDependencyMapperInterface

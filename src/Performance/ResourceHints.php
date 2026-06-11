@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Performance;
+namespace Gratis\Cache\Performance;
 
 /**
  * DNS prefetch + preconnect for external resources.

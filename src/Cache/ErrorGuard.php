@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Cache;
+namespace Gratis\Cache\Cache;
 
 /**
  * Prevents any cache layer from storing error responses.
@@ -68,11 +68,11 @@ final class ErrorGuard
 
     private static function flushCorruptedRedisKeys(string $errorFile): void
     {
-        if (!class_exists(\VLT\CacheManager\Redis\RedisFactory::class)) {
+        if (!class_exists(\Gratis\Cache\Redis\RedisFactory::class)) {
             return;
         }
 
-        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if (!$r) {
             return;
         }
@@ -98,8 +98,8 @@ final class ErrorGuard
         );
 
         $logFile = defined('WP_CONTENT_DIR')
-            ? WP_CONTENT_DIR . '/cache-manager-errors.log'
-            : '/tmp/cache-manager-errors.log';
+            ? WP_CONTENT_DIR . '/gratis-cache-errors.log'
+            : '/tmp/gratis-cache-errors.log';
 
         @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
     }

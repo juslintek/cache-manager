@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Log;
+namespace Gratis\Cache\Log;
 
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Redis\RedisFactory;
 
 final class Logger
 {

@@ -1,390 +1,391 @@
-# English translation for Juslintek Cache Manager
+# Gratis Cache POT file
 # Copyright (C) 2026
 msgid ""
 msgstr ""
-"Project-Id-Version: Juslintek Cache Manager\n"
+"Project-Id-Version: Gratis Cache\n"
 "POT-Creation-Date: 2026-05-08\n"
-"PO-Revision-Date: 2026-05-08\n"
-"Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 msgid "Cache Manager"
-msgstr "Cache Manager"
+msgstr ""
 
 msgid "Dashboard"
-msgstr "Dashboard"
+msgstr ""
 
 msgid "Logs"
-msgstr "Logs"
+msgstr ""
 
 msgid "Settings"
-msgstr "Settings"
+msgstr ""
 
 msgid "Tracer"
-msgstr "Tracer"
+msgstr ""
 
 msgid "Performance"
-msgstr "Performance"
+msgstr ""
 
 msgid "LiteSpeed"
-msgstr "LiteSpeed"
+msgstr ""
 
 msgid "CloudLinux"
-msgstr "CloudLinux"
+msgstr ""
 
 msgid "Connected"
-msgstr "Connected"
+msgstr ""
 
 msgid "Unreachable"
-msgstr "Unreachable"
+msgstr ""
 
 msgid "Enabled"
-msgstr "Enabled"
+msgstr ""
 
 msgid "Disabled"
-msgstr "Disabled"
+msgstr ""
 
 msgid "Active"
-msgstr "Active"
+msgstr ""
 
 msgid "Inactive"
-msgstr "Inactive"
+msgstr ""
 
 msgid "Found"
-msgstr "Found"
+msgstr ""
 
 msgid "Not found"
-msgstr "Not found"
+msgstr ""
 
 msgid "Purge all"
-msgstr "Purge all"
+msgstr ""
 
 msgid "Purge LiteSpeed"
-msgstr "Purge LiteSpeed"
+msgstr ""
 
 msgid "Purge Nginx"
-msgstr "Purge Nginx"
+msgstr ""
 
 msgid "Purge OPcache"
-msgstr "Purge OPcache"
+msgstr ""
 
 msgid "Purge Redis"
-msgstr "Purge Redis"
+msgstr ""
 
 msgid "Save"
-msgstr "Save"
+msgstr ""
 
 msgid "Save settings"
-msgstr "Save settings"
+msgstr ""
 
 msgid "Enable"
-msgstr "Enable"
+msgstr ""
 
 msgid "Disable"
-msgstr "Disable"
+msgstr ""
 
 msgid "Back"
-msgstr "Back"
+msgstr ""
 
 msgid "Cache"
-msgstr "Cache"
+msgstr ""
 
 msgid "Status"
-msgstr "Status"
+msgstr ""
 
 msgid "Time"
-msgstr "Time"
+msgstr ""
 
 msgid "Size"
-msgstr "Size"
+msgstr ""
 
 msgid "Files"
-msgstr "Files"
+msgstr ""
 
 msgid "Keys"
-msgstr "Keys"
+msgstr ""
 
 msgid "Memory usage"
-msgstr "Memory usage"
+msgstr ""
 
 msgid "Today's statistics"
-msgstr "Today's statistics"
+msgstr ""
 
 msgid "Hit rate"
-msgstr "Hit rate"
+msgstr ""
 
 msgid "Purge events"
-msgstr "Purge events"
+msgstr ""
 
 msgid "Recent purge events"
-msgstr "Recent purge events"
+msgstr ""
 
 msgid "Quick purge"
-msgstr "Quick purge"
+msgstr ""
 
 msgid "Purge log"
-msgstr "Purge log"
+msgstr ""
 
 msgid "No records"
-msgstr "No records"
+msgstr ""
 
 msgid "Loading"
-msgstr "Loading"
+msgstr ""
 
 msgid "Error"
-msgstr "Error"
+msgstr ""
 
 msgid "All cleared"
-msgstr "All cleared"
+msgstr ""
 
 msgid "Purging cache"
-msgstr "Purging cache"
+msgstr ""
 
 msgid "Debug mode"
-msgstr "Debug mode"
+msgstr ""
 
 msgid "Request logging"
-msgstr "Request logging"
+msgstr ""
 
 msgid "Cloudflare tracking"
-msgstr "Cloudflare tracking"
+msgstr ""
 
 msgid "Log retention (days)"
-msgstr "Log retention (days)"
+msgstr ""
 
 msgid "Unix socket path"
-msgstr "Unix socket path"
+msgstr ""
 
 msgid "Redis connection"
-msgstr "Redis connection"
+msgstr ""
 
 msgid "Auto-detect Redis"
-msgstr "Auto-detect Redis"
+msgstr ""
 
 msgid "Detecting"
-msgstr "Detecting"
+msgstr ""
 
 msgid "Redis found"
-msgstr "Redis found"
+msgstr ""
 
 msgid "Redis not found"
-msgstr "Redis not found"
+msgstr ""
 
 msgid "Cache settings"
-msgstr "Cache settings"
+msgstr ""
 
 msgid "Cache TTL"
-msgstr "Cache TTL"
+msgstr ""
 
 msgid "Enable LSCache"
-msgstr "Enable LSCache"
+msgstr ""
 
 msgid "Cache logged-in users"
-msgstr "Cache logged-in users"
+msgstr ""
 
 msgid "Cache search results"
-msgstr "Cache search results"
+msgstr ""
 
 msgid "Cache 404 pages"
-msgstr "Cache 404 pages"
+msgstr ""
 
 msgid "Cache management"
-msgstr "Cache management"
+msgstr ""
 
 msgid "Configuration file"
-msgstr "Configuration file"
+msgstr ""
 
 msgid "Configuration files"
-msgstr "Configuration files"
+msgstr ""
 
 msgid "LSCache module"
-msgstr "LSCache module"
+msgstr ""
 
 msgid "Cache enabled"
-msgstr "Cache enabled"
+msgstr ""
 
 msgid "LSCWP plugin"
-msgstr "LSCWP plugin"
+msgstr ""
 
 msgid "Cache directory"
-msgstr "Cache directory"
+msgstr ""
 
 msgid "Server"
-msgstr "Server"
+msgstr ""
 
 msgid "Parameter"
-msgstr "Parameter"
+msgstr ""
 
 msgid "How to enable / fix"
-msgstr "How to enable / fix"
+msgstr ""
 
 msgid "PHP GC & memory analysis"
-msgstr "PHP GC & memory analysis"
+msgstr ""
 
 msgid "Async queue (Redis)"
-msgstr "Async queue (Redis)"
+msgstr ""
 
 msgid "WP-Cron → Redis queue"
-msgstr "WP-Cron → Redis queue"
+msgstr ""
 
 msgid "WP-Cron tasks"
-msgstr "WP-Cron tasks"
+msgstr ""
 
 msgid "WP-Cron — Live monitoring"
-msgstr "WP-Cron — Live monitoring"
+msgstr ""
 
 msgid "Scheduled"
-msgstr "Scheduled"
+msgstr ""
 
 msgid "Overdue"
-msgstr "Overdue"
+msgstr ""
 
 msgid "Execution log"
-msgstr "Execution log"
+msgstr ""
 
 msgid "Stats by hook"
-msgstr "Stats by hook"
+msgstr ""
 
 msgid "Scheduled tasks"
-msgstr "Scheduled tasks"
+msgstr ""
 
 msgid "Run queue now"
-msgstr "Run queue now"
+msgstr ""
 
 msgid "Auto-fix"
-msgstr "Auto-fix"
+msgstr ""
 
 msgid "Fixing"
-msgstr "Fixing"
+msgstr ""
 
 msgid "Live monitoring"
-msgstr "Live monitoring"
+msgstr ""
 
 msgid "Trace Worker"
-msgstr "Trace Worker"
+msgstr ""
 
 msgid "Running"
-msgstr "Running"
+msgstr ""
 
 msgid "Stopped"
-msgstr "Stopped"
+msgstr ""
 
 msgid "Start"
-msgstr "Start"
+msgstr ""
 
 msgid "Stop"
-msgstr "Stop"
+msgstr ""
 
 msgid "In queue"
-msgstr "In queue"
+msgstr ""
 
 msgid "Heartbeat"
-msgstr "Heartbeat"
+msgstr ""
 
 msgid "CloudLinux detected"
-msgstr "CloudLinux detected"
+msgstr ""
 
 msgid "Optimization recommendations"
-msgstr "Optimization recommendations"
+msgstr ""
 
 msgid "LSCache per domain"
-msgstr "LSCache per domain"
+msgstr ""
 
 msgid "Domain"
-msgstr "Domain"
+msgstr ""
 
 msgid "User"
-msgstr "User"
+msgstr ""
 
 msgid "Action"
-msgstr "Action"
+msgstr ""
 
 msgid "Image optimization"
-msgstr "Image optimization"
+msgstr ""
 
 msgid "Optimized"
-msgstr "Optimized"
+msgstr ""
 
 msgid "Pending"
-msgstr "Pending"
+msgstr ""
 
 msgid "Optimize pending"
-msgstr "Optimize pending"
+msgstr ""
+
+msgid "Running"
+msgstr ""
 
 msgid "Delegated to LSCWP"
-msgstr "Delegated to LSCWP"
+msgstr ""
 
 msgid "Processed"
-msgstr "Processed"
+msgstr ""
 
 msgid "Skipped"
-msgstr "Skipped"
+msgstr ""
 
 msgid "Nginx Explorer"
-msgstr "Nginx Explorer"
+msgstr ""
 
 msgid "Nginx cache"
-msgstr "Nginx cache"
+msgstr ""
 
 msgid "Source code"
-msgstr "Source code"
+msgstr ""
 
 msgid "Render"
-msgstr "Render"
+msgstr ""
 
 msgid "Headers"
-msgstr "Headers"
+msgstr ""
 
 msgid "URL key"
-msgstr "URL key"
+msgstr ""
 
 msgid "Cache file"
-msgstr "Cache file"
+msgstr ""
 
 msgid "Created"
-msgstr "Created"
+msgstr ""
 
 msgid "Redis Explorer"
-msgstr "Redis Explorer"
+msgstr ""
 
 msgid "Group"
-msgstr "Group"
+msgstr ""
 
 msgid "Key count"
-msgstr "Key count"
+msgstr ""
 
 msgid "Preview"
-msgstr "Preview"
+msgstr ""
 
 msgid "Delete"
-msgstr "Delete"
+msgstr ""
 
 msgid "Delete group"
-msgstr "Delete group"
+msgstr ""
 
 msgid "OPcache Explorer"
-msgstr "OPcache Explorer"
+msgstr ""
 
 msgid "Reset"
-msgstr "Reset"
+msgstr ""
 
 msgid "Actions"
-msgstr "Actions"
+msgstr ""
 
 msgid "Download logs (ZIP)"
-msgstr "Download logs (ZIP)"
+msgstr ""
 
 msgid "Install object-cache.php"
-msgstr "Install object-cache.php"
+msgstr ""
 
 msgid "Reinstall object-cache.php"
-msgstr "Reinstall object-cache.php"
+msgstr ""
 
 msgid "Re-detect server"
-msgstr "Re-detect server"
+msgstr ""
 
 msgid "Detected"
-msgstr "Detected"
+msgstr ""
 

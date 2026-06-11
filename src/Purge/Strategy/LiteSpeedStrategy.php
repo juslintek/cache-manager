@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Purge\Strategy;
+namespace Gratis\Cache\Purge\Strategy;
 
-use VLT\CacheManager\Contracts\PurgeStrategyInterface;
+use Gratis\Cache\Contracts\PurgeStrategyInterface;
 
 final class LiteSpeedStrategy implements PurgeStrategyInterface
 {
@@ -16,7 +16,7 @@ final class LiteSpeedStrategy implements PurgeStrategyInterface
     public function purge(): void
     {
         // Use our native cache control first
-        \VLT\CacheManager\Cache\LiteSpeedCache::purgeAll();
+        \Gratis\Cache\Cache\LiteSpeedCache::purgeAll();
 
         // Also trigger LSCWP if active (belt and suspenders)
         if (has_action('litespeed_purge_all')) {

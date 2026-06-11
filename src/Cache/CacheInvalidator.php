@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Cache;
+namespace Gratis\Cache\Cache;
 
-use VLT\CacheManager\Purge\PurgeManager;
+use Gratis\Cache\Purge\PurgeManager;
 
 /**
  * Targeted cache invalidation — hooks into every WordPress content change event.
@@ -238,7 +238,7 @@ final class CacheInvalidator
 
     private function purgeRedisGroups(array $groups): void
     {
-        $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+        $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if (!$r) {
             return;
         }

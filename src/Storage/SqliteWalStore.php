@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Storage;
+namespace Gratis\Cache\Storage;
 
 use RuntimeException;
 use SQLite3;
 use SQLite3Stmt;
-use VLT\CacheManager\Contracts\Storage\PersistentStoreInterface;
+use Gratis\Cache\Contracts\Storage\PersistentStoreInterface;
 
 /** SQLite WAL-mode persistent store for concurrent-read workloads. */
 final class SqliteWalStore implements PersistentStoreInterface
@@ -18,7 +18,7 @@ final class SqliteWalStore implements PersistentStoreInterface
         }
 
         if ($path === '') {
-            $path = WP_CONTENT_DIR . '/cache-manager-data/store.sqlite';
+            $path = WP_CONTENT_DIR . '/gratis-cache-data/store.sqlite';
         }
 
         $dir = dirname($path);

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Image;
+namespace Gratis\Cache\Image;
 
 /**
  * Local image optimization: converts JPEG/PNG to WebP (and optionally AVIF)

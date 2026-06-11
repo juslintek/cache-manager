@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\CLI;
+namespace Gratis\Cache\CLI;
 
-use VLT\CacheManager\Diagnostics\CapabilityDetector;
+use Gratis\Cache\Diagnostics\CapabilityDetector;
 
 /** WP-CLI commands: wp gratis-cache <subcommand> */
 final class GratisCacheCommand
@@ -30,7 +30,7 @@ final class GratisCacheCommand
         \WP_CLI::log("  Serializer: " . CapabilityDetector::bestSerializer());
         \WP_CLI::log("");
 
-        $logger = new \VLT\CacheManager\Log\Logger();
+        $logger = new \Gratis\Cache\Log\Logger();
         $stats = $logger->getTodayStats();
         $total = $stats['hits'] + $stats['misses'];
         $ratio = $total > 0 ? round($stats['hits'] / $total * 100, 1) : 0;
@@ -337,8 +337,8 @@ final class GratisCacheCommand
 
         // 7. File Change History
         \WP_CLI::log("\n── Recent Changes ──");
-        $store = new \VLT\CacheManager\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/cache-manager-data');
-        $scanner = new \VLT\CacheManager\Storage\FileChangeScanner($store);
+        $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
+        $scanner = new \Gratis\Cache\Storage\FileChangeScanner($store);
         $last = $scanner->lastChange(get_stylesheet_directory());
         if ($last) {
             \WP_CLI::log("  Last theme change: " . date('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ")");
@@ -369,8 +369,8 @@ final class GratisCacheCommand
      */
     public function scan_files($args, $assoc_args): void
     {
-        $store = new \VLT\CacheManager\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/cache-manager-data');
-        $scanner = new \VLT\CacheManager\Storage\FileChangeScanner($store);
+        $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
+        $scanner = new \Gratis\Cache\Storage\FileChangeScanner($store);
 
         $dirs = null;
         if (!empty($assoc_args['dir'])) {
@@ -408,7 +408,7 @@ final class GratisCacheCommand
     public function history($args, $assoc_args): void
     {
         $sub = $args[0] ?? 'tail';
-        $store = new \VLT\CacheManager\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/cache-manager-data');
+        $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
 
         if ($sub === 'tail') {
             // Show cache events + file changes combined
@@ -465,8 +465,8 @@ final class GratisCacheCommand
     public function dropin($args, $assoc_args): void
     {
         $action = $args[0] ?? 'status';
-        $installer = new \VLT\CacheManager\Cache\DropinInstaller(
-            new \VLT\CacheManager\Cache\DropinGenerator()
+        $installer = new \Gratis\Cache\Cache\DropinInstaller(
+            new \Gratis\Cache\Cache\DropinGenerator()
         );
 
         switch ($action) {
@@ -582,7 +582,7 @@ final class GratisCacheCommand
         $url = $args[0] ?? home_url('/');
         \WP_CLI::log("Generating critical CSS for: {$url}");
 
-        $css = \VLT\CacheManager\Performance\CriticalCSS::generate($url);
+        $css = \Gratis\Cache\Performance\CriticalCSS::generate($url);
         if (empty($css)) {
             \WP_CLI::warning("Could not generate critical CSS (URL unreachable or no stylesheets found).");
             return;
@@ -616,7 +616,7 @@ final class GratisCacheCommand
         $dryRun = isset($assoc_args['dry-run']);
 
         if ($dryRun) {
-            $stats = \VLT\CacheManager\Performance\DatabaseOptimizer::getStats();
+            $stats = \Gratis\Cache\Performance\DatabaseOptimizer::getStats();
             \WP_CLI::log("=== Database Status (dry run) ===");
             \WP_CLI::log("  Size: " . round(($stats['total_size'] ?? 0) / 1048576, 1) . " MB");
             \WP_CLI::log("  Revisions: {$stats['revisions']}");
@@ -628,7 +628,7 @@ final class GratisCacheCommand
         }
 
         \WP_CLI::log("Optimizing database...");
-        $result = \VLT\CacheManager\Performance\DatabaseOptimizer::optimize([
+        $result = \Gratis\Cache\Performance\DatabaseOptimizer::optimize([
             'keep_revisions' => (int) ($assoc_args['keep-revisions'] ?? 5),
         ]);
 
@@ -716,10 +716,10 @@ final class GratisCacheCommand
                 \WP_CLI::error("Usage: redirect add <from> <to>");
             }
             $code = (int) ($assoc_args['code'] ?? 301);
-            \VLT\CacheManager\Performance\RedirectManager::add($args[1], $args[2], $code);
+            \Gratis\Cache\Performance\RedirectManager::add($args[1], $args[2], $code);
             \WP_CLI::success("Redirect added: {$args[1]} → {$args[2]} ({$code})");
         } elseif ($action === 'list') {
-            $all = \VLT\CacheManager\Performance\RedirectManager::all();
+            $all = \Gratis\Cache\Performance\RedirectManager::all();
             if (empty($all)) { \WP_CLI::log("No redirects."); return; }
             $rows = [];
             foreach ($all as $i => $r) {
@@ -729,7 +729,7 @@ final class GratisCacheCommand
         } elseif ($action === 'remove') {
             $idx = (int) ($assoc_args['index'] ?? -1);
             if ($idx < 0) { \WP_CLI::error("Specify --index=N"); }
-            \VLT\CacheManager\Performance\RedirectManager::remove($idx)
+            \Gratis\Cache\Performance\RedirectManager::remove($idx)
                 ? \WP_CLI::success("Removed.")
                 : \WP_CLI::error("Not found.");
         }

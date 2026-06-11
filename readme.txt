@@ -1,4 +1,4 @@
-=== Juslintek Cache Manager ===
+=== Gratis Cache ===
 Contributors: juslintek
 Tags: cache, performance, redis, opcache, object-cache
 Requires at least: 6.0
@@ -12,7 +12,7 @@ Full-stack cache management with auto-backend detection, request tracing, and WP
 
 == Description ==
 
-Juslintek Cache Manager automatically detects and uses the best available cache backend on your server. It supports Redis, Memcached, APCu, SQLite WAL, and file-based storage — choosing the optimal combination without manual configuration.
+Gratis Cache automatically detects and uses the best available cache backend on your server. It supports Redis, Memcached, APCu, SQLite WAL, and file-based storage — choosing the optimal combination without manual configuration.
 
 **Key Features:**
 

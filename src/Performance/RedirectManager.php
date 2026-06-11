@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Performance;
+namespace Gratis\Cache\Performance;
 
 /**
  * Redirect manager (301/302) — what the Redirection plugin does. Free in Gratis.

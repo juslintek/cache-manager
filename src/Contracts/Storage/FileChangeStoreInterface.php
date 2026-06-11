@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Contracts\Storage;
+namespace Gratis\Cache\Contracts\Storage;
 
 /** Tracks filesystem changes for cache invalidation. */
 interface FileChangeStoreInterface

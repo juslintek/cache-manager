@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Async;
+namespace Gratis\Cache\Async;
 
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Redis\RedisFactory;
 
 /**
  * Tracks WP-Cron job execution in real-time via Redis.

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\CloudLinuxDetector;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\CloudLinuxDetector;
 
 final class CloudLinuxPage extends AdminPage
 {

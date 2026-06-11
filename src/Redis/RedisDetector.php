@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Redis;
+namespace Gratis\Cache\Redis;
 
 final class RedisDetector
 {
@@ -214,7 +214,7 @@ final class RedisDetector
 
     public static function detectLiteSpeed(): bool
     {
-        return \VLT\CacheManager\ServerDetector::isLiteSpeed();
+        return \Gratis\Cache\ServerDetector::isLiteSpeed();
     }
 
     private static function installInstructions(string $panel): string

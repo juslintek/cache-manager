@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Performance;
+namespace Gratis\Cache\Performance;
 
 /**
  * Heartbeat API control — reduces admin-ajax.php load.

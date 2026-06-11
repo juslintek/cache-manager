@@ -2,32 +2,32 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager;
+namespace Gratis\Cache;
 
-use VLT\CacheManager\Admin\AdminAjax;
-use VLT\CacheManager\Admin\Page\ApachePage;
-use VLT\CacheManager\Admin\Page\CloudflarePage;
-use VLT\CacheManager\Admin\Page\CloudLinuxPage;
-use VLT\CacheManager\Admin\Page\DashboardPage;
-use VLT\CacheManager\Admin\Page\DocsPage;
-use VLT\CacheManager\Admin\Page\LiteSpeedPage;
-use VLT\CacheManager\Admin\Page\LogsPage;
-use VLT\CacheManager\Admin\Page\NginxExplorerPage;
-use VLT\CacheManager\Admin\Page\OpcacheExplorerPage;
-use VLT\CacheManager\Admin\Page\PerformancePage;
-use VLT\CacheManager\Admin\Page\RedisExplorerPage;
-use VLT\CacheManager\Admin\Page\SettingsPage;
-use VLT\CacheManager\Admin\Page\TracerPage;
-use VLT\CacheManager\Cache\DropinGenerator;
-use VLT\CacheManager\Cache\DropinInstaller;
-use VLT\CacheManager\Log\Logger;
-use VLT\CacheManager\Purge\PurgeManager;
-use VLT\CacheManager\Purge\Strategy\ElementorStrategy;
-use VLT\CacheManager\Purge\Strategy\LiteSpeedStrategy;
-use VLT\CacheManager\Purge\Strategy\NginxStrategy;
-use VLT\CacheManager\Purge\Strategy\OpcacheStrategy;
-use VLT\CacheManager\Purge\Strategy\RedisStrategy;
-use VLT\CacheManager\Tracer\TracerConfig;
+use Gratis\Cache\Admin\AdminAjax;
+use Gratis\Cache\Admin\Page\ApachePage;
+use Gratis\Cache\Admin\Page\CloudflarePage;
+use Gratis\Cache\Admin\Page\CloudLinuxPage;
+use Gratis\Cache\Admin\Page\DashboardPage;
+use Gratis\Cache\Admin\Page\DocsPage;
+use Gratis\Cache\Admin\Page\LiteSpeedPage;
+use Gratis\Cache\Admin\Page\LogsPage;
+use Gratis\Cache\Admin\Page\NginxExplorerPage;
+use Gratis\Cache\Admin\Page\OpcacheExplorerPage;
+use Gratis\Cache\Admin\Page\PerformancePage;
+use Gratis\Cache\Admin\Page\RedisExplorerPage;
+use Gratis\Cache\Admin\Page\SettingsPage;
+use Gratis\Cache\Admin\Page\TracerPage;
+use Gratis\Cache\Cache\DropinGenerator;
+use Gratis\Cache\Cache\DropinInstaller;
+use Gratis\Cache\Log\Logger;
+use Gratis\Cache\Purge\PurgeManager;
+use Gratis\Cache\Purge\Strategy\ElementorStrategy;
+use Gratis\Cache\Purge\Strategy\LiteSpeedStrategy;
+use Gratis\Cache\Purge\Strategy\NginxStrategy;
+use Gratis\Cache\Purge\Strategy\OpcacheStrategy;
+use Gratis\Cache\Purge\Strategy\RedisStrategy;
+use Gratis\Cache\Tracer\TracerConfig;
 
 final class Plugin
 {
@@ -59,11 +59,11 @@ final class Plugin
             new OpcacheStrategy(),
             new RedisStrategy(),
             new ElementorStrategy(),
-            ...( get_option('vlt_litespeed_purge') || \VLT\CacheManager\ServerDetector::isLiteSpeed() ? [new LiteSpeedStrategy()] : [] )
+            ...( get_option('vlt_litespeed_purge') || \Gratis\Cache\ServerDetector::isLiteSpeed() ? [new LiteSpeedStrategy()] : [] )
         );
 
         // Targeted cache invalidation — hooks into every content change event
-        (new \VLT\CacheManager\Cache\CacheInvalidator($self->purge))->register();
+        (new \Gratis\Cache\Cache\CacheInvalidator($self->purge))->register();
 
         add_action('init', [$self->logger, 'logCfRequest']);
         add_action('shutdown', [$self, 'onShutdown']);
@@ -89,7 +89,7 @@ final class Plugin
                 add_action('admin_notices', [$self, 'simdjsonNotice']);
             }
 
-            if (\VLT\CacheManager\CloudLinuxDetector::isCloudLinux()) {
+            if (\Gratis\Cache\CloudLinuxDetector::isCloudLinux()) {
                 add_action('admin_notices', [$self, 'cloudLinuxNotice']);
             }
 
@@ -105,42 +105,42 @@ final class Plugin
         add_action('rest_api_init', [GratisRestApi::class, 'register']);
 
         // Image optimization
-        \VLT\CacheManager\Image\ImageOptimizer::register();
+        \Gratis\Cache\Image\ImageOptimizer::register();
 
         // Page cache (full HTML caching)
-        \VLT\CacheManager\Cache\PageCache::register();
+        \Gratis\Cache\Cache\PageCache::register();
 
         // Performance: Critical CSS, Minification, Resource Hints
-        \VLT\CacheManager\Performance\CriticalCSS::register();
-        \VLT\CacheManager\Performance\Minifier::register();
-        \VLT\CacheManager\Performance\ResourceHints::register();
-        \VLT\CacheManager\Performance\HeartbeatControl::register();
-        \VLT\CacheManager\Performance\LazyLoad::register();
-        \VLT\CacheManager\Performance\RedirectManager::register();
-        \VLT\CacheManager\Search\SearchIndex::register();
-        \VLT\CacheManager\Admin\DashboardWidget::register();
-        \VLT\CacheManager\Security\LoginProtection::register();
+        \Gratis\Cache\Performance\CriticalCSS::register();
+        \Gratis\Cache\Performance\Minifier::register();
+        \Gratis\Cache\Performance\ResourceHints::register();
+        \Gratis\Cache\Performance\HeartbeatControl::register();
+        \Gratis\Cache\Performance\LazyLoad::register();
+        \Gratis\Cache\Performance\RedirectManager::register();
+        \Gratis\Cache\Search\SearchIndex::register();
+        \Gratis\Cache\Admin\DashboardWidget::register();
+        \Gratis\Cache\Security\LoginProtection::register();
 
         // Native LiteSpeed cache control (sends X-LiteSpeed-Cache-Control headers)
-        if (\VLT\CacheManager\ServerDetector::isLiteSpeed()) {
-            \VLT\CacheManager\Cache\LiteSpeedCache::register();
+        if (\Gratis\Cache\ServerDetector::isLiteSpeed()) {
+            \Gratis\Cache\Cache\LiteSpeedCache::register();
         }
 
         // Error guard: prevent ALL cache layers from storing error responses
-        \VLT\CacheManager\Cache\ErrorGuard::register();
+        \Gratis\Cache\Cache\ErrorGuard::register();
 
         // Async queue worker endpoint
-        add_action('wp_ajax_nopriv_vlt_async_worker', [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
-        add_action('wp_ajax_vlt_async_worker',        [\VLT\CacheManager\Async\AsyncQueue::class, 'processQueue']);
+        add_action('wp_ajax_nopriv_vlt_async_worker', [\Gratis\Cache\Async\AsyncQueue::class, 'processQueue']);
+        add_action('wp_ajax_vlt_async_worker',        [\Gratis\Cache\Async\AsyncQueue::class, 'processQueue']);
 
         // WP-Cron → Redis offload
-        \VLT\CacheManager\Async\AsyncQueue::offloadCron();
+        \Gratis\Cache\Async\AsyncQueue::offloadCron();
 
         // Cron execution monitoring
-        \VLT\CacheManager\Async\CronMonitor::register();
+        \Gratis\Cache\Async\CronMonitor::register();
 
         // Trace worker keepalive — check every 5 minutes via WP-Cron
-        add_action('vlt_trace_worker_check', [\VLT\CacheManager\Tracer\TraceWorker::class, 'ensureRunning']);
+        add_action('vlt_trace_worker_check', [\Gratis\Cache\Tracer\TraceWorker::class, 'ensureRunning']);
         if (!wp_next_scheduled('vlt_trace_worker_check')) {
             wp_schedule_event(time(), 'vlt_five_minutes', 'vlt_trace_worker_check');
         }
@@ -151,7 +151,7 @@ final class Plugin
 
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
-            \WP_CLI::add_command('gratis-cache', \VLT\CacheManager\CLI\GratisCacheCommand::class);
+            \WP_CLI::add_command('gratis-cache', \Gratis\Cache\CLI\GratisCacheCommand::class);
         }
     }
 
@@ -174,7 +174,7 @@ final class Plugin
         }
         $maxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
         if ($maxMb > 0) {
-            \VLT\CacheManager\Log\Logger::enforceMaxSize($dir, 'trace-*.json', $maxMb * 1048576);
+            \Gratis\Cache\Log\Logger::enforceMaxSize($dir, 'trace-*.json', $maxMb * 1048576);
         }
     }
 
@@ -194,13 +194,13 @@ final class Plugin
 
     public function registerMenu(): void
     {
-        $server = \VLT\CacheManager\ServerDetector::detect()['server'];
-        $isLS   = in_array($server, [\VLT\CacheManager\ServerDetector::LITESPEED, \VLT\CacheManager\ServerDetector::OLS], true);
-        $isNginx  = $server === \VLT\CacheManager\ServerDetector::NGINX;
-        $isApache = $server === \VLT\CacheManager\ServerDetector::APACHE;
+        $server = \Gratis\Cache\ServerDetector::detect()['server'];
+        $isLS   = in_array($server, [\Gratis\Cache\ServerDetector::LITESPEED, \Gratis\Cache\ServerDetector::OLS], true);
+        $isNginx  = $server === \Gratis\Cache\ServerDetector::NGINX;
+        $isApache = $server === \Gratis\Cache\ServerDetector::APACHE;
 
         $host    = parse_url(home_url(), PHP_URL_HOST) ?? '';
-        $hasCf   = \VLT\CacheManager\Admin\Page\SettingsPage::isDomainBehindCloudflare($host)
+        $hasCf   = \Gratis\Cache\Admin\Page\SettingsPage::isDomainBehindCloudflare($host)
                    || get_option('vlt_cm_cf_tracking', false);
 
         $pages = [new DashboardPage(), new LogsPage()];
@@ -224,21 +224,21 @@ final class Plugin
         $pages[] = new RedisExplorerPage();
         $pages[] = new TracerPage();
         $pages[] = new PerformancePage();
-        if (\VLT\CacheManager\CloudLinuxDetector::isCloudLinux()) {
+        if (\Gratis\Cache\CloudLinuxDetector::isCloudLinux()) {
             $pages[] = new CloudLinuxPage();
         }
         $pages[] = new DocsPage();
         $pages[] = new SettingsPage();
 
         add_menu_page(
-            __('Cache Manager', 'juslintek-cache-manager'),
-            __('Cache Manager', 'juslintek-cache-manager'),
+            __('Cache Manager', 'gratis-cache'),
+            __('Cache Manager', 'gratis-cache'),
             'manage_options', 'vlt-cache', [$pages[0], 'render'], 'dashicons-performance', 80
         );
-        add_submenu_page('vlt-cache', __('Dashboard', 'juslintek-cache-manager'), __('Dashboard', 'juslintek-cache-manager'), 'manage_options', 'vlt-cache', [$pages[0], 'render']);
+        add_submenu_page('vlt-cache', __('Dashboard', 'gratis-cache'), __('Dashboard', 'gratis-cache'), 'manage_options', 'vlt-cache', [$pages[0], 'render']);
 
         for ($i = 1, $c = count($pages); $i < $c; $i++) {
-            $title = __($pages[$i]->title(), 'juslintek-cache-manager');
+            $title = __($pages[$i]->title(), 'gratis-cache');
             add_submenu_page('vlt-cache', $title, $title, 'manage_options', $pages[$i]->slug(), [$pages[$i], 'render']);
         }
     }
@@ -255,16 +255,16 @@ final class Plugin
         }
         $wp_admin_bar->add_node([
             'id'    => 'vlt-cache',
-            'title' => sprintf(__('Cache Manager (H:%d M:%d)', 'juslintek-cache-manager'), $hits, $misses),
+            'title' => sprintf(__('Cache Manager (H:%d M:%d)', 'gratis-cache'), $hits, $misses),
             'href'  => admin_url('admin.php?page=vlt-cache'),
         ]);
-        $isLS = \VLT\CacheManager\ServerDetector::isLiteSpeed();
+        $isLS = \Gratis\Cache\ServerDetector::isLiteSpeed();
         $items = [
-            'purge-all'     => [__('Purge all', 'juslintek-cache-manager'), 'all'],
-            'purge-server'  => [$isLS ? __('Purge LiteSpeed', 'juslintek-cache-manager') : __('Purge Nginx', 'juslintek-cache-manager'), $isLS ? 'litespeed' : 'nginx'],
-            'purge-opcache' => [__('Purge OPcache', 'juslintek-cache-manager'), 'opcache'],
-            'purge-redis'   => [__('Purge Redis', 'juslintek-cache-manager'), 'redis'],
-            'debug-toggle'  => [isset($_COOKIE['vlt_debug_cache']) ? __('Disable debug', 'juslintek-cache-manager') : __('Enable debug', 'juslintek-cache-manager'), 'debug'],
+            'purge-all'     => [__('Purge all', 'gratis-cache'), 'all'],
+            'purge-server'  => [$isLS ? __('Purge LiteSpeed', 'gratis-cache') : __('Purge Nginx', 'gratis-cache'), $isLS ? 'litespeed' : 'nginx'],
+            'purge-opcache' => [__('Purge OPcache', 'gratis-cache'), 'opcache'],
+            'purge-redis'   => [__('Purge Redis', 'gratis-cache'), 'redis'],
+            'debug-toggle'  => [isset($_COOKIE['vlt_debug_cache']) ? __('Disable debug', 'gratis-cache') : __('Enable debug', 'gratis-cache'), 'debug'],
         ];
         foreach ($items as $id => $item) {
             $href = $item[1] === 'debug'
@@ -346,7 +346,7 @@ final class Plugin
             ? 'Prijungtas (' . esc_html($redis['memory']) . ')'
             : '<span style="color:red">Nepasiekiamas</span>') . '</p>';
         echo '<p><strong>Pataikymų santykis šiandien:</strong> ' . $ratio . '% (' . $stats['hits'] . '/' . ($stats['hits'] + $stats['misses']) . ')</p>';
-        echo '<p><strong>Nginx talpykla:</strong> ' . esc_html(self::formatSize(self::dirSize(VLT_CM_NGINX_CACHE))) . '</p>';
+        echo '<p><strong>Nginx talpykla:</strong> ' . esc_html(self::formatSize(self::dirSize(GRATIS_CACHE_NGINX_CACHE))) . '</p>';
 
         $entries = $this->logger->readLog(gmdate('Y-m-d'));
         $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
@@ -485,7 +485,7 @@ final class Plugin
             return;
         }
         $missing = [];
-        if (!\VLT\CacheManager\CloudLinuxDetector::redisEnabled()) {
+        if (!\Gratis\Cache\CloudLinuxDetector::redisEnabled()) {
             $missing[] = 'Redis object cache';
         }
         if (empty($missing)) {
@@ -505,7 +505,7 @@ final class Plugin
         if (!current_user_can('manage_options')) {
             return;
         }
-        $panel = \VLT\CacheManager\Redis\RedisDetector::detectPanel();
+        $panel = \Gratis\Cache\Redis\RedisDetector::detectPanel();
         $instructions = match ($panel) {
             'cpanel'      => 'WHM → PHP Extensions → simdjson, arba SSH: <code>pecl install simdjson</code>',
             'plesk'       => 'Plesk → PHP Settings → Extensions → simdjson, arba SSH: <code>pecl install simdjson</code>',
@@ -534,7 +534,7 @@ final class Plugin
     {
         $info = ['connected' => false, 'memory' => '—', 'keys' => 0];
         try {
-            $r = \VLT\CacheManager\Redis\RedisFactory::create(1.0);
+            $r = \Gratis\Cache\Redis\RedisFactory::create(1.0);
             if ($r) {
                 $info['connected'] = true;
                 $ri = $r->info();

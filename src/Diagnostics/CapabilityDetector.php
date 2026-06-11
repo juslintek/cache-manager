@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Diagnostics;
+namespace Gratis\Cache\Diagnostics;
 
 /** Detects available PHP extensions and backends at runtime. */
 final class CapabilityDetector

@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Storage;
+namespace Gratis\Cache\Storage;
 
-use VLT\CacheManager\Contracts\Storage\TraceStoreInterface;
+use Gratis\Cache\Contracts\Storage\TraceStoreInterface;
 
 /** Append-only JSONL file store for traces and history. */
 final class JsonlTraceStore implements TraceStoreInterface

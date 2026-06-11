@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Purge;
+namespace Gratis\Cache\Purge;
 
-use VLT\CacheManager\Contracts\PurgeStrategyInterface;
-use VLT\CacheManager\Log\Logger;
+use Gratis\Cache\Contracts\PurgeStrategyInterface;
+use Gratis\Cache\Log\Logger;
 
 final class PurgeManager
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager;
+namespace Gratis\Cache;
 
 /**
  * CloudLinux detection and optimization status.

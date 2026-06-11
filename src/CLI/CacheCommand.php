@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\CLI;
+namespace Gratis\Cache\CLI;
 
-use VLT\CacheManager\Plugin;
+use Gratis\Cache\Plugin;
 use WP_CLI;
 
 final class CacheCommand
@@ -50,9 +50,9 @@ final class CacheCommand
             }
         }
 
-        if (is_dir(VLT_CM_NGINX_CACHE)) {
+        if (is_dir(GRATIS_CACHE_NGINX_CACHE)) {
             $size = 0;
-            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(VLT_CM_NGINX_CACHE, \FilesystemIterator::SKIP_DOTS)) as $f) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(GRATIS_CACHE_NGINX_CACHE, \FilesystemIterator::SKIP_DOTS)) as $f) {
                 $size += $f->getSize();
             }
             $mb = round($size / 1048576, 1);

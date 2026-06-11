@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Tracer;
+namespace Gratis\Cache\Tracer;
 
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Redis\RedisFactory;
 
 /**
  * Background trace worker.
@@ -122,7 +122,7 @@ define('ABSPATH', '$wp');
 define('WPINC', 'wp-includes');
 \$_SERVER['HTTP_HOST'] = parse_url(get_option('siteurl'), PHP_URL_HOST) ?? 'localhost';
 require '$wp/wp-load.php';
-VLT\CacheManager\Tracer\TraceWorker::run();
+Gratis\Cache\Tracer\TraceWorker::run();
 PHP);
 
         // Mark as running in Redis before spawn

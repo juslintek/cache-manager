@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Scale;
+namespace Gratis\Cache\Scale;
 
 /**
  * Horizontal scaling readiness checker.

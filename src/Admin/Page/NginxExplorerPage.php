@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\Plugin;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\Plugin;
 
 final class NginxExplorerPage extends AdminPage
 {
@@ -21,7 +21,7 @@ final class NginxExplorerPage extends AdminPage
             return;
         }
 
-        $cache_dir = VLT_CM_NGINX_CACHE;
+        $cache_dir = GRATIS_CACHE_NGINX_CACHE;
         if (!is_dir($cache_dir)) {
             echo '<p>Nginx talpyklos katalogas nerastas.</p></div>';
             return;
@@ -98,7 +98,7 @@ final class NginxExplorerPage extends AdminPage
     private function renderPreview(): void
     {
         $file = realpath(sanitize_text_field($_GET['preview']));
-        if ($file && str_starts_with($file, VLT_CM_NGINX_CACHE) && is_file($file)) {
+        if ($file && str_starts_with($file, GRATIS_CACHE_NGINX_CACHE) && is_file($file)) {
             $raw     = file_get_contents($file);
             $parts   = explode("\r\n\r\n", $raw, 2);
             $headers = $parts[0] ?? '';

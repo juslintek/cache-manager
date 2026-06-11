@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Cache;
+namespace Gratis\Cache\Cache;
 
 /**
  * Full-page HTML cache — what WP Rocket ($59/yr) and WP Super Cache do.

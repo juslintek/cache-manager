@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Contracts;
+namespace Gratis\Cache\Contracts;
 
 interface PurgeStrategyInterface
 {

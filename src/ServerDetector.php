@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager;
+namespace Gratis\Cache;
 
 /**
  * Detects the running web server and its configuration.
@@ -365,7 +365,7 @@ final class ServerDetector
     private static function cacheDir(string $server, array $config): string
     {
         return match ($server) {
-            self::NGINX => $config['fastcgi_cache_path'] ?: (defined('VLT_CM_NGINX_CACHE') ? VLT_CM_NGINX_CACHE : '/var/cache/nginx/wordpress'),
+            self::NGINX => $config['fastcgi_cache_path'] ?: (defined('GRATIS_CACHE_NGINX_CACHE') ? GRATIS_CACHE_NGINX_CACHE : '/var/cache/nginx/wordpress'),
             self::LITESPEED, self::OLS => self::lsCacheDir(),
             default => '',
         };

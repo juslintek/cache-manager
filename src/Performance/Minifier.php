@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace VLT\CacheManager\Performance;
+namespace Gratis\Cache\Performance;
 
 /**
  * CSS/JS minification — what Autoptimize/WP Rocket charge for. Free in Gratis.

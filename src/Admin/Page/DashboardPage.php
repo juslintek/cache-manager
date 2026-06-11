@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\Plugin;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\Plugin;
 
 final class DashboardPage extends AdminPage
 {
@@ -17,7 +17,7 @@ final class DashboardPage extends AdminPage
         $p       = Plugin::instance();
         $redis   = Plugin::redisInfo();
         $opcache = function_exists('opcache_get_status') ? opcache_get_status(false) : null;
-        $nginx_size = Plugin::dirSize(VLT_CM_NGINX_CACHE);
+        $nginx_size = Plugin::dirSize(GRATIS_CACHE_NGINX_CACHE);
         $el_dir  = WP_CONTENT_DIR . '/uploads/elementor/css/';
         $el_count = is_dir($el_dir) ? count(glob($el_dir . '*.css')) : 0;
         $stats   = $p->logger()->getTodayStats();
@@ -71,7 +71,7 @@ final class DashboardPage extends AdminPage
 
         // Redis
         if ($redis['connected']) {
-            $r = \VLT\CacheManager\Redis\RedisFactory::create(0.5);
+            $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
             $redisMemUsed = 0; $redisMemMax = 0;
             if ($r) {
                 $info = $r->info('memory');
@@ -96,8 +96,8 @@ final class DashboardPage extends AdminPage
         }
 
         // LiteSpeed / Nginx cache
-        $serverInfo = \VLT\CacheManager\ServerDetector::detect();
-        $isLS = \VLT\CacheManager\ServerDetector::isLiteSpeed();
+        $serverInfo = \Gratis\Cache\ServerDetector::detect();
+        $isLS = \Gratis\Cache\ServerDetector::isLiteSpeed();
         if ($isLS) {
             $lsCacheDir = $serverInfo['cacheDir'] ?? '/usr/local/lsws/cachedata';
             $lsSize = Plugin::dirSize($lsCacheDir);
@@ -107,7 +107,7 @@ final class DashboardPage extends AdminPage
                 foreach ($it as $f) { if ($f->isFile() && !str_starts_with($f->getFilename(), '.')) $lsFiles++; }
             }
             $card('🚀', 'LiteSpeed', Plugin::formatSize($lsSize), $lsFiles . ' failų', min(100, $lsSize / 1048576 / 10), '#2271b1');
-        } elseif ($nginx_size > 0 || is_dir(VLT_CM_NGINX_CACHE)) {
+        } elseif ($nginx_size > 0 || is_dir(GRATIS_CACHE_NGINX_CACHE)) {
             $card('🌐', 'Nginx FastCGI', Plugin::formatSize($nginx_size), 'Talpykla', min(100, $nginx_size / 1048576 / 10), '#2271b1');
         }
 

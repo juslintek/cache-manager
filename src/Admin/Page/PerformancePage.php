@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Admin\Page;
+namespace Gratis\Cache\Admin\Page;
 
-use VLT\CacheManager\Admin\AdminPage;
-use VLT\CacheManager\Async\AsyncQueue;
-use VLT\CacheManager\Performance\GCAnalyzer;
-use VLT\CacheManager\Plugin;
+use Gratis\Cache\Admin\AdminPage;
+use Gratis\Cache\Async\AsyncQueue;
+use Gratis\Cache\Performance\GCAnalyzer;
+use Gratis\Cache\Plugin;
 
 final class PerformancePage extends AdminPage
 {

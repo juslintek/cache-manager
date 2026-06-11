@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Async;
+namespace Gratis\Cache\Async;
 
-use VLT\CacheManager\Redis\RedisFactory;
+use Gratis\Cache\Redis\RedisFactory;
 
 /**
  * Redis-backed async job queue for WordPress.

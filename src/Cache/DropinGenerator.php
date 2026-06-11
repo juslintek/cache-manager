@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace VLT\CacheManager\Cache;
+namespace Gratis\Cache\Cache;
 
 final class DropinGenerator
 {

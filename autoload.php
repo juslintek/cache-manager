@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 spl_autoload_register(function (string $class): void {
-    $prefix = 'VLT\\CacheManager\\';
+    $prefix = 'Gratis\\Cache\\';
     if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
         return;
     }

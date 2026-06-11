@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace VLT\CacheManager\Storage;
+namespace Gratis\Cache\Storage;
 
-use VLT\CacheManager\Contracts\Storage\FileChangeStoreInterface;
+use Gratis\Cache\Contracts\Storage\FileChangeStoreInterface;
 
 /** Mtime-based file change detection backed by JsonlTraceStore. */
 final class FileChangeScanner implements FileChangeStoreInterface
@@ -14,7 +14,7 @@ final class FileChangeScanner implements FileChangeStoreInterface
     public function __construct(JsonlTraceStore $store, ?string $stateFile = null)
     {
         $this->store = $store;
-        $this->stateFile = $stateFile ?? WP_CONTENT_DIR . '/cache-manager-data/file-scan-state.json';
+        $this->stateFile = $stateFile ?? WP_CONTENT_DIR . '/gratis-cache-data/file-scan-state.json';
     }
 
     public function recordChange(string $path, string $type, int $timestamp): void
