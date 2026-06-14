@@ -79,6 +79,8 @@ final class Plugin
         }
 
         if (is_admin()) {
+            // File-change auto-purge: detect git-pulled changes and purge.
+            add_action('admin_init', [$self, 'maybeAutoPurgeOnFileChange']);
             add_action('admin_menu', [$self, 'registerMenu']);
             add_action('admin_bar_menu', [$self, 'adminBar'], 100);
             add_action('admin_init', [$self, 'handleActions']);
@@ -153,6 +155,54 @@ final class Plugin
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
             \WP_CLI::add_command('gratis-cache', \Gratis\Cache\CLI\GratisCacheCommand::class);
         }
+    }
+
+    /**
+     * Auto-purge when plugin/theme files change (e.g. after git pull).
+     * Throttled to run at most once per 5 minutes.
+     */
+    public function maybeAutoPurgeOnFileChange(): void
+    {
+        $transient = 'gratis_cache_file_check';
+        if (get_transient($transient)) {
+            return; // Already checked recently.
+        }
+        set_transient($transient, '1', 300); // 5 minute throttle.
+
+        $state_key = 'gratis_cache_deploy_mtime';
+        $dirs = [
+            WP_PLUGIN_DIR,
+            get_theme_root() . '/' . get_stylesheet(),
+        ];
+
+        // Quick mtime check: just check the newest file mtime across plugin dirs.
+        $newest = 0;
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) {
+                continue;
+            }
+            // Check top-level plugin main files only (fast).
+            $entries = glob($dir . '/gratis-*/gratis-*.php');
+            if (!$entries) {
+                $entries = glob($dir . '/*.php');
+            }
+            foreach ($entries as $file) {
+                $mt = filemtime($file);
+                if ($mt > $newest) {
+                    $newest = $mt;
+                }
+            }
+        }
+
+        $previous = (int) get_option($state_key, 0);
+        if ($newest > $previous && $previous > 0) {
+            // Files changed since last check — purge all.
+            do_action('gratis_cache_purge_all', 'file-change-detect');
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+            }
+        }
+        update_option($state_key, $newest, true);
     }
 
     public function onShutdown(): void

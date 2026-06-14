@@ -23,6 +23,13 @@ final class GratisRestApi
             'callback'            => [__CLASS__, 'purge'],
             'permission_callback' => [__CLASS__, 'canManage'],
         ]);
+
+        // Deploy hook — accepts a shared secret, no WP auth needed.
+        register_rest_route('gratis-cache/v1', '/deploy-purge', [
+            'methods'             => 'POST',
+            'callback'            => [__CLASS__, 'deployPurge'],
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     public static function canManage(): bool
@@ -65,5 +72,40 @@ final class GratisRestApi
     {
         do_action('gratis_cache_purge_all', 'rest-api');
         return new \WP_REST_Response(['purged' => true, 'timestamp' => gmdate('c')]);
+    }
+
+    /**
+     * Deploy-hook purge — authenticates via a shared secret in the
+     * GRATIS_DEPLOY_SECRET constant or gratis_deploy_secret option.
+     * Called by CI after git pull to flush all caches.
+     */
+    public static function deployPurge(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $token = $request->get_header('X-Deploy-Token');
+        if (empty($token)) {
+            $token = sanitize_text_field($request->get_param('token') ?? '');
+        }
+
+        $secret = defined('GRATIS_DEPLOY_SECRET')
+            ? GRATIS_DEPLOY_SECRET
+            : get_option('gratis_deploy_secret', '');
+
+        if (empty($secret) || !hash_equals($secret, $token)) {
+            return new \WP_REST_Response(['error' => 'unauthorized'], 403);
+        }
+
+        // Purge everything.
+        do_action('gratis_cache_purge_all', 'deploy-hook');
+
+        // Also reset OPcache so new PHP files are picked up.
+        if (function_exists('opcache_reset')) {
+            opcache_reset(); // phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.opcache_resetRemoved
+        }
+
+        return new \WP_REST_Response([
+            'purged'    => true,
+            'source'    => 'deploy-hook',
+            'timestamp' => gmdate('c'),
+        ]);
     }
 }
