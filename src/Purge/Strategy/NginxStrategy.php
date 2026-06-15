@@ -9,12 +9,11 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 
-final class NginxStrategy implements PurgeStrategyInterface
-{
+final class NginxStrategy implements PurgeStrategyInterface {
+
     private const CACHE_DIR = '/var/cache/nginx/wordpress';
 
-    public function purge(): void
-    {
+    public function purge(): void {
         if (!is_dir(self::CACHE_DIR)) {
             return;
         }
@@ -27,8 +26,7 @@ final class NginxStrategy implements PurgeStrategyInterface
         }
     }
 
-    public function type(): string
-    {
+    public function type(): string {
         return 'nginx';
     }
 }

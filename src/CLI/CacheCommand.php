@@ -7,12 +7,11 @@ namespace Gratis\Cache\CLI;
 use Gratis\Cache\Plugin;
 use WP_CLI;
 
-final class CacheCommand
-{
+final class CacheCommand {
+
     private Plugin $plugin;
 
-    public function __construct(Plugin $plugin)
-    {
+    public function __construct(Plugin $plugin) {
         $this->plugin = $plugin;
     }
 
@@ -24,8 +23,7 @@ final class CacheCommand
      *
      * @subcommand status
      */
-    public function status($args, $assoc): void
-    {
+    public function status($args, $assoc): void {
         try {
             $r = new \Redis();
             if ($r->connect('127.0.0.1', 6379, 1.0)) {
@@ -84,8 +82,7 @@ final class CacheCommand
      *
      * @subcommand purge
      */
-    public function purge($args, $assoc): void
-    {
+    public function purge($args, $assoc): void {
         $type = $assoc['type'] ?? 'all';
         if ($type === 'all') {
             $this->plugin->purge()->purgeAll();
@@ -103,8 +100,7 @@ final class CacheCommand
      *
      * @subcommand stats
      */
-    public function stats($args, $assoc): void
-    {
+    public function stats($args, $assoc): void {
         $stats = $this->plugin->logger()->getTodayStats();
         $total = $stats['hits'] + $stats['misses'];
         $ratio = $total > 0 ? round($stats['hits'] / $total * 100, 1) : 0;

@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Cache;
 
-final class DropinGenerator
-{
-    public function generate(): string
-    {
+final class DropinGenerator {
+
+    public function generate(): string {
         $socket = get_option('vlt_redis_socket', '');
         $host   = get_option('vlt_redis_host', '127.0.0.1') ?: '127.0.0.1';
         $port   = (int) (get_option('vlt_redis_port', 0) ?: 6379);
@@ -21,8 +20,7 @@ final class DropinGenerator
         return str_replace('%%REDIS_CONNECT%%', $connectLine, $this->template());
     }
 
-    private function template(): string
-    {
+    private function template(): string {
         return <<<'DROPIN'
 <?php
 

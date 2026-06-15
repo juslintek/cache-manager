@@ -7,13 +7,14 @@ namespace Gratis\Cache\Admin\Page;
 use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\Plugin;
 
-final class NginxExplorerPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-nginx'; }
-    public function title(): string { return 'Nginx Explorer'; }
+final class NginxExplorerPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-nginx'; }
+    public function title(): string {
+ return 'Nginx Explorer'; }
+
+    public function render(): void {
         echo '<div class="wrap"><h1>Podėlio Valdymas — Nginx naršyklė</h1>';
 
         if (!empty($_GET['preview']) && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_nginx_preview')) {
@@ -95,8 +96,7 @@ final class NginxExplorerPage extends AdminPage
         echo '</div>';
     }
 
-    private function renderPreview(): void
-    {
+    private function renderPreview(): void {
         $file = realpath(sanitize_text_field($_GET['preview']));
         if ($file && str_starts_with($file, GRATIS_CACHE_NGINX_CACHE) && is_file($file)) {
             $raw     = file_get_contents($file);

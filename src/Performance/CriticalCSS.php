@@ -5,12 +5,11 @@ namespace Gratis\Cache\Performance;
  * Critical CSS extraction — inlines above-the-fold CSS and defers the rest.
  * What WP Rocket charges $59/yr for. Free in Gratis.
  */
-final class CriticalCSS
-{
+final class CriticalCSS {
+
     private static string $cacheDir;
 
-    public static function register(): void
-    {
+    public static function register(): void {
         if (!get_option('vlt_critical_css_enabled')) return;
 
         self::$cacheDir = WP_CONTENT_DIR . '/cache/critical-css';
@@ -21,8 +20,7 @@ final class CriticalCSS
     }
 
     /** Inline critical CSS in <head> if cached. */
-    public static function inlineCritical(): void
-    {
+    public static function inlineCritical(): void {
         $key = self::cacheKey();
         $file = self::$cacheDir . "/{$key}.css";
         if (!file_exists($file)) return;
@@ -34,8 +32,7 @@ final class CriticalCSS
     }
 
     /** Convert render-blocking stylesheets to async loading. */
-    public static function deferStylesheet(string $html, string $handle, string $href, string $media): string
-    {
+    public static function deferStylesheet(string $html, string $handle, string $href, string $media): string {
         // Don't defer admin styles or critical CSS itself
         if (is_admin() || str_contains($handle, 'critical')) return $html;
 
@@ -55,8 +52,7 @@ final class CriticalCSS
      * Generate critical CSS for a URL (called via WP-CLI or cron).
      * Extracts CSS rules that match above-the-fold elements.
      */
-    public static function generate(string $url): string
-    {
+    public static function generate(string $url): string {
         // Fetch the page HTML
         $response = wp_remote_get($url, ['timeout' => 15]);
         if (is_wp_error($response)) return '';
@@ -90,8 +86,7 @@ final class CriticalCSS
         return $critical;
     }
 
-    private static function extractCritical(string $css): string
-    {
+    private static function extractCritical(string $css): string {
         // Keep: body, html, header, nav, h1-h3, .wp-block-cover, .site-title, above-fold patterns
         $critical = '';
         $aboveFold = '/^(html|body|\*|:root|header|nav|h[1-3]|\.wp-block-cover|\.wp-block-navigation|\.wp-block-site-title|\.gratis-header|\.wp-block-group|\.has-text-align-center|\.wp-block-heading|\.wp-block-button|\.alignfull)/i';
@@ -116,16 +111,14 @@ final class CriticalCSS
         return trim($critical);
     }
 
-    private static function cacheKey(): string
-    {
+    private static function cacheKey(): string {
         if (is_front_page()) return 'front';
         if (is_singular()) return 'singular-' . get_post_type();
         if (is_archive()) return 'archive';
         return 'default';
     }
 
-    private static function cacheKeyForUrl(string $url): string
-    {
+    private static function cacheKeyForUrl(string $url): string {
         $path = parse_url($url, PHP_URL_PATH) ?: '/';
         if ($path === '/') return 'front';
         return sanitize_file_name(trim($path, '/')) ?: 'default';

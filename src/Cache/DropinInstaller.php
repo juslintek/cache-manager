@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Cache;
 
-final class DropinInstaller
-{
+final class DropinInstaller {
+
     private string $path;
     private DropinGenerator $generator;
 
-    public function __construct(DropinGenerator $generator)
-    {
+    public function __construct(DropinGenerator $generator) {
         $this->path = WP_CONTENT_DIR . '/object-cache.php';
         $this->generator = $generator;
     }
 
-    public function isOurs(): bool
-    {
+    public function isOurs(): bool {
         if (!file_exists($this->path)) {
             return false;
         }
@@ -24,8 +22,7 @@ final class DropinInstaller
         return str_contains($header, 'VLT Object Cache');
     }
 
-    public function install(): void
-    {
+    public function install(): void {
         if (file_exists($this->path)) {
             @unlink($this->path);
         }

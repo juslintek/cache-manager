@@ -9,19 +9,20 @@ use Gratis\Cache\Cache\LiteSpeedCache;
 use Gratis\Cache\Plugin;
 use Gratis\Cache\ServerDetector;
 
-final class LiteSpeedPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-litespeed'; }
-    public function title(): string { return 'LiteSpeed'; }
+final class LiteSpeedPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-litespeed'; }
+    public function title(): string {
+ return 'LiteSpeed'; }
+
+    public function render(): void {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_ls_settings')) {
-            update_option('vlt_ls_cache_enabled',    isset($_POST['vlt_ls_cache_enabled']));
-            update_option('vlt_ls_cache_ttl',        max(60, (int) ($_POST['vlt_ls_cache_ttl'] ?? 86400)));
-            update_option('vlt_ls_cache_logged_in',  isset($_POST['vlt_ls_cache_logged_in']));
-            update_option('vlt_ls_cache_search',     isset($_POST['vlt_ls_cache_search']));
-            update_option('vlt_ls_cache_404',        isset($_POST['vlt_ls_cache_404']));
+            update_option('vlt_ls_cache_enabled', isset($_POST['vlt_ls_cache_enabled']));
+            update_option('vlt_ls_cache_ttl', max(60, (int) ($_POST['vlt_ls_cache_ttl'] ?? 86400)));
+            update_option('vlt_ls_cache_logged_in', isset($_POST['vlt_ls_cache_logged_in']));
+            update_option('vlt_ls_cache_search', isset($_POST['vlt_ls_cache_search']));
+            update_option('vlt_ls_cache_404', isset($_POST['vlt_ls_cache_404']));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
         }
 
@@ -143,24 +144,23 @@ final class LiteSpeedPage extends AdminPage
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti</button></p>';
         echo '</form>';
 
-
         // ── Performance optimizations ─────────────────────────────────────────
         echo '<h2>Papildomos optimizacijos</h2>';
         echo '<table class="widefat fixed striped tw-max-w-4xl tw-mb-5"><thead><tr><th style="width:220px">Optimizacija</th><th style="width:100px">Būsena</th><th>Aprašymas</th></tr></thead><tbody>';
         $htaccess = @file_get_contents(ABSPATH . '.htaccess') ?: '';
         $opts = [
-            ['name'=>'Native Lazy Loading','enabled'=>(int)get_option('wp_lazy_loading_enabled',1)>0,'desc'=>'WordPress 5.5+ automatiškai prideda loading="lazy" paveikslėliams.','link'=>'https://make.wordpress.org/core/2020/07/14/lazy-loading-images-in-5-5/'],
-            ['name'=>'HTTP/3 (QUIC)','enabled'=>str_contains($htaccess,'QUIC')||str_contains($htaccess,'quic'),'desc'=>'LiteSpeed palaiko HTTP/3 — iki 3× greitesnis nei HTTP/2 mobiliuose tinkluose.','link'=>'https://docs.litespeedtech.com/lsws/http3/'],
-            ['name'=>'Browser Cache (Expires)','enabled'=>str_contains($htaccess,'ExpiresByType')||str_contains($htaccess,'Cache-Control'),'desc'=>'Naršyklės talpykla statiniams failams. Sumažina pakartotinių apsilankymų laiką.','link'=>'https://docs.litespeedtech.com/lscache/lscwp/cache/#browser-cache'],
-            ['name'=>'Gzip / Brotli','enabled'=>str_contains($htaccess,'mod_deflate')||str_contains($htaccess,'compress'),'desc'=>'LiteSpeed automatiškai suspaudžia atsakymus. Patikrinkite ar įjungta serverio lygiu.','link'=>'https://docs.litespeedtech.com/lsws/config/compression/'],
-            ['name'=>'Critical CSS','enabled'=>defined('LSCWP_V')||class_exists('LiteSpeed\\Core'),'desc'=>'Kritinis CSS įkelia puslapį be blokuojančių stilių.','link'=>'https://docs.litespeedtech.com/lscache/lscwp/pageopt/#css-settings'],
-            ['name'=>'DNS Prefetch','enabled'=>has_action('wp_head','wp_resource_hints'),'desc'=>'WordPress automatiškai prideda DNS prefetch antraštes.','link'=>'https://developer.wordpress.org/reference/functions/wp_resource_hints/'],
+            ['name'=>'Native Lazy Loading', 'enabled'=>(int)get_option('wp_lazy_loading_enabled', 1)>0, 'desc'=>'WordPress 5.5+ automatiškai prideda loading="lazy" paveikslėliams.', 'link'=>'https://make.wordpress.org/core/2020/07/14/lazy-loading-images-in-5-5/'],
+            ['name'=>'HTTP/3 (QUIC)', 'enabled'=>str_contains($htaccess, 'QUIC')||str_contains($htaccess, 'quic'), 'desc'=>'LiteSpeed palaiko HTTP/3 — iki 3× greitesnis nei HTTP/2 mobiliuose tinkluose.', 'link'=>'https://docs.litespeedtech.com/lsws/http3/'],
+            ['name'=>'Browser Cache (Expires)', 'enabled'=>str_contains($htaccess, 'ExpiresByType')||str_contains($htaccess, 'Cache-Control'), 'desc'=>'Naršyklės talpykla statiniams failams. Sumažina pakartotinių apsilankymų laiką.', 'link'=>'https://docs.litespeedtech.com/lscache/lscwp/cache/#browser-cache'],
+            ['name'=>'Gzip / Brotli', 'enabled'=>str_contains($htaccess, 'mod_deflate')||str_contains($htaccess, 'compress'), 'desc'=>'LiteSpeed automatiškai suspaudžia atsakymus. Patikrinkite ar įjungta serverio lygiu.', 'link'=>'https://docs.litespeedtech.com/lsws/config/compression/'],
+            ['name'=>'Critical CSS', 'enabled'=>defined('LSCWP_V')||class_exists('LiteSpeed\\Core'), 'desc'=>'Kritinis CSS įkelia puslapį be blokuojančių stilių.', 'link'=>'https://docs.litespeedtech.com/lscache/lscwp/pageopt/#css-settings'],
+            ['name'=>'DNS Prefetch', 'enabled'=>has_action('wp_head', 'wp_resource_hints'), 'desc'=>'WordPress automatiškai prideda DNS prefetch antraštes.', 'link'=>'https://developer.wordpress.org/reference/functions/wp_resource_hints/'],
         ];
         foreach ($opts as $o) {
             $c=$o['enabled']?'text-green-600':'text-yellow-600';
-            echo '<tr><td><strong>'.esc_html($o['name']).'</strong></td>';
-            echo '<td class="'.esc_attr($c).'">'.(($o['enabled'])?'✅ Aktyvus':'⚠ Patikrinti').'</td>';
-            echo '<td class="text-xs tw-text-gray-600">'.esc_html($o['desc']).($o['link']?' <a href="'.esc_url($o['link']).'" target="_blank" class="tw-text-blue-600">Dokumentacija →</a>':''). '</td></tr>';
+            echo '<tr><td><strong>' . esc_html($o['name']) . '</strong></td>';
+            echo '<td class="' . esc_attr($c) . '">' . (($o['enabled'])?'✅ Aktyvus':'⚠ Patikrinti') . '</td>';
+            echo '<td class="text-xs tw-text-gray-600">' . esc_html($o['desc']) . ($o['link']?' <a href="' . esc_url($o['link']) . '" target="_blank" class="tw-text-blue-600">Dokumentacija →</a>':'') . '</td></tr>';
         }
         echo '</tbody></table>';
 
@@ -173,7 +173,7 @@ final class LiteSpeedPage extends AdminPage
             $size  = 0;
             foreach ($it as $f) {
                 if ($f->isFile() && !str_starts_with($f->getFilename(), '.')) {
-                    $files++;
+                    ++$files;
                     $size += $f->getSize();
                 }
             }
@@ -279,8 +279,7 @@ final class LiteSpeedPage extends AdminPage
         echo '</div>';
     }
 
-    private static function row(string $label, string $input, string $desc): void
-    {
+    private static function row(string $label, string $input, string $desc): void {
         echo '<tr><th class="tw-w-64">' . esc_html($label) . '</th><td>';
         echo '<label>' . $input . '</label>';
         echo '<p class="description">' . $desc . '</p>';

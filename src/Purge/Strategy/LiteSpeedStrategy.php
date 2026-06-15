@@ -6,15 +6,13 @@ namespace Gratis\Cache\Purge\Strategy;
 
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 
-final class LiteSpeedStrategy implements PurgeStrategyInterface
-{
-    public function type(): string
-    {
+final class LiteSpeedStrategy implements PurgeStrategyInterface {
+
+    public function type(): string {
         return 'litespeed';
     }
 
-    public function purge(): void
-    {
+    public function purge(): void {
         // Use our native cache control first
         \Gratis\Cache\Cache\LiteSpeedCache::purgeAll();
 

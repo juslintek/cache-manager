@@ -8,23 +8,20 @@ namespace Gratis\Cache;
  * CloudLinux detection and optimization status.
  * Reads LVE limits, AccelerateWP, PHP Selector, MySQL Governor status.
  */
-final class CloudLinuxDetector
-{
-    public static function isCloudLinux(): bool
-    {
+final class CloudLinuxDetector {
+
+    public static function isCloudLinux(): bool {
         return @file_exists('/etc/cloudlinux-release') || @file_exists('/etc/cl-release');
     }
 
-    public static function version(): string
-    {
+    public static function version(): string {
         $f = @file_get_contents('/etc/cloudlinux-release') ?: @file_get_contents('/etc/cl-release') ?: '';
         preg_match('/release\s+([\d.]+)/i', $f, $m);
         return $m[1] ?? '';
     }
 
     /** @return array{cpu:string, pmem:string, ep:string, nproc:string, io:string} */
-    public static function lveInfo(): array
-    {
+    public static function lveInfo(): array {
         $uid = posix_getuid();
         $raw = @shell_exec('lvectl list --json 2>/dev/null') ?: '';
         if (!$raw) {
@@ -45,35 +42,29 @@ final class CloudLinuxDetector
         return [];
     }
 
-    public static function accelerateWpInstalled(): bool
-    {
+    public static function accelerateWpInstalled(): bool {
         return @is_dir('/usr/share/cloudlinux/wpos');
     }
 
-    public static function redisEnabled(): bool
-    {
+    public static function redisEnabled(): bool {
         $user = self::currentUser();
         return $user && @file_exists("/home/{$user}/.redis/redis.sock");
     }
 
-    public static function mysqlGovernorInstalled(): bool
-    {
+    public static function mysqlGovernorInstalled(): bool {
         return @file_exists('/usr/sbin/db_governor');
     }
 
-    public static function phpSelectorEnabled(): bool
-    {
+    public static function phpSelectorEnabled(): bool {
         return @file_exists('/usr/bin/cloudlinux-selector') || @file_exists('/usr/sbin/cloudlinux-selector');
     }
 
-    public static function cageFsEnabled(): bool
-    {
+    public static function cageFsEnabled(): bool {
         return @file_exists('/usr/sbin/cagefsctl');
     }
 
     /** @return array[] Optimization recommendations */
-    public static function recommendations(): array
-    {
+    public static function recommendations(): array {
         $recs = [];
 
         if (!self::redisEnabled()) {
@@ -146,8 +137,7 @@ final class CloudLinuxDetector
         return $recs;
     }
 
-    private static function currentUser(): string
-    {
+    private static function currentUser(): string {
         if (defined('ABSPATH') && preg_match('#^/home/([^/]+)/#', ABSPATH, $m)) {
             return $m[1];
         }

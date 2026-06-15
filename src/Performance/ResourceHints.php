@@ -5,16 +5,14 @@ namespace Gratis\Cache\Performance;
  * DNS prefetch + preconnect for external resources.
  * Scans enqueued scripts/styles and adds resource hints automatically.
  */
-final class ResourceHints
-{
-    public static function register(): void
-    {
+final class ResourceHints {
+
+    public static function register(): void {
         if (!get_option('vlt_resource_hints_enabled', true)) return;
         add_action('wp_head', [__CLASS__, 'output'], 2);
     }
 
-    public static function output(): void
-    {
+    public static function output(): void {
         $domains = self::detectExternalDomains();
         $siteHost = parse_url(home_url(), PHP_URL_HOST);
 
@@ -25,8 +23,7 @@ final class ResourceHints
         }
     }
 
-    private static function detectExternalDomains(): array
-    {
+    private static function detectExternalDomains(): array {
         $domains = [];
 
         // Common CDNs and services

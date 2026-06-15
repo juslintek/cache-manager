@@ -5,10 +5,9 @@ namespace Gratis\Cache\Performance;
  * CSS/JS minification — what Autoptimize/WP Rocket charge for. Free in Gratis.
  * Simple regex-based minification (no external dependencies).
  */
-final class Minifier
-{
-    public static function register(): void
-    {
+final class Minifier {
+
+    public static function register(): void {
         if (!get_option('vlt_minify_enabled')) return;
 
         if (get_option('vlt_minify_css', true)) {
@@ -26,15 +25,13 @@ final class Minifier
     }
 
     /** Minify inline CSS in style tags. */
-    public static function minifyStyleTag(string $html, string $handle, string $href, string $media): string
-    {
+    public static function minifyStyleTag(string $html, string $handle, string $href, string $media): string {
         // Only minify inline styles, not external files
         return $html;
     }
 
     /** Defer non-critical JS. */
-    public static function minifyScriptTag(string $tag, string $handle, string $src): string
-    {
+    public static function minifyScriptTag(string $tag, string $handle, string $src): string {
         // Skip admin scripts and already-deferred
         if (is_admin() || str_contains($tag, 'defer') || str_contains($tag, 'async')) return $tag;
 
@@ -46,8 +43,7 @@ final class Minifier
     }
 
     /** Minify HTML output. */
-    public static function minifyHTML(string $html): string
-    {
+    public static function minifyHTML(string $html): string {
         if (empty($html)) return $html;
 
         // Remove HTML comments (except IE conditionals and WP block comments)
@@ -63,8 +59,7 @@ final class Minifier
     }
 
     /** Minify CSS string. */
-    public static function css(string $css): string
-    {
+    public static function css(string $css): string {
         $css = preg_replace('/\/\*.*?\*\//s', '', $css); // Remove comments
         $css = preg_replace('/\s+/', ' ', $css);          // Collapse whitespace
         $css = str_replace([' {', '{ ', ' }', '} ', ': ', ' :', '; ', ' ;'], ['{', '{', '}', '}', ':', ':', ';', ';'], $css);
@@ -72,8 +67,7 @@ final class Minifier
     }
 
     /** Minify JS string (basic — removes comments and collapses whitespace). */
-    public static function js(string $js): string
-    {
+    public static function js(string $js): string {
         $js = preg_replace('/\/\*.*?\*\//s', '', $js);     // Block comments
         $js = preg_replace('/\/\/[^\n]*/', '', $js);        // Line comments
         $js = preg_replace('/\s+/', ' ', $js);              // Collapse whitespace

@@ -7,13 +7,14 @@ namespace Gratis\Cache\Admin\Page;
 use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\Tracer\TracerConfig;
 
-final class TracerPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-tracer'; }
-    public function title(): string { return 'Tracer'; }
+final class TracerPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-tracer'; }
+    public function title(): string {
+ return 'Tracer'; }
+
+    public function render(): void {
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');
         $max      = (int) get_option('vlt_trace_max', TracerConfig::VLT_TR_MAX);

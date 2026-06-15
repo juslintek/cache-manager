@@ -7,16 +7,17 @@ namespace Gratis\Cache\Admin\Page;
 use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\Plugin;
 
-final class SettingsPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-settings'; }
-    public function title(): string { return 'Settings'; }
+final class SettingsPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-settings'; }
+    public function title(): string {
+ return 'Settings'; }
+
+    public function render(): void {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_cm_settings')) {
             // Each option saved independently — unchecking one must not affect others
-            update_option('vlt_cm_logging',    isset($_POST['vlt_cm_logging']));
+            update_option('vlt_cm_logging', isset($_POST['vlt_cm_logging']));
             update_option('vlt_cm_cf_tracking', isset($_POST['vlt_cm_cf_tracking']));
             update_option('vlt_cm_log_days', max(1, (int) ($_POST['vlt_cm_log_days'] ?? 30)));
             if (!empty($_POST['vlt_cm_log_path'])) {
@@ -309,8 +310,7 @@ final class SettingsPage extends AdminPage
         echo '</div>';
     }
 
-    public static function isDomainBehindCloudflare(string $host): bool
-    {
+    public static function isDomainBehindCloudflare(string $host): bool {
         if (!$host) {
             return false;
         }
@@ -344,8 +344,7 @@ final class SettingsPage extends AdminPage
         return false;
     }
 
-    private function renderLogFiles(): void
-    {
+    private function renderLogFiles(): void {
         $logDir   = WP_CONTENT_DIR . '/uploads/vlt-cache-logs';
         $traceDir = WP_CONTENT_DIR . '/uploads/vlt-traces';
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
@@ -444,8 +443,7 @@ final class SettingsPage extends AdminPage
         <?php
     }
 
-    private function downloadLogsZip(): void
-    {
+    private function downloadLogsZip(): void {
         if (!current_user_can('manage_options')) {
             wp_die('Neautorizuota');
         }

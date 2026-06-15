@@ -9,8 +9,8 @@ namespace Gratis\Cache;
  * Uses multiple signals: SERVER_SOFTWARE, process list via /proc, config files, ports.
  * Results are cached in a transient to avoid repeated detection on every request.
  */
-final class ServerDetector
-{
+final class ServerDetector {
+
     public const NGINX      = 'nginx';
     public const LITESPEED  = 'litespeed';
     public const OLS        = 'openlitespeed';
@@ -22,8 +22,7 @@ final class ServerDetector
     private const OPTION = 'vlt_server_info';
 
     /** @return array{server:string, version:string, config:array, cache_dir:string, recommendations:string[]} */
-    public static function detect(): array
-    {
+    public static function detect(): array {
         if (self::$cache !== null) {
             return self::$cache;
         }
@@ -36,21 +35,18 @@ final class ServerDetector
     }
 
     /** Run detection and persist result. Called on activation and manual refresh. */
-    public static function runAndStore(): array
-    {
+    public static function runAndStore(): array {
         $result = self::run();
         update_option(self::OPTION, $result, false); // autoload=false — no overhead on every request
         return self::$cache = $result;
     }
 
-    public static function flush(): void
-    {
+    public static function flush(): void {
         self::$cache = null;
         delete_option(self::OPTION);
     }
 
-    private static function run(): array
-    {
+    private static function run(): array {
         $sw      = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
         $server  = self::UNKNOWN;
         $version = '';
@@ -107,8 +103,7 @@ final class ServerDetector
 
     // ── Config parsing ────────────────────────────────────────────────────────
 
-    private static function parseConfig(string $server): array
-    {
+    private static function parseConfig(string $server): array {
         return match ($server) {
             self::NGINX     => self::parseNginxConfig(),
             self::LITESPEED => self::parseLsConfig(),
@@ -118,8 +113,7 @@ final class ServerDetector
         };
     }
 
-    private static function parseNginxConfig(): array
-    {
+    private static function parseNginxConfig(): array {
         $paths = ['/etc/nginx/nginx.conf', '/usr/local/nginx/conf/nginx.conf'];
         foreach ($paths as $p) {
             if (!@is_readable($p)) {
@@ -137,8 +131,7 @@ final class ServerDetector
         return [];
     }
 
-    private static function parseLsConfig(): array
-    {
+    private static function parseLsConfig(): array {
         $paths = [
             '/usr/local/lsws/conf/httpd_config.xml',
             '/usr/local/lsws/conf/httpd_config.conf',
@@ -176,8 +169,7 @@ final class ServerDetector
         ];
     }
 
-    private static function parseOlsConfig(): array
-    {
+    private static function parseOlsConfig(): array {
         // 1. PHP function check — highest reliability (LSCache PHP API available)
         $lscachePhpApi = function_exists('litespeed_finish_request')
             || function_exists('litespeed_purge_all')
@@ -334,8 +326,7 @@ final class ServerDetector
         ];
     }
 
-    private static function parseApacheConfig(): array
-    {
+    private static function parseApacheConfig(): array {
         $paths = ['/etc/apache2/apache2.conf', '/etc/httpd/conf/httpd.conf', '/usr/local/apache/conf/httpd.conf'];
         foreach ($paths as $p) {
             if (!@is_readable($p)) {
@@ -352,8 +343,7 @@ final class ServerDetector
         return ['config_file' => ''];
     }
 
-    private static function extractValue(string $content, string $key): string
-    {
+    private static function extractValue(string $content, string $key): string {
         if (preg_match('/^\s*' . preg_quote($key, '/') . '\s+([^\s;{]+)/m', $content, $m)) {
             return trim($m[1]);
         }
@@ -362,8 +352,7 @@ final class ServerDetector
 
     // ── Cache directory ───────────────────────────────────────────────────────
 
-    private static function cacheDir(string $server, array $config): string
-    {
+    private static function cacheDir(string $server, array $config): string {
         return match ($server) {
             self::NGINX => $config['fastcgi_cache_path'] ?: (defined('GRATIS_CACHE_NGINX_CACHE') ? GRATIS_CACHE_NGINX_CACHE : '/var/cache/nginx/wordpress'),
             self::LITESPEED, self::OLS => self::lsCacheDir(),
@@ -371,8 +360,7 @@ final class ServerDetector
         };
     }
 
-    private static function lsCacheDir(): string
-    {
+    private static function lsCacheDir(): string {
         foreach ([
             '/usr/local/lsws/cachedata',
             '/tmp/lscache',
@@ -387,8 +375,7 @@ final class ServerDetector
 
     // ── Recommendations ───────────────────────────────────────────────────────
 
-    private static function recommendations(string $server, array $config): array
-    {
+    private static function recommendations(string $server, array $config): array {
         $recs = [];
 
         if ($server === self::LITESPEED || $server === self::OLS) {
@@ -423,19 +410,16 @@ final class ServerDetector
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    public static function isLiteSpeed(): bool
-    {
+    public static function isLiteSpeed(): bool {
         $s = self::detect()['server'];
         return $s === self::LITESPEED || $s === self::OLS;
     }
 
-    public static function isNginx(): bool
-    {
+    public static function isNginx(): bool {
         return self::detect()['server'] === self::NGINX;
     }
 
-    public static function isApache(): bool
-    {
+    public static function isApache(): bool {
         return self::detect()['server'] === self::APACHE;
     }
 }

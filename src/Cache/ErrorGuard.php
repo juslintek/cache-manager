@@ -13,12 +13,11 @@ namespace Gratis\Cache\Cache;
  * - Flushes the Redis object cache group that may have caused the error
  * - Logs the error for diagnostics
  */
-final class ErrorGuard
-{
+final class ErrorGuard {
+
     private static bool $registered = false;
 
-    public static function register(): void
-    {
+    public static function register(): void {
         if (self::$registered) {
             return;
         }
@@ -28,8 +27,7 @@ final class ErrorGuard
         register_shutdown_function([self::class, 'onShutdown']);
     }
 
-    public static function onShutdown(): void
-    {
+    public static function onShutdown(): void {
         $error = error_get_last();
         $isFatal = $error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true);
         $status = http_response_code();
@@ -66,8 +64,7 @@ final class ErrorGuard
         }
     }
 
-    private static function flushCorruptedRedisKeys(string $errorFile): void
-    {
+    private static function flushCorruptedRedisKeys(string $errorFile): void {
         if (!class_exists(\Gratis\Cache\Redis\RedisFactory::class)) {
             return;
         }
@@ -87,8 +84,7 @@ final class ErrorGuard
         $r->close();
     }
 
-    private static function logError(string $file, string $message, int $status): void
-    {
+    private static function logError(string $file, string $message, int $status): void {
         $entry = sprintf(
             "[%s] ErrorGuard: HTTP %d | %s | %s\n",
             gmdate('Y-m-d H:i:s'),

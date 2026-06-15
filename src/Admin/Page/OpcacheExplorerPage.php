@@ -6,13 +6,14 @@ namespace Gratis\Cache\Admin\Page;
 
 use Gratis\Cache\Admin\AdminPage;
 
-final class OpcacheExplorerPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-opcache'; }
-    public function title(): string { return 'OPcache'; }
+final class OpcacheExplorerPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-opcache'; }
+    public function title(): string {
+ return 'OPcache'; }
+
+    public function render(): void {
         $status = function_exists('opcache_get_status') ? opcache_get_status(false) : null;
         $config = function_exists('opcache_get_configuration') ? opcache_get_configuration() : null;
         ?>
@@ -21,7 +22,8 @@ final class OpcacheExplorerPage extends AdminPage
 
         <?php if (!$status): ?>
             <div class="tw-bg-red-50 tw-border tw-border-red-200 tw-rounded tw-p-4 text-red-700">OPcache išjungtas arba nepasiekiamas.</div>
-        <?php else:
+        <?php
+        else:
             $mem = $status['memory_usage'] ?? [];
             $stats = $status['opcache_statistics'] ?? [];
             $hit_rate = round($stats['opcache_hit_rate'] ?? 0, 1);
@@ -129,9 +131,13 @@ final class OpcacheExplorerPage extends AdminPage
         <script>
         function vltOpc(){return{
             filter:'',sort:'hits',dir:'desc',
-            scripts:<?php echo json_encode(array_values(array_map(function($s) {
+            scripts:
+            <?php
+            echo json_encode(array_values(array_map(function ($s) {
                 return ['path' => $s['full_path'], 'hits' => $s['hits'], 'memory' => $s['memory_consumption'], 'timestamp' => $s['last_used_timestamp']];
-            }, $status ? (opcache_get_status(true)['scripts'] ?? []) : []))); ?>,
+            }, $status ? (opcache_get_status(true)['scripts'] ?? []) : [])));
+            ?>
+            ,
             get filteredScripts(){
                 let s=this.scripts;
                 if(this.filter)s=s.filter(x=>x.path.toLowerCase().includes(this.filter.toLowerCase()));

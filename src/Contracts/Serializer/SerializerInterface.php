@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Serializer;
 
-interface SerializerInterface
-{
+interface SerializerInterface {
+
     public function serialize(mixed $value): string;
     public function unserialize(string $data): mixed;
     public function name(): string;

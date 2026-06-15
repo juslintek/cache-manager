@@ -7,12 +7,11 @@ use SQLite3Stmt;
 use Gratis\Cache\Contracts\Storage\PersistentStoreInterface;
 
 /** SQLite WAL-mode persistent store for concurrent-read workloads. */
-final class SqliteWalStore implements PersistentStoreInterface
-{
+final class SqliteWalStore implements PersistentStoreInterface {
+
     private SQLite3 $db;
 
-    public function __construct(string $path = '')
-    {
+    public function __construct(string $path = '') {
         if (!extension_loaded('sqlite3')) {
             throw new RuntimeException('ext-sqlite3 is required for SqliteWalStore but is not loaded.');
         }
@@ -39,8 +38,7 @@ final class SqliteWalStore implements PersistentStoreInterface
         );
     }
 
-    public function get(string $key): mixed
-    {
+    public function get(string $key): mixed {
         $this->gc($key);
         $stmt = $this->db->prepare('SELECT value FROM kv WHERE key = :k AND (expires_at = 0 OR expires_at > :t)');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
@@ -49,8 +47,7 @@ final class SqliteWalStore implements PersistentStoreInterface
         return $result ? unserialize($result[0]) : null;
     }
 
-    public function set(string $key, mixed $value, int $ttl = 0): bool
-    {
+    public function set(string $key, mixed $value, int $ttl = 0): bool {
         $expires = $ttl > 0 ? time() + $ttl : 0;
         $stmt = $this->db->prepare('INSERT OR REPLACE INTO kv (key, value, expires_at) VALUES (:k, :v, :e)');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
@@ -59,28 +56,24 @@ final class SqliteWalStore implements PersistentStoreInterface
         return $stmt->execute() !== false;
     }
 
-    public function delete(string $key): bool
-    {
+    public function delete(string $key): bool {
         $stmt = $this->db->prepare('DELETE FROM kv WHERE key = :k');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
         return $stmt->execute() !== false;
     }
 
-    public function has(string $key): bool
-    {
+    public function has(string $key): bool {
         $stmt = $this->db->prepare('SELECT 1 FROM kv WHERE key = :k AND (expires_at = 0 OR expires_at > :t)');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
         $stmt->bindValue(':t', time(), SQLITE3_INTEGER);
         return $stmt->execute()->fetchArray(SQLITE3_NUM) !== false;
     }
 
-    public function flush(): bool
-    {
+    public function flush(): bool {
         return $this->db->exec('DELETE FROM kv');
     }
 
-    public function append(string $key, mixed $value): bool
-    {
+    public function append(string $key, mixed $value): bool {
         $existing = $this->get($key);
         if (is_array($existing)) {
             $existing[] = $value;
@@ -92,8 +85,7 @@ final class SqliteWalStore implements PersistentStoreInterface
         return $this->set($key, $existing);
     }
 
-    public function scan(string $prefix): iterable
-    {
+    public function scan(string $prefix): iterable {
         $stmt = $this->db->prepare('SELECT key, value FROM kv WHERE key LIKE :p AND (expires_at = 0 OR expires_at > :t)');
         $stmt->bindValue(':p', $this->escapeLike($prefix) . '%', SQLITE3_TEXT);
         $stmt->bindValue(':t', time(), SQLITE3_INTEGER);
@@ -103,22 +95,19 @@ final class SqliteWalStore implements PersistentStoreInterface
         }
     }
 
-    public function size(): int
-    {
+    public function size(): int {
         $result = $this->db->querySingle('SELECT COUNT(*) FROM kv WHERE expires_at = 0 OR expires_at > ' . time());
         return (int) $result;
     }
 
-    private function gc(string $key): void
-    {
+    private function gc(string $key): void {
         $stmt = $this->db->prepare('DELETE FROM kv WHERE key = :k AND expires_at > 0 AND expires_at <= :t');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
         $stmt->bindValue(':t', time(), SQLITE3_INTEGER);
         $stmt->execute();
     }
 
-    private function escapeLike(string $s): string
-    {
+    private function escapeLike(string $s): string {
         return str_replace(['%', '_'], ['\%', '\_'], $s);
     }
 }

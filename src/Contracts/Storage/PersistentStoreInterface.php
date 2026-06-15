@@ -2,8 +2,8 @@
 namespace Gratis\Cache\Contracts\Storage;
 
 /** Durable local store (SQLite, file segments). Survives restarts. */
-interface PersistentStoreInterface extends StorageInterface
-{
+interface PersistentStoreInterface extends StorageInterface {
+
     public function append(string $key, mixed $value): bool;
     public function scan(string $prefix): iterable;
     public function size(): int;

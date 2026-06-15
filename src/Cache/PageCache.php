@@ -6,13 +6,12 @@ namespace Gratis\Cache\Cache;
  * Stores rendered HTML to disk, serves it on subsequent requests without loading WordPress.
  * Free in Gratis.
  */
-final class PageCache
-{
+final class PageCache {
+
     private static string $cacheDir;
     private static bool $enabled = false;
 
-    public static function register(): void
-    {
+    public static function register(): void {
         if (!get_option('vlt_page_cache_enabled')) return;
 
         self::$cacheDir = WP_CONTENT_DIR . '/cache/gratis-pages';
@@ -32,8 +31,7 @@ final class PageCache
         add_action('gratis_cache_purge_url', [__CLASS__, 'purgeUrl']);
     }
 
-    public static function maybeServe(): void
-    {
+    public static function maybeServe(): void {
         if (!self::shouldCache()) return;
 
         $file = self::cacheFile();
@@ -53,14 +51,12 @@ final class PageCache
         exit;
     }
 
-    public static function startCapture(): void
-    {
+    public static function startCapture(): void {
         if (!self::shouldCache()) return;
         ob_start([__CLASS__, 'saveOutput']);
     }
 
-    public static function saveOutput(string $html): string
-    {
+    public static function saveOutput(string $html): string {
         if (strlen($html) < 255) return $html; // Don't cache error pages
         if (http_response_code() !== 200) return $html;
 
@@ -69,29 +65,26 @@ final class PageCache
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
         // Add cache signature
-        $html .= "\n<!-- Gratis Page Cache: " . gmdate('c') . " -->";
+        $html .= "\n<!-- Gratis Page Cache: " . gmdate('c') . ' -->';
         @file_put_contents($file, $html, LOCK_EX);
 
         header('X-Gratis-Cache: MISS');
         return $html;
     }
 
-    public static function purgePost($postId): void
-    {
+    public static function purgePost($postId): void {
         $url = get_permalink($postId);
         if ($url) self::purgeUrl($url);
         // Also purge homepage and archives
         self::purgeUrl(home_url('/'));
     }
 
-    public static function purgeUrl(string $url): void
-    {
+    public static function purgeUrl(string $url): void {
         $file = self::cacheFileForUrl($url);
         if (file_exists($file)) @unlink($file);
     }
 
-    public static function purgeAll(): void
-    {
+    public static function purgeAll(): void {
         if (!is_dir(self::$cacheDir)) return;
         $it = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator(self::$cacheDir, \FilesystemIterator::SKIP_DOTS),
@@ -102,17 +95,15 @@ final class PageCache
         }
     }
 
-    public static function getStats(): array
-    {
+    public static function getStats(): array {
         if (!is_dir(self::$cacheDir)) return ['files' => 0, 'size' => 0];
         $files = 0; $size = 0;
         $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(self::$cacheDir, \FilesystemIterator::SKIP_DOTS));
-        foreach ($it as $f) { $files++; $size += $f->getSize(); }
+        foreach ($it as $f) { ++$files; $size += $f->getSize(); }
         return ['files' => $files, 'size' => $size];
     }
 
-    private static function shouldCache(): bool
-    {
+    private static function shouldCache(): bool {
         if (!self::$enabled) return false;
         if (is_admin()) return false;
         if (is_user_logged_in()) return false;
@@ -124,15 +115,13 @@ final class PageCache
         return true;
     }
 
-    private static function cacheFile(): string
-    {
+    private static function cacheFile(): string {
         return self::cacheFileForUrl(
             (is_ssl() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
         );
     }
 
-    private static function cacheFileForUrl(string $url): string
-    {
+    private static function cacheFileForUrl(string $url): string {
         $parsed = parse_url($url);
         $host = $parsed['host'] ?? 'default';
         $path = trim($parsed['path'] ?? '/', '/') ?: 'index';

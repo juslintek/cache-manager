@@ -6,13 +6,14 @@ namespace Gratis\Cache\Admin\Page;
 
 use Gratis\Cache\Admin\AdminPage;
 
-final class DocsPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-docs'; }
-    public function title(): string { return 'Docs'; }
+final class DocsPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-docs'; }
+    public function title(): string {
+ return 'Docs'; }
+
+    public function render(): void {
         echo '<div class="wrap"><h1>Cache Manager — Documentation & Tips</h1>';
 
         $sections = [
@@ -51,7 +52,8 @@ CacheRoot /home/lscache/
 <h3>Verify</h3>
 <p>Check response headers — should see <code>x-litespeed-cache: hit</code> on second request:</p>
 <pre><code>curl -I https://yourdomain.com/</code></pre>
-HTML,
+HTML
+,
             ],
 
             'Redis Object Cache (DirectAdmin)' => [
@@ -73,7 +75,8 @@ define( 'WP_REDIS_PATH', '/home/&lt;user&gt;/.redis/redis.sock' );</code></pre>
 <h3>Verify</h3>
 <pre><code>redis-cli -s /home/&lt;user&gt;/.redis/redis.sock ping
 # Should return: PONG</code></pre>
-HTML,
+HTML
+,
             ],
 
             'Performance Optimizations' => [
@@ -128,7 +131,8 @@ remove_action( 'wp_print_styles', 'print_emoji_styles' );</code></pre>
     }
     return $tag;
 }, 10, 2 );</code></pre>
-HTML,
+HTML
+,
             ],
 
             'OPcache Tuning' => [
@@ -148,7 +152,8 @@ opcache.jit_buffer_size=128M</code></pre>
 
 <h3>Clear OPcache after deploy</h3>
 <pre><code>opcache_reset();</code></pre>
-HTML,
+HTML
+,
             ],
 
             'CloudLinux LVE & AccelerateWP' => [
@@ -173,7 +178,8 @@ ls /usr/share/cloudlinux/wpos/
 <h3>Enable Redis for user (admin)</h3>
 <pre><code># Via DirectAdmin API
 curl -u admin:password "https://server:2222/CMD_API_REDIS?action=enable&user=username"</code></pre>
-HTML,
+HTML
+,
             ],
 
             'Troubleshooting' => [
@@ -209,7 +215,8 @@ HTML,
     <li>Avoid direct <code>?action=vlt_purge</code> URL — it's deprecated</li>
     <li>Check Redis protected keys aren't being deleted</li>
 </ul>
-HTML,
+HTML
+,
             ],
 
         ];

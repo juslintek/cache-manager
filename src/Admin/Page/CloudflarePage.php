@@ -6,13 +6,14 @@ namespace Gratis\Cache\Admin\Page;
 
 use Gratis\Cache\Admin\AdminPage;
 
-final class CloudflarePage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-cf'; }
-    public function title(): string { return 'Cloudflare'; }
+final class CloudflarePage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-cf'; }
+    public function title(): string {
+ return 'Cloudflare'; }
+
+    public function render(): void {
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');
         $sse_url  = esc_js(rest_url('vlt-cache/v1/cloudflare/stream') . '?_wpnonce=' . $nonce);

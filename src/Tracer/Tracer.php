@@ -6,8 +6,8 @@ namespace Gratis\Cache\Tracer;
 
 use Gratis\Cache\Redis\RedisFactory;
 
-final class Tracer
-{
+final class Tracer {
+
     private static ?self $i = null;
     private string $id;
     private float $t0;
@@ -20,8 +20,7 @@ final class Tracer
 
     private function __construct() {}
 
-    public static function boot(): void
-    {
+    public static function boot(): void {
         self::$i = new self();
         self::$i->id = bin2hex(random_bytes(8));
         self::$i->t0 = hrtime(true);
@@ -36,15 +35,14 @@ final class Tracer
         // Hook argument tracing — capture every WP action/filter with args, timing, caller
         if (get_option('vlt_trace_hooks', false)) {
             add_action('all', [self::class, 'traceHookBefore'], -9999);
-            add_action('all', [self::class, 'traceHookAfter'],  PHP_INT_MAX);
+            add_action('all', [self::class, 'traceHookAfter'], PHP_INT_MAX);
         }
 
         self::begin('request');
     }
 
     /** @internal */
-    public static function traceHookBefore(): void
-    {
+    public static function traceHookBefore(): void {
         if (!self::$i) return;
         $hook = current_filter();
         $args = func_get_args();
@@ -56,8 +54,7 @@ final class Tracer
     }
 
     /** @internal */
-    public static function traceHookAfter(): void
-    {
+    public static function traceHookAfter(): void {
         if (!self::$i) return;
         $hook = current_filter();
         if (!isset(self::$i->hookStack[$hook])) return;
@@ -77,8 +74,7 @@ final class Tracer
         ];
     }
 
-    private static function serializeArgs(array $args): array
-    {
+    private static function serializeArgs(array $args): array {
         $out = [];
         foreach (array_slice($args, 0, 3) as $arg) {
             if (is_scalar($arg)) {
@@ -94,8 +90,7 @@ final class Tracer
         return $out;
     }
 
-    private static function shortCaller(): string
-    {
+    private static function shortCaller(): string {
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
         foreach ($bt as $frame) {
             $file = $frame['file'] ?? '';
@@ -107,13 +102,11 @@ final class Tracer
         return '';
     }
 
-    public static function instance(): ?self
-    {
+    public static function instance(): ?self {
         return self::$i;
     }
 
-    public static function begin(string $name, array $meta = []): void
-    {
+    public static function begin(string $name, array $meta = []): void {
         if (!self::$i) {
             return;
         }
@@ -128,8 +121,7 @@ final class Tracer
         self::$i->stack[] = count(self::$i->spans) - 1;
     }
 
-    public static function end(): void
-    {
+    public static function end(): void {
         if (!self::$i) {
             return;
         }
@@ -140,8 +132,7 @@ final class Tracer
         }
     }
 
-    public static function measure(string $name, callable $fn, array $meta = []): mixed
-    {
+    public static function measure(string $name, callable $fn, array $meta = []): mixed {
         self::begin($name, $meta);
         try {
             return $fn();
@@ -150,8 +141,7 @@ final class Tracer
         }
     }
 
-    public static function finish(): void
-    {
+    public static function finish(): void {
         if (!self::$i || self::$i->done) {
             return;
         }

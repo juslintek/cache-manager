@@ -6,12 +6,11 @@ namespace Gratis\Cache\Search;
  * Uses SQLite FTS5 for full-text search with relevance ranking.
  * Free in Gratis.
  */
-final class SearchIndex
-{
+final class SearchIndex {
+
     private static ?\SQLite3 $db = null;
 
-    public static function register(): void
-    {
+    public static function register(): void {
         if (!extension_loaded('sqlite3')) return;
 
         // Re-index on post save
@@ -25,8 +24,7 @@ final class SearchIndex
         }
     }
 
-    public static function db(): \SQLite3
-    {
+    public static function db(): \SQLite3 {
         if (self::$db) return self::$db;
         $dir = WP_CONTENT_DIR . '/gratis-search';
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
@@ -36,8 +34,7 @@ final class SearchIndex
         return self::$db;
     }
 
-    public static function indexPost(int $postId, \WP_Post $post): void
-    {
+    public static function indexPost(int $postId, \WP_Post $post): void {
         if ($post->post_status !== 'publish') { self::removePost($postId); return; }
         if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'])) return;
 
@@ -53,16 +50,14 @@ final class SearchIndex
         $stmt->execute();
     }
 
-    public static function removePost(int $postId): void
-    {
+    public static function removePost(int $postId): void {
         self::db()->exec("DELETE FROM search_index WHERE post_id = {$postId}");
     }
 
     /** Search the index. Returns array of [post_id, rank]. */
-    public static function search(string $query, int $limit = 20): array
-    {
+    public static function search(string $query, int $limit = 20): array {
         $db = self::db();
-        $stmt = $db->prepare("SELECT post_id, rank FROM search_index WHERE search_index MATCH :q ORDER BY rank LIMIT :limit");
+        $stmt = $db->prepare('SELECT post_id, rank FROM search_index WHERE search_index MATCH :q ORDER BY rank LIMIT :limit');
         $stmt->bindValue(':q', $query);
         $stmt->bindValue(':limit', $limit, SQLITE3_INTEGER);
         $result = $stmt->execute();
@@ -75,8 +70,7 @@ final class SearchIndex
     }
 
     /** Override WP search with our index. */
-    public static function searchQuery(?array $posts, \WP_Query $query): ?array
-    {
+    public static function searchQuery(?array $posts, \WP_Query $query): ?array {
         if (!$query->is_search() || is_admin()) return $posts;
 
         $term = $query->get('s');
@@ -93,8 +87,7 @@ final class SearchIndex
         return null; // Let WP run the modified query
     }
 
-    public static function interceptSearch(string $search, \WP_Query $query): string
-    {
+    public static function interceptSearch(string $search, \WP_Query $query): string {
         if ($query->is_search() && !is_admin() && get_option('vlt_search_index_enabled')) {
             return ''; // We handle search via posts_pre_query
         }
@@ -102,8 +95,7 @@ final class SearchIndex
     }
 
     /** Rebuild the entire index. */
-    public static function rebuild(): int
-    {
+    public static function rebuild(): int {
         $db = self::db();
         $db->exec('DELETE FROM search_index');
 
@@ -112,7 +104,7 @@ final class SearchIndex
         foreach ($posts as $post) {
             if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'])) continue;
             self::indexPost($post->ID, $post);
-            $count++;
+            ++$count;
         }
         return $count;
     }

@@ -6,10 +6,9 @@ namespace Gratis\Cache\Redis;
 
 use Redis;
 
-final class RedisFactory
-{
-    public static function create(float $timeout = 1.0): ?Redis
-    {
+final class RedisFactory {
+
+    public static function create(float $timeout = 1.0): ?Redis {
         // 1. Use manually saved config
         $socket = get_option('vlt_redis_socket', '');
         $host   = get_option('vlt_redis_host', '');
@@ -34,8 +33,7 @@ final class RedisFactory
         return null;
     }
 
-    private static function connectSocket(string $path, float $timeout): ?Redis
-    {
+    private static function connectSocket(string $path, float $timeout): ?Redis {
         try {
             $r = new Redis();
             if (@$r->connect($path, 0, $timeout)) {
@@ -46,8 +44,7 @@ final class RedisFactory
         return null;
     }
 
-    private static function connectTcp(string $host, int $port, float $timeout): ?Redis
-    {
+    private static function connectTcp(string $host, int $port, float $timeout): ?Redis {
         try {
             $r = new Redis();
             if (@$r->connect($host, $port, $timeout)) {

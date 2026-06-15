@@ -1,10 +1,9 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Scale;
 
-final class HealthEndpoint
-{
-    public static function register(): void
-    {
+final class HealthEndpoint {
+
+    public static function register(): void {
         register_rest_route('gratis-cache/v1', '/health', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'check'],
@@ -12,10 +11,9 @@ final class HealthEndpoint
         ]);
     }
 
-    public static function check(): \WP_REST_Response
-    {
+    public static function check(): \WP_REST_Response {
         global $wpdb;
-        $dbOk = (bool) $wpdb->get_var("SELECT 1");
+        $dbOk = (bool) $wpdb->get_var('SELECT 1');
         $status = $dbOk ? 200 : 503;
         return new \WP_REST_Response([
             'status'    => $dbOk ? 'healthy' : 'unhealthy',

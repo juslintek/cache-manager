@@ -5,10 +5,9 @@ namespace Gratis\Cache\Performance;
  * Lazy load iframes/videos + preload key resources.
  * What WP Rocket and Perfmatters charge for. Free in Gratis.
  */
-final class LazyLoad
-{
-    public static function register(): void
-    {
+final class LazyLoad {
+
+    public static function register(): void {
         if (!get_option('vlt_lazy_iframes', true)) return;
 
         // Lazy load iframes (YouTube, Vimeo, maps)
@@ -20,16 +19,14 @@ final class LazyLoad
     }
 
     /** Add loading="lazy" to iframes that don't have it. */
-    public static function lazyIframes(string $content): string
-    {
+    public static function lazyIframes(string $content): string {
         return preg_replace_callback('/<iframe(?![^>]*loading=)([^>]*)>/i', function ($m) {
             return '<iframe loading="lazy"' . $m[1] . '>';
         }, $content);
     }
 
     /** Wrap videos in a facade for deferred loading. */
-    public static function lazyVideos(string $content): string
-    {
+    public static function lazyVideos(string $content): string {
         // Add loading="lazy" to video elements
         return preg_replace_callback('/<video(?![^>]*loading=)([^>]*)>/i', function ($m) {
             return '<video loading="lazy" preload="none"' . $m[1] . '>';
@@ -37,8 +34,7 @@ final class LazyLoad
     }
 
     /** Preload critical resources: fonts, LCP image. */
-    public static function preloadHints(): void
-    {
+    public static function preloadHints(): void {
         // Preload theme fonts
         $fontsDir = get_template_directory() . '/assets/fonts';
         if (is_dir($fontsDir)) {

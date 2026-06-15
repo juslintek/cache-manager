@@ -2,8 +2,8 @@
 namespace Gratis\Cache\Contracts\Cache;
 
 /** Maps what cache entries depend on what resources. */
-interface CacheDependencyMapperInterface
-{
+interface CacheDependencyMapperInterface {
+
     public function addDependency(string $cacheKey, string $dependsOn): void;
     public function getDependents(string $resource): array;
     public function removeDependency(string $cacheKey): void;

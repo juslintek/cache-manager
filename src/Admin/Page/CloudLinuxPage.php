@@ -7,13 +7,14 @@ namespace Gratis\Cache\Admin\Page;
 use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\CloudLinuxDetector;
 
-final class CloudLinuxPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-cloudlinux'; }
-    public function title(): string { return 'CloudLinux'; }
+final class CloudLinuxPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-cloudlinux'; }
+    public function title(): string {
+ return 'CloudLinux'; }
+
+    public function render(): void {
         echo '<div class="wrap"><h1>Podėlio Valdymas — CloudLinux</h1>';
 
         $ver  = CloudLinuxDetector::version();
@@ -24,15 +25,15 @@ final class CloudLinuxPage extends AdminPage
         echo '<table class="widefat fixed striped tw-max-w-4xl tw-my-5"><thead><tr><th style="width:220px">Funkcija</th><th style="width:200px">Būsena</th><th>Nauda / Kaip įjungti</th></tr></thead><tbody>';
 
         $rows = [
-            ['CloudLinux versija',    $ver ?: '—',                                                    '—'],
-            ['LVE CPU limitas',       ($lve['cpu'] ?? '—'),                                           'Jūsų procesoriaus limitas. 100% = neribota.'],
-            ['LVE Atminties limitas', ($lve['pmem'] ?? '—'),                                          'Fizinės atminties limitas jūsų paskyroje.'],
-            ['LVE Entry Processes',   ($lve['ep'] ?? '—'),                                            'Maks. vienu metu vykdomų PHP procesų skaičius.'],
-            ['CageFS',                CloudLinuxDetector::cageFsEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Failų sistemos izoliacija — saugumo funkcija.'],
-            ['MySQL Governor',        CloudLinuxDetector::mysqlGovernorInstalled() ? '✅ Įdiegtas' : '❌ Neįdiegtas', 'Riboja lėtas DB užklausas, apsaugo nuo perkrovos.'],
-            ['PHP Selector',          CloudLinuxDetector::phpSelectorEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Pasirinkite PHP versiją kiekvienam domenui.'],
-            ['AccelerateWP',          CloudLinuxDetector::accelerateWpInstalled() ? '✅ Įdiegtas' : '❌ Neįdiegtas', 'Automatinis WordPress optimizavimas (object cache, CDN, critical CSS).'],
-            ['Redis (jūsų paskyra)',  CloudLinuxDetector::redisEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Redis object cache jūsų domenui.'],
+            ['CloudLinux versija', $ver ?: '—', '—'],
+            ['LVE CPU limitas', ($lve['cpu'] ?? '—'), 'Jūsų procesoriaus limitas. 100% = neribota.'],
+            ['LVE Atminties limitas', ($lve['pmem'] ?? '—'), 'Fizinės atminties limitas jūsų paskyroje.'],
+            ['LVE Entry Processes', ($lve['ep'] ?? '—'), 'Maks. vienu metu vykdomų PHP procesų skaičius.'],
+            ['CageFS', CloudLinuxDetector::cageFsEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Failų sistemos izoliacija — saugumo funkcija.'],
+            ['MySQL Governor', CloudLinuxDetector::mysqlGovernorInstalled() ? '✅ Įdiegtas' : '❌ Neįdiegtas', 'Riboja lėtas DB užklausas, apsaugo nuo perkrovos.'],
+            ['PHP Selector', CloudLinuxDetector::phpSelectorEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Pasirinkite PHP versiją kiekvienam domenui.'],
+            ['AccelerateWP', CloudLinuxDetector::accelerateWpInstalled() ? '✅ Įdiegtas' : '❌ Neįdiegtas', 'Automatinis WordPress optimizavimas (object cache, CDN, critical CSS).'],
+            ['Redis (jūsų paskyra)', CloudLinuxDetector::redisEnabled() ? '✅ Aktyvus' : '❌ Neaktyvus', 'Redis object cache jūsų domenui.'],
         ];
 
         foreach ($rows as [$label, $status, $note]) {

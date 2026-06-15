@@ -5,20 +5,18 @@ namespace Gratis\Cache\Storage;
 use Gratis\Cache\Contracts\Storage\FileChangeStoreInterface;
 
 /** Mtime-based file change detection backed by JsonlTraceStore. */
-final class FileChangeScanner implements FileChangeStoreInterface
-{
+final class FileChangeScanner implements FileChangeStoreInterface {
+
     private const CHANNEL = 'file-changes';
     private JsonlTraceStore $store;
     private string $stateFile;
 
-    public function __construct(JsonlTraceStore $store, ?string $stateFile = null)
-    {
+    public function __construct(JsonlTraceStore $store, ?string $stateFile = null) {
         $this->store = $store;
         $this->stateFile = $stateFile ?? WP_CONTENT_DIR . '/gratis-cache-data/file-scan-state.json';
     }
 
-    public function recordChange(string $path, string $type, int $timestamp): void
-    {
+    public function recordChange(string $path, string $type, int $timestamp): void {
         $this->store->record(self::CHANNEL, [
             'path' => $path,
             'type' => $type,
@@ -26,13 +24,11 @@ final class FileChangeScanner implements FileChangeStoreInterface
         ]);
     }
 
-    public function changesSince(int $timestamp): array
-    {
+    public function changesSince(int $timestamp): array {
         return array_values($this->store->since(self::CHANNEL, $timestamp));
     }
 
-    public function lastChange(?string $pathPrefix = null): ?array
-    {
+    public function lastChange(?string $pathPrefix = null): ?array {
         $entries = $this->store->tail(self::CHANNEL, 100);
         if ($pathPrefix !== null) {
             $entries = array_filter($entries, fn($e) => str_starts_with($e['path'] ?? '', $pathPrefix));
@@ -41,8 +37,7 @@ final class FileChangeScanner implements FileChangeStoreInterface
     }
 
     /** @return string[] List of changed file paths */
-    public function scan(?array $directories = null): array
-    {
+    public function scan(?array $directories = null): array {
         $directories ??= $this->defaultDirectories();
         $previous = $this->loadState();
         $current = [];
@@ -83,23 +78,20 @@ final class FileChangeScanner implements FileChangeStoreInterface
         return $changed;
     }
 
-    private function defaultDirectories(): array
-    {
+    private function defaultDirectories(): array {
         return array_filter([
             defined('WP_CONTENT_DIR') ? get_stylesheet_directory() : null,
             defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : (defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR . '/plugins' : null),
         ]);
     }
 
-    private function loadState(): array
-    {
+    private function loadState(): array {
         if (!file_exists($this->stateFile)) return [];
         $data = json_decode(file_get_contents($this->stateFile), true);
         return is_array($data) ? $data : [];
     }
 
-    private function saveState(array $state): void
-    {
+    private function saveState(array $state): void {
         $dir = dirname($this->stateFile);
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
         file_put_contents($this->stateFile, json_encode($state, JSON_UNESCAPED_SLASHES), LOCK_EX);

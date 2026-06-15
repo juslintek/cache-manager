@@ -5,11 +5,10 @@ namespace Gratis\Cache\Performance;
  * Database optimization — what WP-Optimize charges $49/yr for. Free in Gratis.
  * Cleans revisions, transients, spam, trash, and optimizes tables.
  */
-final class DatabaseOptimizer
-{
+final class DatabaseOptimizer {
+
     /** Run all optimizations and return stats. */
-    public static function optimize(array $options = []): array
-    {
+    public static function optimize(array $options = []): array {
         global $wpdb;
         $stats = [];
 
@@ -42,8 +41,7 @@ final class DatabaseOptimizer
     }
 
     /** Delete old revisions, keeping N most recent per post. */
-    public static function cleanRevisions(int $keep = 5): int
-    {
+    public static function cleanRevisions(int $keep = 5): int {
         global $wpdb;
         $deleted = 0;
 
@@ -56,15 +54,14 @@ final class DatabaseOptimizer
             $to_delete = array_slice($revisions, $keep);
             foreach ($to_delete as $rev_id) {
                 wp_delete_post_revision($rev_id);
-                $deleted++;
+                ++$deleted;
             }
         }
         return $deleted;
     }
 
     /** Delete expired transients. */
-    public static function cleanTransients(): int
-    {
+    public static function cleanTransients(): int {
         global $wpdb;
         $time = time();
         $expired = $wpdb->query(
@@ -78,8 +75,7 @@ final class DatabaseOptimizer
     }
 
     /** Delete spam comments. */
-    public static function cleanSpam(): int
-    {
+    public static function cleanSpam(): int {
         global $wpdb;
         $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'");
         if ($count > 0) {
@@ -89,8 +85,7 @@ final class DatabaseOptimizer
     }
 
     /** Empty trash (posts + comments older than 30 days). */
-    public static function cleanTrash(): int
-    {
+    public static function cleanTrash(): int {
         global $wpdb;
         $cutoff = gmdate('Y-m-d H:i:s', strtotime('-30 days'));
         $posts = (int) $wpdb->query($wpdb->prepare(
@@ -103,8 +98,7 @@ final class DatabaseOptimizer
     }
 
     /** Delete orphaned post/comment/term meta. */
-    public static function cleanOrphanMeta(): int
-    {
+    public static function cleanOrphanMeta(): int {
         global $wpdb;
         $pm = (int) $wpdb->query("DELETE pm FROM {$wpdb->postmeta} pm LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.ID IS NULL");
         $cm = (int) $wpdb->query("DELETE cm FROM {$wpdb->commentmeta} cm LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_ID IS NULL");
@@ -112,8 +106,7 @@ final class DatabaseOptimizer
     }
 
     /** Run OPTIMIZE TABLE on all WP tables. */
-    public static function optimizeTables(): int
-    {
+    public static function optimizeTables(): int {
         global $wpdb;
         $tables = $wpdb->get_col("SHOW TABLES LIKE '{$wpdb->prefix}%'");
         foreach ($tables as $table) {
@@ -123,11 +116,10 @@ final class DatabaseOptimizer
     }
 
     /** Get database size stats. */
-    public static function getStats(): array
-    {
+    public static function getStats(): array {
         global $wpdb;
         return [
-            'total_size'  => $wpdb->get_var("SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()"),
+            'total_size'  => $wpdb->get_var('SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()'),
             'revisions'   => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'revision'"),
             'transients'  => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'"),
             'spam'        => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'"),

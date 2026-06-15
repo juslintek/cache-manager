@@ -29,27 +29,28 @@ use Gratis\Cache\Purge\Strategy\OpcacheStrategy;
 use Gratis\Cache\Purge\Strategy\RedisStrategy;
 use Gratis\Cache\Tracer\TracerConfig;
 
-final class Plugin
-{
+final class Plugin {
+
     private static ?self $instance = null;
     private Logger $logger;
     private PurgeManager $purge;
     private DropinInstaller $dropin;
 
-    public static function instance(): self
-    {
+    public static function instance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function logger(): Logger { return $this->logger; }
-    public function purge(): PurgeManager { return $this->purge; }
-    public function dropin(): DropinInstaller { return $this->dropin; }
+    public function logger(): Logger {
+ return $this->logger; }
+    public function purge(): PurgeManager {
+ return $this->purge; }
+    public function dropin(): DropinInstaller {
+ return $this->dropin; }
 
-    public static function boot(): void
-    {
+    public static function boot(): void {
         $self = self::instance();
         $self->logger = new Logger();
         $self->dropin = new DropinInstaller(new DropinGenerator());
@@ -133,7 +134,7 @@ final class Plugin
 
         // Async queue worker endpoint
         add_action('wp_ajax_nopriv_vlt_async_worker', [\Gratis\Cache\Async\AsyncQueue::class, 'processQueue']);
-        add_action('wp_ajax_vlt_async_worker',        [\Gratis\Cache\Async\AsyncQueue::class, 'processQueue']);
+        add_action('wp_ajax_vlt_async_worker', [\Gratis\Cache\Async\AsyncQueue::class, 'processQueue']);
 
         // WP-Cron → Redis offload
         \Gratis\Cache\Async\AsyncQueue::offloadCron();
@@ -161,8 +162,7 @@ final class Plugin
      * Auto-purge when plugin/theme files change (e.g. after git pull).
      * Throttled to run at most once per 5 minutes.
      */
-    public function maybeAutoPurgeOnFileChange(): void
-    {
+    public function maybeAutoPurgeOnFileChange(): void {
         $transient = 'gratis_cache_file_check';
         if (get_transient($transient)) {
             return; // Already checked recently.
@@ -205,16 +205,14 @@ final class Plugin
         update_option($state_key, $newest, true);
     }
 
-    public function onShutdown(): void
-    {
+    public function onShutdown(): void {
         $oc = $GLOBALS['wp_object_cache'] ?? null;
         if ($oc && property_exists($oc, 'cache_hits')) {
             $this->logger->logRequestStats($oc->cache_hits, $oc->cache_misses);
         }
     }
 
-    public function rotateTraces(): void
-    {
+    public function rotateTraces(): void {
         $dir = TracerConfig::getDir();
         $cut = gmdate('Y-m-d', strtotime('-7 days'));
         foreach (glob($dir . '/trace-*.json') as $f) {
@@ -228,8 +226,7 @@ final class Plugin
         }
     }
 
-    public function enqueueAdminAssets(string $hook): void
-    {
+    public function enqueueAdminAssets(string $hook): void {
         // Only on our plugin pages
         if (!str_contains($hook, 'vlt-cache')) {
             return;
@@ -242,8 +239,7 @@ final class Plugin
         wp_add_inline_script('vlt-tailwind', 'tailwind.config={prefix:"tw-",theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
     }
 
-    public function registerMenu(): void
-    {
+    public function registerMenu(): void {
         $server = \Gratis\Cache\ServerDetector::detect()['server'];
         $isLS   = in_array($server, [\Gratis\Cache\ServerDetector::LITESPEED, \Gratis\Cache\ServerDetector::OLS], true);
         $isNginx  = $server === \Gratis\Cache\ServerDetector::NGINX;
@@ -293,8 +289,7 @@ final class Plugin
         }
     }
 
-    public function adminBar(\WP_Admin_Bar $wp_admin_bar): void
-    {
+    public function adminBar(\WP_Admin_Bar $wp_admin_bar): void {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -305,7 +300,7 @@ final class Plugin
         }
         $wp_admin_bar->add_node([
             'id'    => 'vlt-cache',
-            'title' => sprintf(__('Cache Manager (H:%d M:%d)', 'gratis-cache'), $hits, $misses),
+            'title' => sprintf(__('Cache Manager (H:%1$d M:%2$d)', 'gratis-cache'), $hits, $misses),
             'href'  => admin_url('admin.php?page=vlt-cache'),
         ]);
         $isLS = \Gratis\Cache\ServerDetector::isLiteSpeed();
@@ -329,8 +324,7 @@ final class Plugin
         }
     }
 
-    public function handleActions(): void
-    {
+    public function handleActions(): void {
         $action = $_GET['action'] ?? '';
 
         if ($action === 'vlt_purge') {
@@ -380,13 +374,11 @@ final class Plugin
         }
     }
 
-    public function dashboardWidget(): void
-    {
+    public function dashboardWidget(): void {
         wp_add_dashboard_widget('vlt_cache_widget', 'Podėlio Valdymas', [$this, 'renderDashboardWidget']);
     }
 
-    public function renderDashboardWidget(): void
-    {
+    public function renderDashboardWidget(): void {
         $redis = self::redisInfo();
         $stats = $this->logger->getTodayStats();
         $ratio = ($stats['hits'] + $stats['misses']) > 0
@@ -420,8 +412,7 @@ final class Plugin
         }
     }
 
-    public function imgOptmNotice(): void
-    {
+    public function imgOptmNotice(): void {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -519,8 +510,7 @@ final class Plugin
         </script>';
     }
 
-    private static function commandExists(string $cmd): bool
-    {
+    private static function commandExists(string $cmd): bool {
         foreach (explode(':', getenv('PATH') ?: '/usr/bin:/usr/local/bin:/bin') as $dir) {
             if (@is_executable(rtrim($dir, '/') . '/' . $cmd)) {
                 return true;
@@ -529,8 +519,7 @@ final class Plugin
         return false;
     }
 
-    public function cloudLinuxNotice(): void
-    {
+    public function cloudLinuxNotice(): void {
         if (!current_user_can('manage_options') || get_option('vlt_cl_notice_dismissed')) {
             return;
         }
@@ -550,8 +539,7 @@ final class Plugin
         echo '<script>document.querySelector("#vlt-cl-notice .notice-dismiss")?.addEventListener("click",()=>{fetch("' . $url . '",{method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_cl_notice_dismissed"})});});</script>';
     }
 
-    public function simdjsonNotice(): void
-    {
+    public function simdjsonNotice(): void {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -570,8 +558,7 @@ final class Plugin
         echo '</p></div>';
     }
 
-    public function dropinNotice(): void
-    {
+    public function dropinNotice(): void {
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -580,8 +567,7 @@ final class Plugin
             '">Įdiegti dabar</a></p></div>';
     }
 
-    public static function redisInfo(): array
-    {
+    public static function redisInfo(): array {
         $info = ['connected' => false, 'memory' => '—', 'keys' => 0];
         try {
             $r = \Gratis\Cache\Redis\RedisFactory::create(1.0);
@@ -600,8 +586,7 @@ final class Plugin
         return $info;
     }
 
-    public static function formatSize(int $bytes): string
-    {
+    public static function formatSize(int $bytes): string {
         if ($bytes >= 1048576) {
             return round($bytes / 1048576, 1) . ' MB';
         }
@@ -611,8 +596,7 @@ final class Plugin
         return $bytes . ' B';
     }
 
-    public static function dirSize(string $dir): int
-    {
+    public static function dirSize(string $dir): int {
         if (!is_dir($dir)) {
             return 0;
         }
@@ -623,13 +607,11 @@ final class Plugin
         return $s;
     }
 
-    public static function purgeButton(string $type, string $label): string
-    {
+    public static function purgeButton(string $type, string $label): string {
         return '<a href="' . esc_url(wp_nonce_url(admin_url('admin.php?action=vlt_purge&type=' . $type), 'vlt_purge')) . '" class="button">' . esc_html($label) . '</a> ';
     }
 
-    public static function notice(): void
-    {
+    public static function notice(): void {
         if (!empty($_GET['vlt_purged'])) {
             echo '<div class="notice notice-success is-dismissible"><p>Talpykla sėkmingai išvalyta.</p></div>';
         }

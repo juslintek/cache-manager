@@ -6,13 +6,14 @@ namespace Gratis\Cache\Admin\Page;
 
 use Gratis\Cache\Admin\AdminPage;
 
-final class RedisExplorerPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-redis'; }
-    public function title(): string { return 'Redis Explorer'; }
+final class RedisExplorerPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-redis'; }
+    public function title(): string {
+ return 'Redis Explorer'; }
+
+    public function render(): void {
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');
         ?>

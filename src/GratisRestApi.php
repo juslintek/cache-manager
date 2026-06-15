@@ -2,10 +2,9 @@
 namespace Gratis\Cache;
 
 /** REST API endpoints for Gratis Cache Manager admin dashboard. */
-final class GratisRestApi
-{
-    public static function register(): void
-    {
+final class GratisRestApi {
+
+    public static function register(): void {
         register_rest_route('gratis-cache/v1', '/status', [
             'methods'             => 'GET',
             'callback'            => [__CLASS__, 'status'],
@@ -32,13 +31,11 @@ final class GratisRestApi
         ]);
     }
 
-    public static function canManage(): bool
-    {
+    public static function canManage(): bool {
         return current_user_can('manage_options');
     }
 
-    public static function status(\WP_REST_Request $request): \WP_REST_Response
-    {
+    public static function status(\WP_REST_Request $request): \WP_REST_Response {
         $caps = Diagnostics\CapabilityDetector::detect();
         return new \WP_REST_Response([
             'php'        => PHP_VERSION,
@@ -52,8 +49,7 @@ final class GratisRestApi
         ]);
     }
 
-    public static function stats(\WP_REST_Request $request): \WP_REST_Response
-    {
+    public static function stats(\WP_REST_Request $request): \WP_REST_Response {
         $logger = new Log\Logger();
         $stats = $logger->getTodayStats();
         $total = $stats['hits'] + $stats['misses'];
@@ -68,8 +64,7 @@ final class GratisRestApi
         ]);
     }
 
-    public static function purge(\WP_REST_Request $request): \WP_REST_Response
-    {
+    public static function purge(\WP_REST_Request $request): \WP_REST_Response {
         do_action('gratis_cache_purge_all', 'rest-api');
         return new \WP_REST_Response(['purged' => true, 'timestamp' => gmdate('c')]);
     }
@@ -79,8 +74,7 @@ final class GratisRestApi
      * GRATIS_DEPLOY_SECRET constant or gratis_deploy_secret option.
      * Called by CI after git pull to flush all caches.
      */
-    public static function deployPurge(\WP_REST_Request $request): \WP_REST_Response
-    {
+    public static function deployPurge(\WP_REST_Request $request): \WP_REST_Response {
         $token = $request->get_header('X-Deploy-Token');
         if (empty($token)) {
             $token = sanitize_text_field($request->get_param('token') ?? '');

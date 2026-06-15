@@ -17,8 +17,8 @@ use Gratis\Cache\Redis\RedisFactory;
  *   TraceWorker::status()         — check PID file + Redis heartbeat
  *   TraceWorker::stop()           — kill by PID
  */
-final class TraceWorker
-{
+final class TraceWorker {
+
     private const STREAM_KEY   = 'vlt_trace_stream';
     private const PID_KEY      = 'vlt_trace_worker_pid';
     private const HEARTBEAT_KEY = 'vlt_trace_worker_hb';
@@ -26,8 +26,7 @@ final class TraceWorker
 
     // ── Main request: push trace to Redis stream (non-blocking) ──────────────
 
-    public static function push(array $trace): void
-    {
+    public static function push(array $trace): void {
         try {
             $r = RedisFactory::create(0.1);
             if (!$r) {
@@ -47,8 +46,7 @@ final class TraceWorker
      * Run the worker loop. Called by the spawned background process.
      * Reads from Redis stream, writes traces to disk files.
      */
-    public static function run(): void
-    {
+    public static function run(): void {
         // Write PID
         file_put_contents(self::PID_FILE, getmypid());
 
@@ -100,16 +98,14 @@ final class TraceWorker
 
     // ── Process management ────────────────────────────────────────────────────
 
-    public static function ensureRunning(): void
-    {
+    public static function ensureRunning(): void {
         if (self::isRunning()) {
             return;
         }
         self::spawn();
     }
 
-    public static function spawn(): void
-    {
+    public static function spawn(): void {
         $php  = PHP_BINARY ?: '/usr/local/php84/bin/php';
         $self = __FILE__;
         $wp   = defined('ABSPATH') ? ABSPATH : '';
@@ -137,8 +133,7 @@ PHP);
         exec($cmd);
     }
 
-    public static function stop(): void
-    {
+    public static function stop(): void {
         $r = RedisFactory::create(0.5);
         if ($r) {
             $r->del(self::PID_KEY); // Signal worker to stop
@@ -153,8 +148,7 @@ PHP);
         }
     }
 
-    public static function isRunning(): bool
-    {
+    public static function isRunning(): bool {
         // Check Redis heartbeat (updated every 10s, expires in 30s)
         $r = RedisFactory::create(0.3);
         if (!$r) {
@@ -173,8 +167,7 @@ PHP);
         return false;
     }
 
-    public static function status(): array
-    {
+    public static function status(): array {
         $r  = RedisFactory::create(0.3);
         $hb = 0;
         $queueLen = 0;

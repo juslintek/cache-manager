@@ -7,13 +7,14 @@ namespace Gratis\Cache\Admin\Page;
 use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\Plugin;
 
-final class DashboardPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache'; }
-    public function title(): string { return 'Dashboard'; }
+final class DashboardPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache'; }
+    public function title(): string {
+ return 'Dashboard'; }
+
+    public function render(): void {
         $p       = Plugin::instance();
         $redis   = Plugin::redisInfo();
         $opcache = function_exists('opcache_get_status') ? opcache_get_status(false) : null;
@@ -57,7 +58,7 @@ final class DashboardPage extends AdminPage
 
         <?php
         // Helper: render a card
-        $card = function(string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
+        $card = function (string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
             $bar = '<div class="tw-h-1 tw-bg-gray-200 tw-rounded tw-mt-2"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
             echo '<div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-shadow-sm">';
             echo '<div class="tw-flex tw-justify-between tw-items-start">';

@@ -4,17 +4,15 @@ namespace Gratis\Cache\Admin;
 /**
  * Unified Gratis dashboard widget showing stats from all active plugins.
  */
-final class DashboardWidget
-{
-    public static function register(): void
-    {
+final class DashboardWidget {
+
+    public static function register(): void {
         add_action('wp_dashboard_setup', function () {
             wp_add_dashboard_widget('gratis_dashboard', '⚡ Gratis Suite', [__CLASS__, 'render']);
         });
     }
 
-    public static function render(): void
-    {
+    public static function render(): void {
         echo '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">';
 
         // Cache stats
@@ -71,8 +69,7 @@ final class DashboardWidget
         echo '<p style="margin-top:12px;font-size:12px;color:#666">Gratis Suite — ' . count(get_option('active_plugins', [])) . ' plugins active | <a href="' . admin_url('admin.php?page=gratis-fleet') . '">Fleet Dashboard →</a></p>';
     }
 
-    private static function card(string $label, string $value, string $sub): void
-    {
+    private static function card(string $label, string $value, string $sub): void {
         echo '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center">';
         echo '<div style="font-size:1.5em;font-weight:700;color:#1e293b">' . esc_html($value) . '</div>';
         echo '<div style="font-size:11px;color:#64748b;margin-top:2px">' . esc_html($label) . ' ' . esc_html($sub) . '</div>';

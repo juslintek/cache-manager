@@ -8,12 +8,11 @@ use Gratis\Cache\Plugin;
 use Gratis\Cache\Redis\RedisFactory;
 use Gratis\Cache\Tracer\TracerConfig;
 
-final class RestApi
-{
+final class RestApi {
+
     private const NS = 'vlt-cache/v1';
 
-    public static function register(): void
-    {
+    public static function register(): void {
         // MCP Bridge endpoints (mcp-for-page-builders compatibility)
         $ns_mcp = 'mcp-for-page-builders/v1';
         $admin   = [self::class, 'canManage'];
@@ -210,15 +209,13 @@ final class RestApi
         ]);
     }
 
-    public static function canManage(): bool
-    {
+    public static function canManage(): bool {
         return current_user_can('manage_options');
     }
 
     // ── Logs ──
 
-    public static function logs(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function logs(\WP_REST_Request $req): \WP_REST_Response {
         $logger = Plugin::instance()->logger();
         $date   = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
         $type   = sanitize_key($req->get_param('type') ?? '');
@@ -281,8 +278,7 @@ final class RestApi
         return new \WP_REST_Response(['rows' => array_values(array_reverse($entries)), 'meta' => $meta]);
     }
 
-    public static function uris(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function uris(\WP_REST_Request $req): \WP_REST_Response {
         $date    = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
         $entries = Plugin::instance()->logger()->readLog($date);
         $uris    = array_values(array_unique(array_filter(array_column($entries, 'uri'))));
@@ -292,8 +288,7 @@ final class RestApi
 
     // ── Redis ──
 
-    public static function redis(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function redis(\WP_REST_Request $req): \WP_REST_Response {
         $sub = $req->get_param('sub');
 
         if ($sub === 'detect') {
@@ -315,13 +310,11 @@ final class RestApi
         };
     }
 
-    private static function redisDetect(): \WP_REST_Response
-    {
+    private static function redisDetect(): \WP_REST_Response {
         return new \WP_REST_Response(\Gratis\Cache\Redis\RedisDetector::detect());
     }
 
-    public static function redisSaveConfig(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function redisSaveConfig(\WP_REST_Request $req): \WP_REST_Response {
         $socket = sanitize_text_field($req->get_param('socket') ?? '');
         $host   = sanitize_text_field($req->get_param('host') ?? '');
         $port   = (int) ($req->get_param('port') ?? 0);
@@ -339,8 +332,7 @@ final class RestApi
         return new \WP_REST_Response(['ok' => true]);
     }
 
-    private static function redisStats(\Redis $r): \WP_REST_Response
-    {
+    private static function redisStats(\Redis $r): \WP_REST_Response {
         $info = $r->info();
         $keys = $r->keys('vlt_*');
         $groups = [];
@@ -352,7 +344,7 @@ final class RestApi
             if (!isset($groups[$group])) {
                 $groups[$group] = ['name' => $group, 'count' => 0, 'size' => 0];
             }
-            $groups[$group]['count']++;
+            ++$groups[$group]['count'];
         }
         foreach ($groups as $name => &$g) {
             $sample_keys = array_filter($keys, fn($k) => str_starts_with($k, 'vlt_' . $name . ':'));
@@ -379,8 +371,7 @@ final class RestApi
         ]);
     }
 
-    private static function redisKeys(\Redis $r, \WP_REST_Request $req): \WP_REST_Response
-    {
+    private static function redisKeys(\Redis $r, \WP_REST_Request $req): \WP_REST_Response {
         $group = sanitize_text_field($req->get_param('group') ?? 'default');
         $keys  = $r->keys('vlt_' . $group . ':*');
         if (!$keys && $group === 'default') {
@@ -395,8 +386,7 @@ final class RestApi
         return new \WP_REST_Response($result);
     }
 
-    private static function redisPreview(\Redis $r, \WP_REST_Request $req): \WP_REST_Response
-    {
+    private static function redisPreview(\Redis $r, \WP_REST_Request $req): \WP_REST_Response {
         $key = sanitize_text_field($req->get_param('key') ?? '');
         if (!$key || !$r->exists($key)) {
             return new \WP_REST_Response(['error' => 'Not found'], 404);
@@ -426,8 +416,7 @@ final class RestApi
         ]);
     }
 
-    private static function redisDelete(\Redis $r, \WP_REST_Request $req): \WP_REST_Response
-    {
+    private static function redisDelete(\Redis $r, \WP_REST_Request $req): \WP_REST_Response {
         $key = sanitize_text_field($req->get_param('key') ?? '');
         if ($key) {
             $r->del($key);
@@ -435,8 +424,7 @@ final class RestApi
         return new \WP_REST_Response(['ok' => true]);
     }
 
-    private static function redisDeleteGroup(\Redis $r, \WP_REST_Request $req): \WP_REST_Response
-    {
+    private static function redisDeleteGroup(\Redis $r, \WP_REST_Request $req): \WP_REST_Response {
         $group = sanitize_text_field($req->get_param('group') ?? '');
         if (!$group) {
             return new \WP_REST_Response(['error' => 'No group'], 400);
@@ -450,8 +438,7 @@ final class RestApi
 
     // ── Cloudflare ──
 
-    public static function cloudflare(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function cloudflare(\WP_REST_Request $req): \WP_REST_Response {
         $date = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
 
         if ($date === gmdate('Y-m-d')) {
@@ -495,30 +482,26 @@ final class RestApi
         return new \WP_REST_Response(array_values(array_reverse($rows)));
     }
 
-    public static function cfStream(): void
-    {
+    public static function cfStream(): void {
         self::sseLoop('vlt_cf_live', 'ray');
     }
 
     // ── Logs Stream ──
 
-    public static function logsStream(): void
-    {
+    public static function logsStream(): void {
         self::sseLoop('vlt_logs_live', 'timestamp');
     }
 
     // ── Tracer Stream ──
 
-    public static function tracerStream(): void
-    {
+    public static function tracerStream(): void {
         self::sseLoop('vlt_traces', 'id');
     }
 
     /**
      * Generic SSE loop: watches a Redis list for new entries by tracking the newest item's unique field.
      */
-    private static function sseLoop(string $key, string $idField): void
-    {
+    private static function sseLoop(string $key, string $idField): void {
         $r = RedisFactory::create(1.0);
         if (!$r) {
             status_header(503);
@@ -557,7 +540,7 @@ final class RestApi
                         $fresh[] = $entry;
                     }
                     if ($fresh) {
-                        echo "data: " . json_encode($fresh) . "\n\n";
+                        echo 'data: ' . json_encode($fresh) . "\n\n";
                         flush();
                     }
                     $lastId = $currentId;
@@ -577,19 +560,16 @@ final class RestApi
 
     // ── Image Optimization ──
 
-    public static function imgOptmStatus(): \WP_REST_Response
-    {
+    public static function imgOptmStatus(): \WP_REST_Response {
         return new \WP_REST_Response(\Gratis\Cache\Image\ImageOptimizer::status());
     }
 
-    public static function imgOptmRun(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function imgOptmRun(\WP_REST_Request $req): \WP_REST_Response {
         $limit = max(1, min(500, (int) ($req->get_param('limit') ?? 50)));
         return new \WP_REST_Response(\Gratis\Cache\Image\ImageOptimizer::runBulk($limit));
     }
 
-    public static function dismissNotice(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function dismissNotice(\WP_REST_Request $req): \WP_REST_Response {
         $notice = sanitize_key($req->get_json_params()['notice'] ?? '');
         if ($notice) {
             update_option($notice, true);
@@ -597,13 +577,11 @@ final class RestApi
         return new \WP_REST_Response(['ok' => true]);
     }
 
-    public static function serverDetect(): \WP_REST_Response
-    {
+    public static function serverDetect(): \WP_REST_Response {
         return new \WP_REST_Response(\Gratis\Cache\ServerDetector::runAndStore());
     }
 
-    public static function configSave(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function configSave(\WP_REST_Request $req): \WP_REST_Response {
         $path    = $req->get_json_params()['path'] ?? '';
         $content = $req->get_json_params()['content'] ?? '';
 
@@ -638,8 +616,7 @@ final class RestApi
         return new \WP_REST_Response(['ok' => $ok !== false]);
     }
 
-    public static function purgeType(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function purgeType(\WP_REST_Request $req): \WP_REST_Response {
         @ini_set('memory_limit', '512M');
         $type  = sanitize_key($req->get_param('type'));
         $start = microtime(true);
@@ -660,26 +637,22 @@ final class RestApi
         return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
     }
 
-    public static function traceWorkerStatus(): \WP_REST_Response
-    {
+    public static function traceWorkerStatus(): \WP_REST_Response {
         return new \WP_REST_Response(\Gratis\Cache\Tracer\TraceWorker::status());
     }
 
-    public static function traceWorkerStart(): \WP_REST_Response
-    {
+    public static function traceWorkerStart(): \WP_REST_Response {
         \Gratis\Cache\Tracer\TraceWorker::spawn();
         sleep(1);
         return new \WP_REST_Response(\Gratis\Cache\Tracer\TraceWorker::status());
     }
 
-    public static function traceWorkerStop(): \WP_REST_Response
-    {
+    public static function traceWorkerStop(): \WP_REST_Response {
         \Gratis\Cache\Tracer\TraceWorker::stop();
         return new \WP_REST_Response(['ok' => true]);
     }
 
-    public static function purgeStream(): void
-    {
+    public static function purgeStream(): void {
         @ini_set('memory_limit', '512M');
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache, no-store');
@@ -706,7 +679,7 @@ final class RestApi
             $start = microtime(true);
             $purge->purge($type);
             $ms = round((microtime(true) - $start) * 1000, 1);
-            $done++;
+            ++$done;
 
             $entry = ['event' => 'progress', 'type' => $type, 'ms' => $ms, 'done' => $done, 'total' => $total, 'pct' => round($done / $total * 100), 'ts' => time(), 'user' => $user, 'session' => $session];
 
@@ -728,13 +701,11 @@ final class RestApi
         exit;
     }
 
-    private static function sse(array $data): void
-    {
+    private static function sse(array $data): void {
         echo 'data: ' . json_encode($data) . "\n\n";
     }
 
-    public static function purgeLog(): \WP_REST_Response
-    {
+    public static function purgeLog(): \WP_REST_Response {
         $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if (!$r) {
             return new \WP_REST_Response([]);
@@ -745,30 +716,26 @@ final class RestApi
         return new \WP_REST_Response(array_map(fn($j) => $decode($j, true), $raw));
     }
 
-    public static function gcFix(): \WP_REST_Response
-    {
+    public static function gcFix(): \WP_REST_Response {
         $applied = \Gratis\Cache\Performance\GCAnalyzer::applyAutoFixes();
         return new \WP_REST_Response(['ok' => true, 'applied' => $applied]);
     }
 
-    public static function queueRun(): \WP_REST_Response
-    {
+    public static function queueRun(): \WP_REST_Response {
         $before = \Gratis\Cache\Async\AsyncQueue::status()['queue_length'];
         \Gratis\Cache\Async\AsyncQueue::processQueue();
         $after  = \Gratis\Cache\Async\AsyncQueue::status()['queue_length'];
         return new \WP_REST_Response(['ok' => true, 'processed' => max(0, $before - $after)]);
     }
 
-    public static function cronStats(): \WP_REST_Response
-    {
+    public static function cronStats(): \WP_REST_Response {
         return new \WP_REST_Response([
             'log'   => \Gratis\Cache\Async\CronMonitor::recentLog(50),
             'stats' => \Gratis\Cache\Async\CronMonitor::hookStats(),
         ]);
     }
 
-    public static function cronStream(): void
-    {
+    public static function cronStream(): void {
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache, no-store');
         header('X-Accel-Buffering: no');
@@ -795,8 +762,7 @@ final class RestApi
 
     // ── Tracer ──
 
-    public static function tracer(\WP_REST_Request $req): \WP_REST_Response
-    {
+    public static function tracer(\WP_REST_Request $req): \WP_REST_Response {
         $sub = $req->get_param('sub');
 
         if ($sub === 'live') {

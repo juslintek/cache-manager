@@ -7,23 +7,21 @@ namespace Gratis\Cache\Purge;
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 use Gratis\Cache\Log\Logger;
 
-final class PurgeManager
-{
+final class PurgeManager {
+
     private Logger $logger;
     /** @var PurgeStrategyInterface[] */
     private array $strategies = [];
     private array $purged = [];
 
-    public function __construct(Logger $logger, PurgeStrategyInterface ...$strategies)
-    {
+    public function __construct(Logger $logger, PurgeStrategyInterface ...$strategies) {
         $this->logger = $logger;
         foreach ($strategies as $s) {
             $this->strategies[$s->type()] = $s;
         }
     }
 
-    public function purge(string $type): void
-    {
+    public function purge(string $type): void {
         if ($type === 'all') {
             $this->purgeAll();
             return;
@@ -40,8 +38,7 @@ final class PurgeManager
         $this->logger->log('purge', $type);
     }
 
-    public function purgeAll(): void
-    {
+    public function purgeAll(): void {
         // Purge one strategy at a time to avoid OOM on full purge
         foreach ($this->strategies as $type => $strategy) {
             $this->purge($type);
@@ -51,8 +48,7 @@ final class PurgeManager
     }
 
     /** @return \Generator<string> Yields each purged type — use for batched async purging */
-    public function purgeAllGenerator(): \Generator
-    {
+    public function purgeAllGenerator(): \Generator {
         foreach (array_keys($this->strategies) as $type) {
             if (!isset($this->purged[$type])) {
                 $this->purge($type);
@@ -61,8 +57,7 @@ final class PurgeManager
         }
     }
 
-    public function types(): array
-    {
+    public function types(): array {
         return array_keys($this->strategies);
     }
 }

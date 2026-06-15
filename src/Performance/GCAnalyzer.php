@@ -15,11 +15,10 @@ namespace Gratis\Cache\Performance;
  * - https://www.php.net/manual/en/features.gc.collecting-cycles.php
  * - https://www.php.net/manual/en/features.gc.performance-considerations.php
  */
-final class GCAnalyzer
-{
+final class GCAnalyzer {
+
     /** @return array{issues:array, stats:array, recommendations:array} */
-    public static function analyze(): array
-    {
+    public static function analyze(): array {
         $issues  = [];
         $stats   = self::gcStats();
         $recs    = [];
@@ -136,8 +135,7 @@ final class GCAnalyzer
         return compact('issues', 'stats') + ['recommendations' => $recs];
     }
 
-    public static function gcStats(): array
-    {
+    public static function gcStats(): array {
         $status = gc_status();
         return [
             'enabled'       => $status['runs'] >= 0,
@@ -155,8 +153,7 @@ final class GCAnalyzer
      * Apply auto-fixable issues (safe, non-destructive).
      * Only calls PHP functions — never modifies files.
      */
-    public static function applyAutoFixes(): array
-    {
+    public static function applyAutoFixes(): array {
         $applied = [];
         if (!gc_enabled()) {
             gc_enable();
@@ -169,8 +166,7 @@ final class GCAnalyzer
         return $applied;
     }
 
-    private static function parseMemoryLimit(string $limit): int
-    {
+    private static function parseMemoryLimit(string $limit): int {
         if ($limit === '-1') {
             return 0;
         }
@@ -184,8 +180,7 @@ final class GCAnalyzer
         };
     }
 
-    private static function formatBytes(int $bytes): string
-    {
+    private static function formatBytes(int $bytes): string {
         if ($bytes >= 1073741824) return round($bytes / 1073741824, 1) . ' GB';
         if ($bytes >= 1048576)    return round($bytes / 1048576, 1) . ' MB';
         if ($bytes >= 1024)       return round($bytes / 1024, 1) . ' KB';

@@ -6,17 +6,15 @@ namespace Gratis\Cache\Log;
 
 use Gratis\Cache\Redis\RedisFactory;
 
-final class Logger
-{
+final class Logger {
+
     private string $dir;
 
-    public function __construct()
-    {
+    public function __construct() {
         $this->dir = get_option('vlt_cm_log_path', WP_CONTENT_DIR . '/uploads/vlt-cache-logs');
     }
 
-    public function log(string $type, mixed $details = ''): void
-    {
+    public function log(string $type, mixed $details = ''): void {
         if (!get_option('vlt_cm_logging', true)) {
             return;
         }
@@ -49,8 +47,7 @@ final class Logger
         }
     }
 
-    public function logCfRequest(): void
-    {
+    public function logCfRequest(): void {
         if (!get_option('vlt_cm_cf_tracking', true)) {
             return;
         }
@@ -85,16 +82,14 @@ final class Logger
         $this->log('cloudflare', $entry);
     }
 
-    public function logRequestStats(int $hits, int $misses): void
-    {
+    public function logRequestStats(int $hits, int $misses): void {
         if (!get_option('vlt_cm_logging', true) || ($hits === 0 && $misses === 0)) {
             return;
         }
         $this->log('stats', ['hits' => $hits, 'misses' => $misses]);
     }
 
-    public function readLog(string $date): array
-    {
+    public function readLog(string $date): array {
         $file = $this->dir . '/cache-log-' . $date . '.json';
         if (!file_exists($file)) {
             return [];
@@ -111,24 +106,22 @@ final class Logger
         return $entries;
     }
 
-    public function getTodayStats(): array
-    {
+    public function getTodayStats(): array {
         $entries = $this->readLog(gmdate('Y-m-d'));
         $stats   = ['requests' => 0, 'hits' => 0, 'misses' => 0, 'purges' => 0];
         foreach ($entries as $e) {
             if (($e['type'] ?? '') === 'stats') {
-                $stats['requests']++;
+                ++$stats['requests'];
                 $stats['hits']   += (int) ($e['details']['hits'] ?? 0);
                 $stats['misses'] += (int) ($e['details']['misses'] ?? 0);
             } elseif (($e['type'] ?? '') === 'purge') {
-                $stats['purges']++;
+                ++$stats['purges'];
             }
         }
         return $stats;
     }
 
-    public function rotateLogs(): void
-    {
+    public function rotateLogs(): void {
         // Age-based rotation
         $days   = (int) get_option('vlt_cm_log_days', 30);
         $cutoff = gmdate('Y-m-d', strtotime("-{$days} days"));
@@ -144,8 +137,7 @@ final class Logger
         }
     }
 
-    public static function enforceMaxSize(string $dir, string $pattern, int $maxBytes): void
-    {
+    public static function enforceMaxSize(string $dir, string $pattern, int $maxBytes): void {
         $files = glob($dir . '/' . $pattern) ?: [];
         if (!$files) {
             return;
@@ -159,8 +151,7 @@ final class Logger
         }
     }
 
-    public function initDir(): void
-    {
+    public function initDir(): void {
         if (is_dir($this->dir)) {
             return;
         }
@@ -172,8 +163,7 @@ final class Logger
         @file_put_contents($this->dir . '/index.php', "<?php\n// Silence.\n", LOCK_EX);
     }
 
-    private function ip(): string
-    {
+    private function ip(): string {
         return $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
     }
 }

@@ -6,13 +6,14 @@ namespace Gratis\Cache\Admin\Page;
 
 use Gratis\Cache\Admin\AdminPage;
 
-final class LogsPage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-logs'; }
-    public function title(): string { return 'Logs'; }
+final class LogsPage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-logs'; }
+    public function title(): string {
+ return 'Logs'; }
+
+    public function render(): void {
         $date     = sanitize_text_field($_GET['log_date'] ?? gmdate('Y-m-d'));
         $rest_url = esc_js(rest_url('vlt-cache/v1'));
         $nonce    = wp_create_nonce('wp_rest');

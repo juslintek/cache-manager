@@ -9,13 +9,14 @@ use Gratis\Cache\Async\AsyncQueue;
 use Gratis\Cache\Performance\GCAnalyzer;
 use Gratis\Cache\Plugin;
 
-final class PerformancePage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-performance'; }
-    public function title(): string { return 'Performance'; }
+final class PerformancePage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-performance'; }
+    public function title(): string {
+ return 'Performance'; }
+
+    public function render(): void {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_perf_settings')) {
             update_option('vlt_async_offload_cron', isset($_POST['vlt_async_offload_cron']));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
@@ -132,7 +133,7 @@ final class PerformancePage extends AdminPage
         foreach ($crons as $ts => $hooks) {
             foreach ($hooks as $hook => $jobs) {
                 foreach ($jobs as $job) {
-                    $total++;
+                    ++$total;
                     if ($ts < $now) $overdue++;
                     $scheduled[] = ['hook' => $hook, 'ts' => $ts, 'schedule' => $job['schedule'] ?? 'once', 'args' => $job['args'] ?? []];
                 }

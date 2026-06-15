@@ -6,17 +6,15 @@ namespace Gratis\Cache\Purge\Strategy;
 
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 
-final class ElementorStrategy implements PurgeStrategyInterface
-{
-    public function purge(): void
-    {
+final class ElementorStrategy implements PurgeStrategyInterface {
+
+    public function purge(): void {
         if (class_exists('\Elementor\Plugin') && isset(\Elementor\Plugin::$instance->files_manager)) {
             \Elementor\Plugin::$instance->files_manager->clear_cache();
         }
     }
 
-    public function type(): string
-    {
+    public function type(): string {
         return 'elementor';
     }
 }

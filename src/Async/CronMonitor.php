@@ -10,38 +10,34 @@ use Gratis\Cache\Redis\RedisFactory;
  * Tracks WP-Cron job execution in real-time via Redis.
  * Wraps every scheduled hook with start/end/error recording.
  */
-final class CronMonitor
-{
+final class CronMonitor {
+
     private const LOG_KEY  = 'vlt_cron_log';   // Redis list — recent executions
     private const STAT_KEY = 'vlt_cron_stat:'; // Redis hash per hook — counts/timing
     private const MAX_LOG  = 200;
 
-    public static function register(): void
-    {
+    public static function register(): void {
         // Wrap every cron hook at the earliest possible point
         add_action('init', [self::class, 'wrapCronHooks'], PHP_INT_MAX);
     }
 
-    public static function wrapCronHooks(): void
-    {
+    public static function wrapCronHooks(): void {
         $crons = _get_cron_array() ?: [];
         foreach ($crons as $hooks) {
             foreach (array_keys($hooks) as $hook) {
                 // Add a high-priority before/after wrapper
                 add_action($hook, [self::class, 'beforeHook'], -9999);
-                add_action($hook, [self::class, 'afterHook'],  PHP_INT_MAX);
+                add_action($hook, [self::class, 'afterHook'], PHP_INT_MAX);
             }
         }
     }
 
-    public static function beforeHook(): void
-    {
+    public static function beforeHook(): void {
         $hook = current_filter();
         self::record($hook, 'running', null, null);
     }
 
-    public static function afterHook(): void
-    {
+    public static function afterHook(): void {
         $hook = current_filter();
         self::record($hook, 'done', null, null);
     }
@@ -50,8 +46,7 @@ final class CronMonitor
      * Record a cron event to Redis.
      * Called by beforeHook/afterHook and also by AsyncQueue for queued jobs.
      */
-    public static function record(string $hook, string $status, ?float $duration = null, ?string $error = null): void
-    {
+    public static function record(string $hook, string $status, ?float $duration = null, ?string $error = null): void {
         $r = RedisFactory::create(0.3);
         if (!$r) {
             return;
@@ -85,8 +80,7 @@ final class CronMonitor
     }
 
     /** @return array[] Recent log entries, newest first */
-    public static function recentLog(int $limit = 50, string $since = ''): array
-    {
+    public static function recentLog(int $limit = 50, string $since = ''): array {
         $r = RedisFactory::create(0.3);
         if (!$r) {
             return [];
@@ -102,8 +96,7 @@ final class CronMonitor
     }
 
     /** @return array Per-hook stats */
-    public static function hookStats(): array
-    {
+    public static function hookStats(): array {
         $r = RedisFactory::create(0.3);
         if (!$r) {
             return [];

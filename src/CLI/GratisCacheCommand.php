@@ -4,31 +4,30 @@ namespace Gratis\Cache\CLI;
 use Gratis\Cache\Diagnostics\CapabilityDetector;
 
 /** WP-CLI commands: wp gratis-cache <subcommand> */
-final class GratisCacheCommand
-{
+final class GratisCacheCommand {
+
     /**
      * Show cache system status and detected capabilities.
      * ## EXAMPLES
      *     wp gratis-cache status
      * @when after_wp_load
      */
-    public function status($args, $assoc_args): void
-    {
+    public function status($args, $assoc_args): void {
         $caps = CapabilityDetector::detect();
 
-        \WP_CLI::log("=== Gratis Cache Status ===");
-        \WP_CLI::log("");
-        \WP_CLI::log("Environment:");
-        \WP_CLI::log("  PHP: " . PHP_VERSION);
-        \WP_CLI::log("  WordPress: " . get_bloginfo('version'));
-        \WP_CLI::log("  Theme: " . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
-        \WP_CLI::log("  Site URL: " . get_site_url());
-        \WP_CLI::log("");
-        \WP_CLI::log("Backends:");
-        \WP_CLI::log("  Volatile: " . CapabilityDetector::bestVolatileBackend());
-        \WP_CLI::log("  Persistent: " . CapabilityDetector::bestPersistentStore());
-        \WP_CLI::log("  Serializer: " . CapabilityDetector::bestSerializer());
-        \WP_CLI::log("");
+        \WP_CLI::log('=== Gratis Cache Status ===');
+        \WP_CLI::log('');
+        \WP_CLI::log('Environment:');
+        \WP_CLI::log('  PHP: ' . PHP_VERSION);
+        \WP_CLI::log('  WordPress: ' . get_bloginfo('version'));
+        \WP_CLI::log('  Theme: ' . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
+        \WP_CLI::log('  Site URL: ' . get_site_url());
+        \WP_CLI::log('');
+        \WP_CLI::log('Backends:');
+        \WP_CLI::log('  Volatile: ' . CapabilityDetector::bestVolatileBackend());
+        \WP_CLI::log('  Persistent: ' . CapabilityDetector::bestPersistentStore());
+        \WP_CLI::log('  Serializer: ' . CapabilityDetector::bestSerializer());
+        \WP_CLI::log('');
 
         $logger = new \Gratis\Cache\Log\Logger();
         $stats = $logger->getTodayStats();
@@ -38,9 +37,9 @@ final class GratisCacheCommand
         \WP_CLI::log("  Requests: {$stats['requests']}");
         \WP_CLI::log("  Hits: {$stats['hits']} | Misses: {$stats['misses']} | Ratio: {$ratio}%");
         \WP_CLI::log("  Purges: {$stats['purges']}");
-        \WP_CLI::log("");
+        \WP_CLI::log('');
 
-        \WP_CLI::log("Extensions:");
+        \WP_CLI::log('Extensions:');
         foreach ($caps as $ext => $available) {
             $icon = $available ? '✓' : '✗';
             \WP_CLI::log("  {$icon} {$ext}");
@@ -61,8 +60,7 @@ final class GratisCacheCommand
      *     wp gratis-cache bench --iterations=5000
      * @when after_wp_load
      */
-    public function bench($args, $assoc_args): void
-    {
+    public function bench($args, $assoc_args): void {
         $iterations = (int) ($assoc_args['iterations'] ?? 1000);
         \WP_CLI::log("Benchmarking {$iterations} iterations per backend...\n");
 
@@ -94,11 +92,10 @@ final class GratisCacheCommand
 
         // Output
         \WP_CLI\Utils\format_items('table', $results, ['Backend', 'Write', 'Read', 'Delete', 'Ops/sec']);
-        \WP_CLI::success("Benchmark complete.");
+        \WP_CLI::success('Benchmark complete.');
     }
 
-    private function benchArray(int $n): array
-    {
+    private function benchArray(int $n): array {
         $cache = [];
         $s = microtime(true);
         for ($i = 0; $i < $n; $i++) $cache["key_{$i}"] = str_repeat('x', 100);
@@ -115,8 +112,7 @@ final class GratisCacheCommand
         return ['Backend' => 'array', 'Write' => round($write * 1000, 1) . 'ms', 'Read' => round($read * 1000, 1) . 'ms', 'Delete' => round($del * 1000, 1) . 'ms', 'Ops/sec' => number_format((int) ($n * 3 / ($write + $read + $del)))];
     }
 
-    private function benchRedis(\Redis $r, int $n): array
-    {
+    private function benchRedis(\Redis $r, int $n): array {
         $r->setOption(\Redis::OPT_PREFIX, 'bench_');
         $val = str_repeat('x', 100);
 
@@ -135,8 +131,7 @@ final class GratisCacheCommand
         return ['Backend' => 'redis', 'Write' => round($write * 1000, 1) . 'ms', 'Read' => round($read * 1000, 1) . 'ms', 'Delete' => round($del * 1000, 1) . 'ms', 'Ops/sec' => number_format((int) ($n * 3 / ($write + $read + $del)))];
     }
 
-    private function benchSqlite(int $n): array
-    {
+    private function benchSqlite(int $n): array {
         $db = new \SQLite3(':memory:');
         $db->exec('CREATE TABLE bench (k TEXT PRIMARY KEY, v BLOB)');
         $val = str_repeat('x', 100);
@@ -164,8 +159,7 @@ final class GratisCacheCommand
         return ['Backend' => 'sqlite', 'Write' => round($write * 1000, 1) . 'ms', 'Read' => round($read * 1000, 1) . 'ms', 'Delete' => round($del * 1000, 1) . 'ms', 'Ops/sec' => number_format((int) ($n * 3 / ($write + $read + $del)))];
     }
 
-    private function benchFile(int $n): array
-    {
+    private function benchFile(int $n): array {
         $dir = sys_get_temp_dir() . '/gratis-bench-' . getmypid();
         @mkdir($dir, 0755, true);
         $val = str_repeat('x', 100);
@@ -193,10 +187,9 @@ final class GratisCacheCommand
      *     wp gratis-cache purge
      * @when after_wp_load
      */
-    public function purge($args, $assoc_args): void
-    {
+    public function purge($args, $assoc_args): void {
         do_action('gratis_cache_purge_all', 'cli');
-        \WP_CLI::success("All cache layers purged.");
+        \WP_CLI::success('All cache layers purged.');
     }
 
     /**
@@ -211,8 +204,7 @@ final class GratisCacheCommand
      * @subcommand purge-url
      * @when after_wp_load
      */
-    public function purge_url($args, $assoc_args): void
-    {
+    public function purge_url($args, $assoc_args): void {
         $url = $args[0];
         $reason = $assoc_args['reason'] ?? 'manual';
         do_action('gratis_cache_purge_url', $url, $reason);
@@ -229,17 +221,16 @@ final class GratisCacheCommand
      * @subcommand debug-url
      * @when after_wp_load
      */
-    public function debug_url($args, $assoc_args): void
-    {
+    public function debug_url($args, $assoc_args): void {
         $url = $args[0];
         \WP_CLI::log("=== Cache Debug: {$url} ===\n");
 
         // 1. Theme & Template
-        \WP_CLI::log("── Theme ──");
-        \WP_CLI::log("  Active: " . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
+        \WP_CLI::log('── Theme ──');
+        \WP_CLI::log('  Active: ' . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
         $themeJson = get_stylesheet_directory() . '/theme.json';
         if (file_exists($themeJson)) {
-            \WP_CLI::log("  theme.json: " . substr(md5_file($themeJson), 0, 8) . ' (modified ' . date('Y-m-d H:i:s', filemtime($themeJson)) . ')');
+            \WP_CLI::log('  theme.json: ' . substr(md5_file($themeJson), 0, 8) . ' (modified ' . date('Y-m-d H:i:s', filemtime($themeJson)) . ')');
         }
 
         // 2. URL Resolution
@@ -247,10 +238,10 @@ final class GratisCacheCommand
         $post_id = url_to_postid($url);
         if ($post_id) {
             \WP_CLI::log("  Post ID: {$post_id}");
-            \WP_CLI::log("  Post type: " . get_post_type($post_id));
-            \WP_CLI::log("  Template: " . (get_page_template_slug($post_id) ?: '(default)'));
+            \WP_CLI::log('  Post type: ' . get_post_type($post_id));
+            \WP_CLI::log('  Template: ' . (get_page_template_slug($post_id) ?: '(default)'));
         } else {
-            \WP_CLI::log("  Post ID: none (may be archive, taxonomy, or custom route)");
+            \WP_CLI::log('  Post ID: none (may be archive, taxonomy, or custom route)');
         }
 
         // 3. Object Cache Layer
@@ -259,7 +250,7 @@ final class GratisCacheCommand
         if (file_exists($dropin)) {
             $header = file_get_contents($dropin, false, null, 0, 300);
             if (str_contains($header, 'VLT')) {
-                \WP_CLI::log("  Drop-in: Gratis/VLT (Redis)");
+                \WP_CLI::log('  Drop-in: Gratis/VLT (Redis)');
                 try {
                     $host = defined('WP_REDIS_HOST') ? WP_REDIS_HOST : '127.0.0.1';
                     $r = new \Redis();
@@ -269,21 +260,21 @@ final class GratisCacheCommand
                         \WP_CLI::log("  Redis: connected ({$info['used_memory_human']} used, {$keys} keys)");
                         $r->close();
                     } else {
-                        \WP_CLI::log("  Redis: connection failed");
+                        \WP_CLI::log('  Redis: connection failed');
                     }
                 } catch (\Throwable $e) {
-                    \WP_CLI::log("  Redis: " . $e->getMessage());
+                    \WP_CLI::log('  Redis: ' . $e->getMessage());
                 }
             } else {
-                \WP_CLI::log("  Drop-in: third-party");
+                \WP_CLI::log('  Drop-in: third-party');
             }
         } else {
-            \WP_CLI::log("  Drop-in: not installed (using WP default)");
+            \WP_CLI::log('  Drop-in: not installed (using WP default)');
         }
         if (function_exists('wp_cache_get')) {
             $found = false;
             wp_cache_get('alloptions', 'options', false, $found);
-            \WP_CLI::log("  alloptions cached: " . ($found ? 'yes (HIT)' : 'no (MISS)'));
+            \WP_CLI::log('  alloptions cached: ' . ($found ? 'yes (HIT)' : 'no (MISS)'));
         }
 
         // 4. OPcache
@@ -295,10 +286,10 @@ final class GratisCacheCommand
                 $hitRate = round($oc['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
                 \WP_CLI::log("  Status: enabled ({$scripts} scripts, {$hitRate}% hit rate)");
             } else {
-                \WP_CLI::log("  Status: disabled");
+                \WP_CLI::log('  Status: disabled');
             }
         } else {
-            \WP_CLI::log("  Status: not available");
+            \WP_CLI::log('  Status: not available');
         }
 
         // 5. Page Cache (Nginx/LiteSpeed/Cloudflare)
@@ -307,33 +298,33 @@ final class GratisCacheCommand
         if ($headers) {
             // Nginx FastCGI
             $nginx = $headers['X-FastCGI-Cache'] ?? $headers['x-fastcgi-cache'] ?? null;
-            if ($nginx) \WP_CLI::log("  Nginx FastCGI: " . (is_array($nginx) ? end($nginx) : $nginx));
+            if ($nginx) \WP_CLI::log('  Nginx FastCGI: ' . (is_array($nginx) ? end($nginx) : $nginx));
 
             // LiteSpeed
             $ls = $headers['X-Litespeed-Cache'] ?? $headers['x-litespeed-cache'] ?? null;
-            if ($ls) \WP_CLI::log("  LiteSpeed: " . (is_array($ls) ? end($ls) : $ls));
+            if ($ls) \WP_CLI::log('  LiteSpeed: ' . (is_array($ls) ? end($ls) : $ls));
 
             // Cloudflare
             $cf = $headers['CF-Cache-Status'] ?? $headers['cf-cache-status'] ?? null;
-            if ($cf) \WP_CLI::log("  Cloudflare: " . (is_array($cf) ? end($cf) : $cf));
+            if ($cf) \WP_CLI::log('  Cloudflare: ' . (is_array($cf) ? end($cf) : $cf));
 
             // Generic cache-control
             $cc = $headers['Cache-Control'] ?? $headers['cache-control'] ?? null;
-            if ($cc) \WP_CLI::log("  Cache-Control: " . (is_array($cc) ? end($cc) : $cc));
+            if ($cc) \WP_CLI::log('  Cache-Control: ' . (is_array($cc) ? end($cc) : $cc));
 
             if (!$nginx && !$ls && !$cf) {
-                \WP_CLI::log("  No page cache headers detected");
+                \WP_CLI::log('  No page cache headers detected');
             }
         } else {
-            \WP_CLI::log("  Could not fetch headers (URL may not be reachable from CLI)");
+            \WP_CLI::log('  Could not fetch headers (URL may not be reachable from CLI)');
         }
 
         // 6. Patterns & Templates
         \WP_CLI::log("\n── Patterns & Templates ──");
         $patterns = \WP_Block_Patterns_Registry::get_instance()->get_all_registered();
-        \WP_CLI::log("  Patterns registered: " . count($patterns));
+        \WP_CLI::log('  Patterns registered: ' . count($patterns));
         $themePatterns = array_filter($patterns, fn($p) => str_starts_with($p['name'] ?? '', 'gratis'));
-        \WP_CLI::log("  Gratis patterns: " . count($themePatterns));
+        \WP_CLI::log('  Gratis patterns: ' . count($themePatterns));
 
         // 7. File Change History
         \WP_CLI::log("\n── Recent Changes ──");
@@ -341,9 +332,9 @@ final class GratisCacheCommand
         $scanner = new \Gratis\Cache\Storage\FileChangeScanner($store);
         $last = $scanner->lastChange(get_stylesheet_directory());
         if ($last) {
-            \WP_CLI::log("  Last theme change: " . date('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ")");
+            \WP_CLI::log('  Last theme change: ' . date('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ')');
         } else {
-            \WP_CLI::log("  No theme file changes recorded");
+            \WP_CLI::log('  No theme file changes recorded');
         }
 
         // 8. Debug meta from integrations
@@ -367,8 +358,7 @@ final class GratisCacheCommand
      * @subcommand scan-files
      * @when after_wp_load
      */
-    public function scan_files($args, $assoc_args): void
-    {
+    public function scan_files($args, $assoc_args): void {
         $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
         $scanner = new \Gratis\Cache\Storage\FileChangeScanner($store);
 
@@ -377,25 +367,25 @@ final class GratisCacheCommand
             $dirs = [realpath($assoc_args['dir']) ?: $assoc_args['dir']];
         }
 
-        \WP_CLI::log("Scanning for file changes...");
+        \WP_CLI::log('Scanning for file changes...');
         $changed = $scanner->scan($dirs);
 
         if (empty($changed)) {
-            \WP_CLI::success("No changes detected since last scan.");
+            \WP_CLI::success('No changes detected since last scan.');
             return;
         }
 
-        \WP_CLI::log(count($changed) . " file(s) changed:");
+        \WP_CLI::log(count($changed) . ' file(s) changed:');
         foreach (array_slice($changed, 0, 50) as $path) {
             $rel = str_replace(ABSPATH, '', $path);
             \WP_CLI::log("  • {$rel}");
         }
         if (count($changed) > 50) {
-            \WP_CLI::log("  ... and " . (count($changed) - 50) . " more");
+            \WP_CLI::log('  ... and ' . (count($changed) - 50) . ' more');
         }
 
         do_action('gratis_cache_files_changed', $changed);
-        \WP_CLI::success(count($changed) . " change(s) recorded.");
+        \WP_CLI::success(count($changed) . ' change(s) recorded.');
     }
 
     /**
@@ -405,8 +395,7 @@ final class GratisCacheCommand
      * @subcommand history
      * @when after_wp_load
      */
-    public function history($args, $assoc_args): void
-    {
+    public function history($args, $assoc_args): void {
         $sub = $args[0] ?? 'tail';
         $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
 
@@ -462,8 +451,7 @@ final class GratisCacheCommand
      *
      * @when after_wp_load
      */
-    public function dropin($args, $assoc_args): void
-    {
+    public function dropin($args, $assoc_args): void {
         $action = $args[0] ?? 'status';
         $installer = new \Gratis\Cache\Cache\DropinInstaller(
             new \Gratis\Cache\Cache\DropinGenerator()
@@ -473,31 +461,31 @@ final class GratisCacheCommand
             case 'status':
                 $path = WP_CONTENT_DIR . '/object-cache.php';
                 if (!file_exists($path)) {
-                    \WP_CLI::log("object-cache.php: not installed");
+                    \WP_CLI::log('object-cache.php: not installed');
                 } elseif ($installer->isOurs()) {
-                    \WP_CLI::log("object-cache.php: installed (Gratis/VLT)");
+                    \WP_CLI::log('object-cache.php: installed (Gratis/VLT)');
                 } else {
-                    \WP_CLI::log("object-cache.php: third-party drop-in present");
+                    \WP_CLI::log('object-cache.php: third-party drop-in present');
                 }
                 break;
 
             case 'install':
                 if ($installer->isOurs()) {
-                    \WP_CLI::log("Already installed. Regenerating...");
+                    \WP_CLI::log('Already installed. Regenerating...');
                 }
                 $installer->install();
-                \WP_CLI::success("object-cache.php installed with Redis support.");
+                \WP_CLI::success('object-cache.php installed with Redis support.');
                 break;
 
             case 'remove':
                 $path = WP_CONTENT_DIR . '/object-cache.php';
                 if (!file_exists($path)) {
-                    \WP_CLI::warning("No object-cache.php to remove.");
+                    \WP_CLI::warning('No object-cache.php to remove.');
                 } elseif (!$installer->isOurs()) {
-                    \WP_CLI::error("object-cache.php is not ours. Remove manually if intended.");
+                    \WP_CLI::error('object-cache.php is not ours. Remove manually if intended.');
                 } else {
                     @unlink($path);
-                    \WP_CLI::success("object-cache.php removed.");
+                    \WP_CLI::success('object-cache.php removed.');
                 }
                 break;
 
@@ -523,8 +511,7 @@ final class GratisCacheCommand
      * @subcommand optimize-images
      * @when after_wp_load
      */
-    public function optimize_images($args, $assoc_args): void
-    {
+    public function optimize_images($args, $assoc_args): void {
         $limit = (int) ($assoc_args['limit'] ?? 50);
         $attachments = get_posts([
             'post_type'      => 'attachment',
@@ -534,11 +521,11 @@ final class GratisCacheCommand
         ]);
 
         if (empty($attachments)) {
-            \WP_CLI::success("All images already optimized.");
+            \WP_CLI::success('All images already optimized.');
             return;
         }
 
-        \WP_CLI::log("Optimizing " . count($attachments) . " image(s)...");
+        \WP_CLI::log('Optimizing ' . count($attachments) . ' image(s)...');
         $saved = 0;
 
         foreach ($attachments as $att) {
@@ -577,14 +564,13 @@ final class GratisCacheCommand
      * @subcommand critical-css
      * @when after_wp_load
      */
-    public function critical_css($args, $assoc_args): void
-    {
+    public function critical_css($args, $assoc_args): void {
         $url = $args[0] ?? home_url('/');
         \WP_CLI::log("Generating critical CSS for: {$url}");
 
         $css = \Gratis\Cache\Performance\CriticalCSS::generate($url);
         if (empty($css)) {
-            \WP_CLI::warning("Could not generate critical CSS (URL unreachable or no stylesheets found).");
+            \WP_CLI::warning('Could not generate critical CSS (URL unreachable or no stylesheets found).');
             return;
         }
 
@@ -611,14 +597,13 @@ final class GratisCacheCommand
      * @subcommand optimize-db
      * @when after_wp_load
      */
-    public function optimize_db($args, $assoc_args): void
-    {
+    public function optimize_db($args, $assoc_args): void {
         $dryRun = isset($assoc_args['dry-run']);
 
         if ($dryRun) {
             $stats = \Gratis\Cache\Performance\DatabaseOptimizer::getStats();
-            \WP_CLI::log("=== Database Status (dry run) ===");
-            \WP_CLI::log("  Size: " . round(($stats['total_size'] ?? 0) / 1048576, 1) . " MB");
+            \WP_CLI::log('=== Database Status (dry run) ===');
+            \WP_CLI::log('  Size: ' . round(($stats['total_size'] ?? 0) / 1048576, 1) . ' MB');
             \WP_CLI::log("  Revisions: {$stats['revisions']}");
             \WP_CLI::log("  Transients: {$stats['transients']}");
             \WP_CLI::log("  Spam comments: {$stats['spam']}");
@@ -627,18 +612,18 @@ final class GratisCacheCommand
             return;
         }
 
-        \WP_CLI::log("Optimizing database...");
+        \WP_CLI::log('Optimizing database...');
         $result = \Gratis\Cache\Performance\DatabaseOptimizer::optimize([
             'keep_revisions' => (int) ($assoc_args['keep-revisions'] ?? 5),
         ]);
 
-        \WP_CLI::log("  Revisions deleted: " . ($result['revisions'] ?? 0));
-        \WP_CLI::log("  Transients cleaned: " . ($result['transients'] ?? 0));
-        \WP_CLI::log("  Spam removed: " . ($result['spam'] ?? 0));
-        \WP_CLI::log("  Trash emptied: " . ($result['trash'] ?? 0));
-        \WP_CLI::log("  Orphan meta removed: " . ($result['orphan_meta'] ?? 0));
-        \WP_CLI::log("  Tables optimized: " . ($result['tables_optimized'] ?? 0));
-        \WP_CLI::success("Database optimized.");
+        \WP_CLI::log('  Revisions deleted: ' . ($result['revisions'] ?? 0));
+        \WP_CLI::log('  Transients cleaned: ' . ($result['transients'] ?? 0));
+        \WP_CLI::log('  Spam removed: ' . ($result['spam'] ?? 0));
+        \WP_CLI::log('  Trash emptied: ' . ($result['trash'] ?? 0));
+        \WP_CLI::log('  Orphan meta removed: ' . ($result['orphan_meta'] ?? 0));
+        \WP_CLI::log('  Tables optimized: ' . ($result['tables_optimized'] ?? 0));
+        \WP_CLI::success('Database optimized.');
     }
 
     /**
@@ -656,8 +641,7 @@ final class GratisCacheCommand
      *
      * @when after_wp_load
      */
-    public function warmup($args, $assoc_args): void
-    {
+    public function warmup($args, $assoc_args): void {
         $limit = (int) ($assoc_args['limit'] ?? 50);
         $urls = [home_url('/')];
 
@@ -670,17 +654,17 @@ final class GratisCacheCommand
         foreach ($posts as $id) $urls[] = get_permalink($id);
 
         $urls = array_unique(array_slice($urls, 0, $limit));
-        \WP_CLI::log("Warming " . count($urls) . " URL(s)...");
+        \WP_CLI::log('Warming ' . count($urls) . ' URL(s)...');
 
         $warmed = 0;
         foreach ($urls as $url) {
             $r = wp_remote_get($url, ['timeout' => 10, 'sslverify' => false]);
             if (!is_wp_error($r) && wp_remote_retrieve_response_code($r) === 200) {
-                $warmed++;
+                ++$warmed;
             }
         }
 
-        \WP_CLI::success("{$warmed}/" . count($urls) . " pages warmed.");
+        \WP_CLI::success("{$warmed}/" . count($urls) . ' pages warmed.');
     }
 
     /**
@@ -708,19 +692,18 @@ final class GratisCacheCommand
      *
      * @when after_wp_load
      */
-    public function redirect($args, $assoc_args): void
-    {
+    public function redirect($args, $assoc_args): void {
         $action = $args[0] ?? 'list';
         if ($action === 'add') {
             if (empty($args[1]) || empty($args[2])) {
-                \WP_CLI::error("Usage: redirect add <from> <to>");
+                \WP_CLI::error('Usage: redirect add <from> <to>');
             }
             $code = (int) ($assoc_args['code'] ?? 301);
             \Gratis\Cache\Performance\RedirectManager::add($args[1], $args[2], $code);
             \WP_CLI::success("Redirect added: {$args[1]} → {$args[2]} ({$code})");
         } elseif ($action === 'list') {
             $all = \Gratis\Cache\Performance\RedirectManager::all();
-            if (empty($all)) { \WP_CLI::log("No redirects."); return; }
+            if (empty($all)) { \WP_CLI::log('No redirects.'); return; }
             $rows = [];
             foreach ($all as $i => $r) {
                 $rows[] = ['#' => $i, 'From' => $r['from'], 'To' => $r['to'], 'Code' => $r['code']];
@@ -728,10 +711,10 @@ final class GratisCacheCommand
             \WP_CLI\Utils\format_items('table', $rows, ['#', 'From', 'To', 'Code']);
         } elseif ($action === 'remove') {
             $idx = (int) ($assoc_args['index'] ?? -1);
-            if ($idx < 0) { \WP_CLI::error("Specify --index=N"); }
+            if ($idx < 0) { \WP_CLI::error('Specify --index=N'); }
             \Gratis\Cache\Performance\RedirectManager::remove($idx)
-                ? \WP_CLI::success("Removed.")
-                : \WP_CLI::error("Not found.");
+                ? \WP_CLI::success('Removed.')
+                : \WP_CLI::error('Not found.');
         }
     }
 }

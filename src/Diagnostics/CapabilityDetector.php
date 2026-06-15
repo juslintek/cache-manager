@@ -2,10 +2,9 @@
 namespace Gratis\Cache\Diagnostics;
 
 /** Detects available PHP extensions and backends at runtime. */
-final class CapabilityDetector
-{
-    public static function detect(): array
-    {
+final class CapabilityDetector {
+
+    public static function detect(): array {
         return [
             'ext-json'       => true, // Always in PHP 8+
             'ext-sqlite3'    => extension_loaded('sqlite3'),
@@ -25,8 +24,7 @@ final class CapabilityDetector
         ];
     }
 
-    public static function bestVolatileBackend(): string
-    {
+    public static function bestVolatileBackend(): string {
         $caps = self::detect();
         if ($caps['ext-redis']) return 'redis';
         if ($caps['ext-memcached']) return 'memcached';
@@ -34,16 +32,14 @@ final class CapabilityDetector
         return 'array';
     }
 
-    public static function bestPersistentStore(): string
-    {
+    public static function bestPersistentStore(): string {
         $caps = self::detect();
         if ($caps['ext-sqlite3']) return 'sqlite';
         if ($caps['dba-lmdb']) return 'lmdb';
         return 'file';
     }
 
-    public static function bestSerializer(): string
-    {
+    public static function bestSerializer(): string {
         $caps = self::detect();
         if ($caps['ext-igbinary']) return 'igbinary';
         if ($caps['ext-msgpack']) return 'msgpack';

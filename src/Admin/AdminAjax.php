@@ -8,10 +8,9 @@ use Gratis\Cache\Plugin;
 use Gratis\Cache\Redis\RedisFactory;
 use Gratis\Cache\Tracer\TracerConfig;
 
-final class AdminAjax
-{
-    public static function logs(): void
-    {
+final class AdminAjax {
+
+    public static function logs(): void {
         check_ajax_referer('vlt_cache_logs');
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -81,8 +80,7 @@ final class AdminAjax
         wp_send_json_success(['rows' => array_values($entries), 'meta' => $meta]);
     }
 
-    public static function uris(): void
-    {
+    public static function uris(): void {
         check_ajax_referer('vlt_cache_logs');
         if (!current_user_can('manage_options')) {
             wp_send_json_error();
@@ -94,8 +92,7 @@ final class AdminAjax
         wp_send_json_success($uris);
     }
 
-    public static function redis(): void
-    {
+    public static function redis(): void {
         check_ajax_referer('vlt_redis');
         if (!current_user_can('manage_options')) {
             wp_send_json_error();
@@ -119,8 +116,7 @@ final class AdminAjax
         };
     }
 
-    public static function cloudflare(): void
-    {
+    public static function cloudflare(): void {
         check_ajax_referer('vlt_cache_cf');
         if (!current_user_can('manage_options')) {
             wp_send_json_error();
@@ -176,8 +172,7 @@ final class AdminAjax
         wp_send_json_success(array_values(array_reverse($rows)));
     }
 
-    public static function tracer(): void
-    {
+    public static function tracer(): void {
         check_ajax_referer('vlt_tracer');
         if (!current_user_can('manage_options')) {
             wp_send_json_error();
@@ -225,8 +220,7 @@ final class AdminAjax
         }
     }
 
-    public static function buildGroups(array $entries, array $groupKeys): array
-    {
+    public static function buildGroups(array $entries, array $groupKeys): array {
         $groups = [];
         foreach ($entries as $e) {
             $parts = [];
@@ -257,7 +251,7 @@ final class AdminAjax
                 }
                 $groups[$key] = ['label' => $label, 'count' => 0, 'hits' => 0, 'misses' => 0, 'purges' => 0, 'children' => []];
             }
-            $groups[$key]['count']++;
+            ++$groups[$key]['count'];
             $groups[$key]['hits']   += (int) ($e['hits'] ?? 0);
             $groups[$key]['misses'] += (int) ($e['misses'] ?? 0);
             if (($e['type'] ?? '') === 'purge') $groups[$key]['purges']++;
@@ -275,8 +269,7 @@ final class AdminAjax
         return array_values($groups);
     }
 
-    private static function redisStats(\Redis $r): void
-    {
+    private static function redisStats(\Redis $r): void {
         $info = $r->info();
         $keys = $r->keys('vlt_*');
         $groups = [];
@@ -284,7 +277,7 @@ final class AdminAjax
             $group = 'default';
             if (preg_match('/^vlt_([^:]+)/', $k, $m)) $group = $m[1];
             if (!isset($groups[$group])) $groups[$group] = ['name' => $group, 'count' => 0, 'size' => 0];
-            $groups[$group]['count']++;
+            ++$groups[$group]['count'];
         }
         foreach ($groups as $name => &$g) {
             $sample_keys = array_filter($keys, fn($k) => str_starts_with($k, 'vlt_' . $name . ':') || ($name === 'default' && substr_count($k, ':') === 0));
@@ -314,8 +307,7 @@ final class AdminAjax
         ]);
     }
 
-    private static function redisKeys(\Redis $r): void
-    {
+    private static function redisKeys(\Redis $r): void {
         $group   = sanitize_text_field($_GET['group'] ?? 'default');
         $pattern = 'vlt_' . $group . ':*';
         $keys    = $r->keys($pattern);
@@ -332,8 +324,7 @@ final class AdminAjax
         wp_send_json_success($result);
     }
 
-    private static function redisPreview(\Redis $r): void
-    {
+    private static function redisPreview(\Redis $r): void {
         $key = sanitize_text_field($_GET['key'] ?? '');
         if (!$key || !$r->exists($key)) {
             wp_send_json_error('Raktas nerastas');
@@ -363,15 +354,13 @@ final class AdminAjax
         ]);
     }
 
-    private static function redisDelete(\Redis $r): void
-    {
+    private static function redisDelete(\Redis $r): void {
         $key = sanitize_text_field($_GET['key'] ?? '');
         if ($key) $r->del($key);
         wp_send_json_success();
     }
 
-    private static function redisDeleteGroup(\Redis $r): void
-    {
+    private static function redisDeleteGroup(\Redis $r): void {
         $group = sanitize_text_field($_GET['group'] ?? '');
         if (!$group) {
             wp_send_json_error();

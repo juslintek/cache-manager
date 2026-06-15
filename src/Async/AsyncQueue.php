@@ -15,8 +15,8 @@ use Gratis\Cache\Redis\RedisFactory;
  * PHP 8.1+ Fibers are used for concurrent I/O within a single request.
  * Falls back to sequential execution on older PHP.
  */
-final class AsyncQueue
-{
+final class AsyncQueue {
+
     private const QUEUE_KEY   = 'vlt_async_queue';
     private const RUNNING_KEY = 'vlt_async_running';
     private const RESULT_KEY  = 'vlt_async_result:';
@@ -32,8 +32,7 @@ final class AsyncQueue
      * @param array  $args  Arguments passed to the hook
      * @param int    $delay Seconds to delay (0 = immediate)
      */
-    public static function push(string $hook, array $args = [], int $delay = 0): string
-    {
+    public static function push(string $hook, array $args = [], int $delay = 0): string {
         $jobId = uniqid('job_', true);
         $job   = [
             'id'        => $jobId,
@@ -67,8 +66,7 @@ final class AsyncQueue
      * @param array[] $jobs  [['hook' => '...', 'args' => [...]], ...]
      * @return array  Results keyed by hook name
      */
-    public static function parallel(array $jobs): array
-    {
+    public static function parallel(array $jobs): array {
         if (PHP_VERSION_ID >= 80100 && class_exists('Fiber')) {
             return self::runWithFibers($jobs);
         }
@@ -88,8 +86,7 @@ final class AsyncQueue
      * Process jobs from the queue. Called by the background worker endpoint.
      * Runs up to MAX_WORKERS jobs concurrently via Fibers.
      */
-    public static function processQueue(): void
-    {
+    public static function processQueue(): void {
         $r = RedisFactory::create();
         if (!$r) {
             return;
@@ -141,8 +138,7 @@ final class AsyncQueue
 
     // ── Fiber execution ───────────────────────────────────────────────────────
 
-    private static function runWithFibers(array $jobs): array
-    {
+    private static function runWithFibers(array $jobs): array {
         $fibers  = [];
         $results = [];
 
@@ -172,8 +168,7 @@ final class AsyncQueue
         return $results;
     }
 
-    private static function runJobsWithFibers(array $jobs): void
-    {
+    private static function runJobsWithFibers(array $jobs): void {
         $fibers = [];
         foreach ($jobs as $job) {
             $fiber = new \Fiber(function () use ($job): void {
@@ -195,8 +190,7 @@ final class AsyncQueue
         }
     }
 
-    private static function runJob(array $job): void
-    {
+    private static function runJob(array $job): void {
         $r = RedisFactory::create();
         try {
             do_action($job['hook'], ...($job['args'] ?? []));
@@ -214,8 +208,7 @@ final class AsyncQueue
 
     // ── Status ────────────────────────────────────────────────────────────────
 
-    public static function status(): array
-    {
+    public static function status(): array {
         $r = RedisFactory::create();
         if (!$r) {
             return ['queue_length' => 0, 'running' => false, 'redis' => false];
@@ -226,8 +219,7 @@ final class AsyncQueue
         return ['queue_length' => $len, 'running' => $running, 'redis' => true];
     }
 
-    public static function jobStatus(string $jobId): array
-    {
+    public static function jobStatus(string $jobId): array {
         $r = RedisFactory::create();
         if (!$r) {
             return ['status' => 'unknown'];
@@ -243,8 +235,7 @@ final class AsyncQueue
      * Replace WP-Cron with Redis queue.
      * Hook into 'schedule_event' to push cron jobs to Redis instead.
      */
-    public static function offloadCron(): void
-    {
+    public static function offloadCron(): void {
         if (!get_option('vlt_async_offload_cron')) {
             return;
         }
@@ -265,8 +256,7 @@ final class AsyncQueue
 
     // ── Background worker trigger ─────────────────────────────────────────────
 
-    private static function triggerWorker(): void
-    {
+    private static function triggerWorker(): void {
         // Non-blocking loopback HTTP — WordPress's own async pattern
         $url  = add_query_arg('vlt_async_worker', '1', admin_url('admin-ajax.php'));
         $args = [

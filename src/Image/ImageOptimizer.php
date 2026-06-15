@@ -11,10 +11,9 @@ namespace Gratis\Cache\Image;
  * If LiteSpeed Cache plugin is active, delegates to its image optimization
  * instead of running locally.
  */
-final class ImageOptimizer
-{
-    public static function register(): void
-    {
+final class ImageOptimizer {
+
+    public static function register(): void {
         if (!get_option('vlt_img_optm_enabled')) {
             return;
         }
@@ -33,8 +32,7 @@ final class ImageOptimizer
 
     // ── Upload hook ──────────────────────────────────────────────────────────
 
-    public static function onUpload(array $metadata, int $attachmentId): array
-    {
+    public static function onUpload(array $metadata, int $attachmentId): array {
         $file = get_attached_file($attachmentId);
         if (!$file || !self::isOptimizable($file)) {
             return $metadata;
@@ -66,8 +64,7 @@ final class ImageOptimizer
      * Wrap <img> tags in <picture> with AVIF → WebP → original fallback.
      * Already-wrapped images (inside <picture>) are skipped.
      */
-    public static function rewriteContentImages(string $content): string
-    {
+    public static function rewriteContentImages(string $content): string {
         // Skip if no modern format available at all
         if (!self::browserSupportsWebP()) {
             return $content;
@@ -102,8 +99,7 @@ final class ImageOptimizer
     /**
      * Rewrite srcset entries to prefer WebP (AVIF not supported in srcset).
      */
-    public static function rewriteSrcset(array $sources, array $sizeArray, string $imageSrc, array $imageMeta, int $attachmentId): array
-    {
+    public static function rewriteSrcset(array $sources, array $sizeArray, string $imageSrc, array $imageMeta, int $attachmentId): array {
         if (!self::browserSupportsWebP()) {
             return $sources;
         }
@@ -121,8 +117,7 @@ final class ImageOptimizer
      * For wp_get_attachment_image(): swap src to WebP when available.
      * The <picture> wrapping for attachment images is handled by the_content filter.
      */
-    public static function rewriteAttachmentSrc(array|false $image, int $attachmentId, mixed $size, bool $icon): array|false
-    {
+    public static function rewriteAttachmentSrc(array|false $image, int $attachmentId, mixed $size, bool $icon): array|false {
         if (!$image || !self::browserSupportsWebP()) {
             return $image;
         }
@@ -136,8 +131,7 @@ final class ImageOptimizer
     /**
      * Add srcset with WebP variants to attachment image attributes.
      */
-    public static function rewriteImgAttrs(array $attr, \WP_Post $attachment, mixed $size): array
-    {
+    public static function rewriteImgAttrs(array $attr, \WP_Post $attachment, mixed $size): array {
         if (!self::browserSupportsWebP() || empty($attr['srcset'])) {
             return $attr;
         }
@@ -158,8 +152,7 @@ final class ImageOptimizer
     /**
      * Build <source> tags: AVIF first (best compression), WebP second.
      */
-    private static function buildSources(string $url): string
-    {
+    private static function buildSources(string $url): string {
         $sources = '';
         $avif = self::avifPath($url);
         if ($avif) {
@@ -172,8 +165,7 @@ final class ImageOptimizer
         return $sources;
     }
 
-    private static function avifPath(string $url): string
-    {
+    private static function avifPath(string $url): string {
         $avifUrl = preg_replace('/\.(jpe?g|png)$/i', '.avif', $url);
         if (!$avifUrl || $avifUrl === $url) {
             return '';
@@ -186,8 +178,7 @@ final class ImageOptimizer
     // ── Bulk optimization ────────────────────────────────────────────────────
 
     /** @return array{processed:int, skipped:int, errors:int} */
-    public static function runBulk(int $limit = 50): array
-    {
+    public static function runBulk(int $limit = 50): array {
         if (self::lscwpActive()) {
             // Trigger LSCWP image optimization via its cron action
             do_action('litespeed_img_optm_new_req');
@@ -204,7 +195,7 @@ final class ImageOptimizer
             'meta_query'     => [[
                 'key'     => '_vlt_webp_done',
                 'compare' => 'NOT EXISTS',
-            ]],
+            ],],
         ]);
 
         $uploadDir = wp_upload_dir();
@@ -212,13 +203,13 @@ final class ImageOptimizer
         foreach ($attachments as $id) {
             $file = get_attached_file($id);
             if (!$file || !file_exists($file)) {
-                $stats['skipped']++;
+                ++$stats['skipped'];
                 continue;
             }
             $result = self::convertToWebP($file);
             if ($result) {
                 update_post_meta($id, '_vlt_webp_done', 1);
-                $stats['processed']++;
+                ++$stats['processed'];
 
                 // Convert sizes
                 $meta = wp_get_attachment_metadata($id);
@@ -229,7 +220,7 @@ final class ImageOptimizer
                     }
                 }
             } else {
-                $stats['errors']++;
+                ++$stats['errors'];
             }
         }
 
@@ -237,8 +228,7 @@ final class ImageOptimizer
     }
 
     /** @return array{total:int, optimized:int, pending:int, lscwp:bool, gd:bool, imagick:bool} */
-    public static function status(): array
-    {
+    public static function status(): array {
         global $wpdb;
         $total = (int) $wpdb->get_var(
             "SELECT COUNT(*) FROM {$wpdb->posts}
@@ -260,8 +250,7 @@ final class ImageOptimizer
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static function convertToWebP(string $sourcePath): bool
-    {
+    private static function convertToWebP(string $sourcePath): bool {
         $quality = (int) get_option('vlt_img_optm_quality', 82);
         $ok      = false;
 
@@ -314,8 +303,7 @@ final class ImageOptimizer
         return $ok;
     }
 
-    private static function webpPath(string $url): string
-    {
+    private static function webpPath(string $url): string {
         $webpUrl = preg_replace('/\.(jpe?g|png)$/i', '.webp', $url);
         if (!$webpUrl || $webpUrl === $url) {
             return '';
@@ -326,19 +314,16 @@ final class ImageOptimizer
         return file_exists($localPath) ? $webpUrl : '';
     }
 
-    private static function isOptimizable(string $path): bool
-    {
+    private static function isOptimizable(string $path): bool {
         return (bool) preg_match('/\.(jpe?g|png)$/i', $path);
     }
 
-    private static function browserSupportsWebP(): bool
-    {
+    private static function browserSupportsWebP(): bool {
         $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
         return str_contains($accept, 'image/webp');
     }
 
-    private static function lscwpActive(): bool
-    {
+    private static function lscwpActive(): bool {
         return defined('LSCWP_V') || class_exists('LiteSpeed\Core') || class_exists('LiteSpeed_Cache');
     }
 }

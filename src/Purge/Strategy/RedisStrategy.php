@@ -7,8 +7,8 @@ namespace Gratis\Cache\Purge\Strategy;
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 use Gratis\Cache\Redis\RedisFactory;
 
-final class RedisStrategy implements PurgeStrategyInterface
-{
+final class RedisStrategy implements PurgeStrategyInterface {
+
     /**
      * Keys matching these prefixes are NEVER purged.
      * They are pipeline/queue/stream keys used for async communication —
@@ -25,8 +25,7 @@ final class RedisStrategy implements PurgeStrategyInterface
         'vlt_server_',      // Server detection cache
     ];
 
-    public function purge(): void
-    {
+    public function purge(): void {
         $r = RedisFactory::create(1.0);
         if (!$r) {
             // Fallback: flush only WP object cache in-memory
@@ -45,7 +44,7 @@ final class RedisStrategy implements PurgeStrategyInterface
                 continue;
             }
             $r->del($key);
-            $deleted++;
+            ++$deleted;
         }
 
         $r->close();
@@ -56,8 +55,7 @@ final class RedisStrategy implements PurgeStrategyInterface
         }
     }
 
-    private static function isProtected(string $key): bool
-    {
+    private static function isProtected(string $key): bool {
         foreach (self::PROTECTED_PREFIXES as $prefix) {
             if (str_starts_with($key, $prefix)) {
                 return true;
@@ -66,8 +64,7 @@ final class RedisStrategy implements PurgeStrategyInterface
         return false;
     }
 
-    public function type(): string
-    {
+    public function type(): string {
         return 'redis';
     }
 }

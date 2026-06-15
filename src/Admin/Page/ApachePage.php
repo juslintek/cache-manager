@@ -8,13 +8,14 @@ use Gratis\Cache\Admin\AdminPage;
 use Gratis\Cache\Plugin;
 use Gratis\Cache\ServerDetector;
 
-final class ApachePage extends AdminPage
-{
-    public function slug(): string { return 'vlt-cache-apache'; }
-    public function title(): string { return 'Apache'; }
+final class ApachePage extends AdminPage {
 
-    public function render(): void
-    {
+    public function slug(): string {
+ return 'vlt-cache-apache'; }
+    public function title(): string {
+ return 'Apache'; }
+
+    public function render(): void {
         $info = ServerDetector::detect();
         Plugin::notice();
         echo '<div class="wrap"><h1>Podėlio Valdymas — Apache</h1>';

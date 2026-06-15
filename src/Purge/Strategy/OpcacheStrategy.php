@@ -6,17 +6,15 @@ namespace Gratis\Cache\Purge\Strategy;
 
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 
-final class OpcacheStrategy implements PurgeStrategyInterface
-{
-    public function purge(): void
-    {
+final class OpcacheStrategy implements PurgeStrategyInterface {
+
+    public function purge(): void {
         if (function_exists('opcache_reset')) {
             opcache_reset();
         }
     }
 
-    public function type(): string
-    {
+    public function type(): string {
         return 'opcache';
     }
 }

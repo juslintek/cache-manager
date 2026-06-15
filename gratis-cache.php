@@ -47,7 +47,8 @@ add_action('template_redirect', fn() => \Gratis\Cache\Tracer\Tracer::begin('temp
 add_action('wp_head', fn() => \Gratis\Cache\Tracer\Tracer::begin('wp_head'), -9999);
 add_action('wp_head', fn() => \Gratis\Cache\Tracer\Tracer::end(), PHP_INT_MAX);
 add_filter('the_content', fn($c) => (\Gratis\Cache\Tracer\Tracer::begin('the_content')) ?: $c, -9999);
-add_filter('the_content', function ($c) { \Gratis\Cache\Tracer\Tracer::end(); return $c; }, PHP_INT_MAX);
+add_filter('the_content', function ($c) {
+ \Gratis\Cache\Tracer\Tracer::end(); return $c; }, PHP_INT_MAX);
 add_action('wp_footer', fn() => \Gratis\Cache\Tracer\Tracer::begin('wp_footer'), -9999);
 add_action('wp_footer', fn() => \Gratis\Cache\Tracer\Tracer::end(), PHP_INT_MAX);
 
@@ -63,7 +64,7 @@ add_filter('template_include', function ($tpl) {
     return $tpl;
 }, PHP_INT_MAX);
 
-add_action('shutdown', function() {
+add_action('shutdown', function () {
     try {
         \Gratis\Cache\Tracer\Tracer::finish();
     } catch (\Throwable) {

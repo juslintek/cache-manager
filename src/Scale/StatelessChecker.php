@@ -5,10 +5,9 @@ namespace Gratis\Cache\Scale;
  * Horizontal scaling readiness checker.
  * Verifies WordPress is stateless and ready for multi-server deployment.
  */
-final class StatelessChecker
-{
-    public static function check(): array
-    {
+final class StatelessChecker {
+
+    public static function check(): array {
         $checks = [];
 
         // 1. Sessions in Redis?

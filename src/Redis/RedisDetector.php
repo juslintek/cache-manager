@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Redis;
 
-final class RedisDetector
-{
+final class RedisDetector {
+
     /** @return array{connected:bool, method:string, socket:string, host:string, port:int, version:string, panel:string, litespeed:bool, instructions:string} */
-    public static function detect(): array
-    {
+    public static function detect(): array {
         $panel  = self::detectPanel();
         $result = [
             'connected'    => false,
@@ -53,8 +52,7 @@ final class RedisDetector
 
     // ── DirectAdmin ───────────────────────────────────────────────────────────
 
-    private static function daSocket(): string
-    {
+    private static function daSocket(): string {
         // Extract username from ABSPATH: /home/<user>/domains/...
         if (defined('ABSPATH') && preg_match('#^/home/([^/]+)/#', ABSPATH, $m)) {
             return '/home/' . $m[1] . '/.redis/redis.sock';
@@ -67,8 +65,7 @@ final class RedisDetector
         return '';
     }
 
-    private static function standardSockets(string $panel): array
-    {
+    private static function standardSockets(string $panel): array {
         return match ($panel) {
             'cpanel', 'plesk', 'hestia', 'vesta', 'interworx' => ['/var/run/redis/redis.sock'],
             'cyberpanel'  => ['/var/run/redis/redis.sock', '/tmp/redis.sock'],
@@ -78,8 +75,7 @@ final class RedisDetector
 
     // ── Probe ─────────────────────────────────────────────────────────────────
 
-    private static function probeSocket(string $path): bool
-    {
+    private static function probeSocket(string $path): bool {
         if (!extension_loaded('redis') || !$path) {
             return false;
         }
@@ -94,8 +90,7 @@ final class RedisDetector
         return false;
     }
 
-    private static function probePort(string $host, int $port): bool
-    {
+    private static function probePort(string $host, int $port): bool {
         if (!extension_loaded('redis')) {
             return false;
         }
@@ -110,8 +105,7 @@ final class RedisDetector
         return false;
     }
 
-    private static function redisVersion(string $method, string $hostOrSocket, int $port = 0): string
-    {
+    private static function redisVersion(string $method, string $hostOrSocket, int $port = 0): string {
         try {
             $r = new \Redis();
             if ($method === 'socket') {
@@ -129,8 +123,7 @@ final class RedisDetector
 
     // ── Result builders ───────────────────────────────────────────────────────
 
-    private static function foundSocket(array $result, string $socket): array
-    {
+    private static function foundSocket(array $result, string $socket): array {
         $result['connected'] = true;
         $result['method']    = 'socket';
         $result['socket']    = $socket;
@@ -138,8 +131,7 @@ final class RedisDetector
         return $result;
     }
 
-    private static function foundTcp(array $result, string $host, int $port): array
-    {
+    private static function foundTcp(array $result, string $host, int $port): array {
         $result['connected'] = true;
         $result['method']    = 'tcp';
         $result['host']      = $host;
@@ -150,8 +142,7 @@ final class RedisDetector
 
     // ── Panel / server detection ──────────────────────────────────────────────
 
-    public static function detectPanel(): string
-    {
+    public static function detectPanel(): string {
         // 1. Environment variables (most reliable, no open_basedir issues)
         $serverSoftware = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
         if (isset($_SERVER['DIRECTADMIN']) || str_contains($serverSoftware, 'directadmin')) {
@@ -212,13 +203,11 @@ final class RedisDetector
         return 'linux';
     }
 
-    public static function detectLiteSpeed(): bool
-    {
+    public static function detectLiteSpeed(): bool {
         return \Gratis\Cache\ServerDetector::isLiteSpeed();
     }
 
-    private static function installInstructions(string $panel): string
-    {
+    private static function installInstructions(string $panel): string {
         return match ($panel) {
             'cpanel'      => "Redis nerastas.\n\ncPanel/WHM: WHM → Redis Manager → Enable Redis.",
             'plesk'       => "Redis nerastas.\n\nPlesk: Tools & Settings → Updates → install Redis extension.",
