@@ -76,6 +76,16 @@ add_action('shutdown', function () {
 // Boot the plugin
 add_action('plugins_loaded', [\Gratis\Cache\Plugin::class, 'boot']);
 
+// One-time migration: disable autoload on growing option.
+add_action('plugins_loaded', function () {
+    if (!get_option('gratis_cache_autoload_fixed')) {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->update($wpdb->options, ['autoload' => 'no'], ['option_name' => 'gratis_redirects']);
+        update_option('gratis_cache_autoload_fixed', 1);
+    }
+});
+
 // Run server detection on activation (stored in wp_options, no overhead after)
 register_activation_hook(__FILE__, function () {
     \Gratis\Cache\ServerDetector::runAndStore();

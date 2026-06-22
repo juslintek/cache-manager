@@ -29,14 +29,14 @@ final class RedirectManager {
     public static function add(string $from, string $to, int $code = 301): void {
         $redirects = self::all();
         $redirects[] = ['from' => $from, 'to' => $to, 'code' => $code, 'created' => gmdate('c')];
-        update_option(self::OPTION, $redirects);
+        update_option(self::OPTION, $redirects, false);
     }
 
     public static function remove(int $index): bool {
         $redirects = self::all();
         if (!isset($redirects[$index])) return false;
         array_splice($redirects, $index, 1);
-        update_option(self::OPTION, $redirects);
+        update_option(self::OPTION, $redirects, false);
         return true;
     }
 
