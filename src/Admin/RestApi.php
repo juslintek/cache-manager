@@ -407,14 +407,42 @@ final class RestApi
         }
 
         if ($sub === 'history') {
-            $date = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
-            $f    = TracerConfig::getDir() . '/trace-' . $date . '.json';
+            $date  = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
+            $limit = min(500, max(1, (int) ($req->get_param('limit') ?? 200)));
+            $offset = max(0, (int) ($req->get_param('offset') ?? 0));
+            $f     = TracerConfig::getDir() . '/trace-' . $date . '.json';
             if (!file_exists($f)) {
-                return new \WP_REST_Response([]);
+                return new \WP_REST_Response(['rows' => [], 'total' => 0]);
             }
-            $lines  = file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $fh = fopen($f, 'r');
+            if (!$fh) {
+                return new \WP_REST_Response(['rows' => [], 'total' => 0]);
+            }
             $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
-            return new \WP_REST_Response(array_filter(array_map(fn($l) => $decode($l, true), $lines ?: [])));
+            // Read from end of file for most recent entries
+            $size = filesize($f);
+            $rows = [];
+            $total = 0;
+            // For large files, read last chunk only
+            $maxRead = min($size, 10 * 1024 * 1024); // 10MB max
+            fseek($fh, max(0, $size - $maxRead));
+            if ($size > $maxRead) fgets($fh); // skip partial line
+            $allEntries = [];
+            while (($line = fgets($fh)) !== false) {
+                $line = trim($line);
+                if (!$line) continue;
+                $allEntries[] = $line;
+                $total++;
+            }
+            fclose($fh);
+            // Reverse for newest-first, then apply pagination
+            $allEntries = array_reverse($allEntries);
+            $slice = array_slice($allEntries, $offset, $limit);
+            foreach ($slice as $line) {
+                $d = $decode($line, true);
+                if ($d) $rows[] = $d;
+            }
+            return new \WP_REST_Response(['rows' => $rows, 'total' => $total]);
         }
 
         if ($sub === 'set_rate') {

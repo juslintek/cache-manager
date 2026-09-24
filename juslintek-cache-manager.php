@@ -21,44 +21,46 @@ if (!defined('VLT_CM_NGINX_CACHE')) {
 
 require_once __DIR__ . '/autoload.php';
 
-// Tracer — always on, captures all requests
-if (!defined('SAVEQUERIES')) {
-    define('SAVEQUERIES', true);
+// Tracer — only active when sampling or explicitly enabled
+$vlt_should_trace = \VLT\CacheManager\Tracer\TracerConfig::shouldTrace();
+if ($vlt_should_trace) {
+    if (!defined('SAVEQUERIES')) {
+        define('SAVEQUERIES', true);
+    }
+    \VLT\CacheManager\Tracer\Tracer::boot();
+
+    add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::begin('plugins_loaded'), -9999);
+    add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_action('init', fn() => \VLT\CacheManager\Tracer\Tracer::begin('init'), -9999);
+    add_action('init', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_action('wp_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_loaded'), -9999);
+    add_action('wp_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_action('parse_request', fn() => \VLT\CacheManager\Tracer\Tracer::begin('parse_request'), -9999);
+    add_action('parse_request', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_action('wp', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp'), -9999);
+    add_action('wp', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_action('template_redirect', fn() => \VLT\CacheManager\Tracer\Tracer::begin('template_redirect'), -9999);
+    add_action('wp_head', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_head'), -9999);
+    add_action('wp_head', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    add_filter('the_content', fn($c) => (\VLT\CacheManager\Tracer\Tracer::begin('the_content')) ?: $c, -9999);
+    add_filter('the_content', function ($c) { \VLT\CacheManager\Tracer\Tracer::end(); return $c; }, PHP_INT_MAX);
+    add_action('wp_footer', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_footer'), -9999);
+    add_action('wp_footer', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+
+    if (is_admin()) {
+        add_action('admin_init', fn() => \VLT\CacheManager\Tracer\Tracer::begin('admin_init'), -9999);
+        add_action('admin_init', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+        add_action('admin_menu', fn() => \VLT\CacheManager\Tracer\Tracer::begin('admin_menu'), -9999);
+        add_action('admin_menu', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
+    }
+
+    add_filter('template_include', function ($tpl) {
+        \VLT\CacheManager\Tracer\Tracer::begin('template:' . basename($tpl));
+        return $tpl;
+    }, PHP_INT_MAX);
+
+    add_action('shutdown', [\VLT\CacheManager\Tracer\Tracer::class, 'finish'], 0);
 }
-
-\VLT\CacheManager\Tracer\Tracer::boot();
-
-add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::begin('plugins_loaded'), -9999);
-add_action('plugins_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_action('init', fn() => \VLT\CacheManager\Tracer\Tracer::begin('init'), -9999);
-add_action('init', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_action('wp_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_loaded'), -9999);
-add_action('wp_loaded', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_action('parse_request', fn() => \VLT\CacheManager\Tracer\Tracer::begin('parse_request'), -9999);
-add_action('parse_request', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_action('wp', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp'), -9999);
-add_action('wp', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_action('template_redirect', fn() => \VLT\CacheManager\Tracer\Tracer::begin('template_redirect'), -9999);
-add_action('wp_head', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_head'), -9999);
-add_action('wp_head', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-add_filter('the_content', fn($c) => (\VLT\CacheManager\Tracer\Tracer::begin('the_content')) ?: $c, -9999);
-add_filter('the_content', function ($c) { \VLT\CacheManager\Tracer\Tracer::end(); return $c; }, PHP_INT_MAX);
-add_action('wp_footer', fn() => \VLT\CacheManager\Tracer\Tracer::begin('wp_footer'), -9999);
-add_action('wp_footer', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-
-if (is_admin()) {
-    add_action('admin_init', fn() => \VLT\CacheManager\Tracer\Tracer::begin('admin_init'), -9999);
-    add_action('admin_init', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-    add_action('admin_menu', fn() => \VLT\CacheManager\Tracer\Tracer::begin('admin_menu'), -9999);
-    add_action('admin_menu', fn() => \VLT\CacheManager\Tracer\Tracer::end(), PHP_INT_MAX);
-}
-
-add_filter('template_include', function ($tpl) {
-    \VLT\CacheManager\Tracer\Tracer::begin('template:' . basename($tpl));
-    return $tpl;
-}, PHP_INT_MAX);
-
-add_action('shutdown', [\VLT\CacheManager\Tracer\Tracer::class, 'finish'], 0);
 
 // Boot the plugin
 add_action('plugins_loaded', [\VLT\CacheManager\Plugin::class, 'boot']);

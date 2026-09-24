@@ -33,7 +33,7 @@ final class Logger
             'uri'       => $_SERVER['REQUEST_URI'] ?? '',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
         $file = $this->dir . '/cache-log-' . gmdate('Y-m-d') . '.json';
-        file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
         @chown($file, 'nginx');
         @chgrp($file, 'nginx');
         // Push to Redis for live SSE streaming
@@ -113,9 +113,21 @@ final class Logger
 
     public function getTodayStats(): array
     {
-        $entries = $this->readLog(gmdate('Y-m-d'));
-        $stats   = ['requests' => 0, 'hits' => 0, 'misses' => 0, 'purges' => 0];
-        foreach ($entries as $e) {
+        $file = $this->dir . '/cache-log-' . gmdate('Y-m-d') . '.json';
+        $stats = ['requests' => 0, 'hits' => 0, 'misses' => 0, 'purges' => 0];
+        if (!file_exists($file)) {
+            return $stats;
+        }
+        $fh = fopen($file, 'r');
+        if (!$fh) {
+            return $stats;
+        }
+        $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
+        while (($line = fgets($fh)) !== false) {
+            $line = trim($line);
+            if (!$line) continue;
+            $e = $decode($line, true);
+            if (!$e) continue;
             if (($e['type'] ?? '') === 'stats') {
                 $stats['requests']++;
                 $stats['hits']   += (int) ($e['details']['hits'] ?? 0);
@@ -124,7 +136,37 @@ final class Logger
                 $stats['purges']++;
             }
         }
+        fclose($fh);
         return $stats;
+    }
+
+    public function getRecentPurges(int $limit = 10): array
+    {
+        $file = $this->dir . '/cache-log-' . gmdate('Y-m-d') . '.json';
+        if (!file_exists($file)) {
+            return [];
+        }
+        // Read last 200KB of file to find recent purges without loading entire file
+        $fh = fopen($file, 'r');
+        if (!$fh) {
+            return [];
+        }
+        $size = filesize($file);
+        $offset = max(0, $size - 204800);
+        fseek($fh, $offset);
+        if ($offset > 0) fgets($fh); // skip partial line
+        $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
+        $purges = [];
+        while (($line = fgets($fh)) !== false) {
+            $line = trim($line);
+            if (!$line) continue;
+            $e = $decode($line, true);
+            if ($e && ($e['type'] ?? '') === 'purge') {
+                $purges[] = $e;
+            }
+        }
+        fclose($fh);
+        return array_slice(array_reverse($purges), 0, $limit);
     }
 
     public function rotateLogs(): void

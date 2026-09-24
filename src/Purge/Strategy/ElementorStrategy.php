@@ -11,7 +11,11 @@ final class ElementorStrategy implements PurgeStrategyInterface
     public function purge(): void
     {
         if (class_exists('\Elementor\Plugin') && isset(\Elementor\Plugin::$instance->files_manager)) {
-            \Elementor\Plugin::$instance->files_manager->clear_cache();
+            try {
+                \Elementor\Plugin::$instance->files_manager->clear_cache();
+            } catch (\Throwable $e) {
+                // Elementor may fail in WP-CLI (FTP filesystem not available)
+            }
         }
     }
 

@@ -234,8 +234,9 @@ class VLT_WP_Object_Cache {
 	public function flush() {
 		$this->cache = [];
 		if ( $this->connected ) {
-			return $this->redis->flushDb();
+			$this->redis->flushDb();
 		}
+		do_action( 'wp_cache_flushed' );
 		return true;
 	}
 

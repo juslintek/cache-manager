@@ -198,14 +198,34 @@ final class AdminAjax
                 wp_send_json_success([]);
             }
         } elseif ($sub === 'history') {
-            $date = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
-            $f    = TracerConfig::getDir() . '/trace-' . $date . '.json';
+            $date  = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
+            $limit = min(500, max(1, (int) ($_GET['limit'] ?? 200)));
+            $f     = TracerConfig::getDir() . '/trace-' . $date . '.json';
             if (!file_exists($f)) {
-                wp_send_json_success([]);
+                wp_send_json_success(['rows' => [], 'total' => 0]);
             }
-            $lines  = file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $fh = fopen($f, 'r');
+            if (!$fh) {
+                wp_send_json_success(['rows' => [], 'total' => 0]);
+            }
             $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
-            wp_send_json_success(array_filter(array_map(fn($l) => $decode($l, true), $lines ?: [])));
+            $size = filesize($f);
+            $maxRead = min($size, 10 * 1024 * 1024);
+            fseek($fh, max(0, $size - $maxRead));
+            if ($size > $maxRead) fgets($fh);
+            $lines = [];
+            while (($line = fgets($fh)) !== false) {
+                $line = trim($line);
+                if ($line) $lines[] = $line;
+            }
+            fclose($fh);
+            $lines = array_reverse($lines);
+            $rows = [];
+            foreach (array_slice($lines, 0, $limit) as $line) {
+                $d = $decode($line, true);
+                if ($d) $rows[] = $d;
+            }
+            wp_send_json_success(['rows' => $rows, 'total' => count($lines)]);
         } elseif ($sub === 'set_rate') {
             $rate = max(0, min(100, (int) ($_GET['rate'] ?? 0)));
             update_option('vlt_trace_sample_rate', $rate);

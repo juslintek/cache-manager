@@ -65,6 +65,13 @@ final class Plugin
         add_action('upgrader_process_complete', [$self, 'onUpgrade'], 10, 2);
         add_action('elementor/core/files/clear_cache', fn() => $self->purge->purge('nginx'));
 
+        // When wp_cache_flush() is called, also purge nginx, opcache, elementor
+        add_action('wp_cache_flushed', function () use ($self) {
+            $self->purge->purge('nginx');
+            $self->purge->purge('opcache');
+            $self->purge->purge('elementor');
+        });
+
         add_action('vlt_cm_log_rotate', [$self->logger, 'rotateLogs']);
         if (!wp_next_scheduled('vlt_cm_log_rotate')) {
             wp_schedule_event(time(), 'daily', 'vlt_cm_log_rotate');
@@ -254,10 +261,8 @@ final class Plugin
         echo '<p><strong>Pataikymų santykis šiandien:</strong> ' . $ratio . '% (' . $stats['hits'] . '/' . ($stats['hits'] + $stats['misses']) . ')</p>';
         echo '<p><strong>Nginx talpykla:</strong> ' . esc_html(self::formatSize(self::dirSize(VLT_CM_NGINX_CACHE))) . '</p>';
 
-        $entries = $this->logger->readLog(gmdate('Y-m-d'));
-        $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
-        $purges  = array_reverse($purges);
-        $groups  = [];
+        $purges = $this->logger->getRecentPurges(5);
+        $groups = [];
         foreach ($purges as $p) {
             $key = substr($p['timestamp'] ?? '', 0, 19) . '|' . ($p['user_id'] ?? 0);
             if (!isset($groups[$key])) {
@@ -323,8 +328,20 @@ final class Plugin
             return 0;
         }
         $s = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $f) {
-            $s += $f->getSize();
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY,
+                \RecursiveIteratorIterator::CATCH_GET_CHILD
+            );
+            foreach ($iterator as $f) {
+                try {
+                    $s += $f->getSize();
+                } catch (\Throwable $e) {
+                }
+            }
+        } catch (\Throwable $e) {
+            return 0;
         }
         return $s;
     }

@@ -21,7 +21,8 @@ final class TracerConfig
         if (isset($_COOKIE['vlt_trace']) || isset($_GET['vlt_trace'])) {
             return true;
         }
-        $rateFile = self::getDir() . '/.sample_rate';
+        $dir = defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR . '/uploads/vlt-traces' : '/var/www/html/wp-content/uploads/vlt-traces';
+        $rateFile = $dir . '/.sample_rate';
         $rate = file_exists($rateFile) ? (int) file_get_contents($rateFile) : 0;
         return $rate > 0 && mt_rand(1, 100) <= $rate;
     }

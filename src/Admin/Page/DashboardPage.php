@@ -48,9 +48,7 @@ final class DashboardPage extends AdminPage
         echo '<tr><td>Valymo įvykiai</td><td>' . $stats['purges'] . '</td></tr>';
         echo '</tbody></table>';
 
-        $entries = $p->logger()->readLog(gmdate('Y-m-d'));
-        $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
-        $purges  = array_reverse($purges);
+        $purges = $p->logger()->getRecentPurges(10);
 
         $groups = [];
         foreach ($purges as $pg) {

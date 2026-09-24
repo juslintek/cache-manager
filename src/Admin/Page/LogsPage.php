@@ -215,7 +215,7 @@ final class LogsPage extends AdminPage
                     this.loading = true;
                     this.lastTs = null;
                     const p = new URLSearchParams({
-                        
+
                         date: this.filters.date, type: this.filters.type, ip: this.filters.ip,
                         uri: this.filters.uri, user: this.filters.user,
                         group: this.groupFields.join(',')

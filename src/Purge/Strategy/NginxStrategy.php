@@ -18,12 +18,19 @@ final class NginxStrategy implements PurgeStrategyInterface
         if (!is_dir(self::CACHE_DIR)) {
             return;
         }
-        $it = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator(self::CACHE_DIR, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($it as $item) {
-            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        try {
+            $it = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator(self::CACHE_DIR, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST,
+                RecursiveIteratorIterator::CATCH_GET_CHILD
+            );
+            foreach ($it as $item) {
+                try {
+                    $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+                } catch (\Throwable $e) {
+                }
+            }
+        } catch (\Throwable $e) {
         }
     }
 

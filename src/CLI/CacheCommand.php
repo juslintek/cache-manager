@@ -51,10 +51,7 @@ final class CacheCommand
         }
 
         if (is_dir(VLT_CM_NGINX_CACHE)) {
-            $size = 0;
-            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(VLT_CM_NGINX_CACHE, \FilesystemIterator::SKIP_DOTS)) as $f) {
-                $size += $f->getSize();
-            }
+            $size = Plugin::dirSize(VLT_CM_NGINX_CACHE);
             $mb = round($size / 1048576, 1);
             WP_CLI::success("Nginx FastCGI: {$mb} MB");
         } else {

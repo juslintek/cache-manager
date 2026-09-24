@@ -28,27 +28,37 @@ final class NginxExplorerPage extends AdminPage
         }
 
         $files = [];
-        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($cache_dir, \FilesystemIterator::SKIP_DOTS));
-        foreach ($it as $file) {
-            if ($file->isFile()) {
-                $path = $file->getPathname();
-                $raw_start = file_get_contents($path, false, null, 0, 2048);
-                $url = '—';
-                if (preg_match('/^KEY:\s*(.+)$/m', $raw_start, $m)) {
-                    $url = trim($m[1]);
+        try {
+            $it = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($cache_dir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY,
+                \RecursiveIteratorIterator::CATCH_GET_CHILD
+            );
+            foreach ($it as $file) {
+                try {
+                    if ($file->isFile()) {
+                        $path = $file->getPathname();
+                        $raw_start = @file_get_contents($path, false, null, 0, 2048);
+                        $url = '—';
+                        if ($raw_start && preg_match('/^KEY:\s*(.+)$/m', $raw_start, $m)) {
+                            $url = trim($m[1]);
+                        }
+                        $status = '—';
+                        if ($raw_start && preg_match('/^Status:\s*(\d+)/m', $raw_start, $m)) {
+                            $status = $m[1];
+                        }
+                        $files[] = [
+                            'path'   => $path,
+                            'url'    => $url,
+                            'size'   => $file->getSize(),
+                            'mtime'  => $file->getMTime(),
+                            'status' => $status,
+                        ];
+                    }
+                } catch (\Throwable $e) {
                 }
-                $status = '—';
-                if (preg_match('/^Status:\s*(\d+)/m', $raw_start, $m)) {
-                    $status = $m[1];
-                }
-                $files[] = [
-                    'path'   => $path,
-                    'url'    => $url,
-                    'size'   => $file->getSize(),
-                    'mtime'  => $file->getMTime(),
-                    'status' => $status,
-                ];
             }
+        } catch (\Throwable $e) {
         }
 
         usort($files, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
