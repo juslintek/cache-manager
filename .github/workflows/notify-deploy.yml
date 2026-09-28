@@ -3,6 +3,9 @@ name: Notify deploy
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/workflows/notify-deploy.yml'
 
 jobs:
   trigger:
