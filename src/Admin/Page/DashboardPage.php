@@ -168,9 +168,7 @@ final class DashboardPage extends AdminPage {
 
         <?php
         // Recent purge events
-        $entries = $p->logger()->readLog(gmdate('Y-m-d'));
-        $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
-        $purges  = array_reverse($purges);
+        $purges = $p->logger()->getRecentPurges(10);
         $groups  = [];
         foreach ($purges as $pg) {
             $key = substr($pg['timestamp'] ?? '', 0, 19) . '|' . ($pg['user_id'] ?? 0);

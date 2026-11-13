@@ -513,7 +513,7 @@ final class TracerPage extends AdminPage {
                 this.evtSource.onerror=()=>{this.sseConnected=false};
             },
             async goLive(){const d=await this.rpc('live');if(d)this.live=d},
-            async loadExp(){if(!this.expDate)return;const d=await this.rpc('history',{date:this.expDate});if(d)this.expData=d.reverse()},
+            async loadExp(){if(!this.expDate)return;const d=await this.rpc('history',{date:this.expDate});if(d)this.expData=Array.isArray(d)?d.reverse():(d.rows||[])},
             get currentRows(){return this.tab==='explorer'?this.expFiltered:this.live},
 
             ss(c){if(this.sc===c)this.sd=this.sd==='asc'?'desc':'asc';else{this.sc=c;this.sd='desc'}},

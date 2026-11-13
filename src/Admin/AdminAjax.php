@@ -193,14 +193,9 @@ final class AdminAjax {
                 wp_send_json_success([]);
             }
         } elseif ($sub === 'history') {
-            $date = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
-            $f    = TracerConfig::getDir() . '/trace-' . $date . '.json';
-            if (!file_exists($f)) {
-                wp_send_json_success([]);
-            }
-            $lines  = file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
-            wp_send_json_success(array_filter(array_map(fn($l) => $decode($l, true), $lines ?: [])));
+            $date  = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
+            $limit = min(500, max(1, (int) ($_GET['limit'] ?? 200)));
+            wp_send_json_success(TracerConfig::readHistory($date, $limit));
         } elseif ($sub === 'set_rate') {
             $rate = max(0, min(100, (int) ($_GET['rate'] ?? 0)));
             update_option('vlt_trace_sample_rate', $rate);

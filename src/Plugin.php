@@ -66,6 +66,13 @@ final class Plugin {
         // Targeted cache invalidation — hooks into every content change event
         (new \Gratis\Cache\Cache\CacheInvalidator($self->purge))->register();
 
+        // When wp_cache_flushed fires (e.g. wp cache flush), also purge nginx, opcache, elementor.
+        add_action('wp_cache_flushed', function () use ($self) {
+            $self->purge->purge('nginx');
+            $self->purge->purge('opcache');
+            $self->purge->purge('elementor');
+        });
+
         add_action('init', [$self->logger, 'logCfRequest']);
         add_action('shutdown', [$self, 'onShutdown']);
 
@@ -390,10 +397,8 @@ final class Plugin {
         echo '<p><strong>Pataikymų santykis šiandien:</strong> ' . $ratio . '% (' . $stats['hits'] . '/' . ($stats['hits'] + $stats['misses']) . ')</p>';
         echo '<p><strong>Nginx talpykla:</strong> ' . esc_html(self::formatSize(self::dirSize(GRATIS_CACHE_NGINX_CACHE))) . '</p>';
 
-        $entries = $this->logger->readLog(gmdate('Y-m-d'));
-        $purges  = array_filter($entries, fn($e) => ($e['type'] ?? '') === 'purge');
-        $purges  = array_reverse($purges);
-        $groups  = [];
+        $purges = $this->logger->getRecentPurges(5);
+        $groups = [];
         foreach ($purges as $p) {
             $key = substr($p['timestamp'] ?? '', 0, 19) . '|' . ($p['user_id'] ?? 0);
             if (!isset($groups[$key])) {
@@ -597,12 +602,24 @@ final class Plugin {
     }
 
     public static function dirSize(string $dir): int {
-        if (!is_dir($dir)) {
+        if (!is_dir($dir) || !is_readable($dir)) {
             return 0;
         }
         $s = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $f) {
-            $s += $f->getSize();
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY,
+                \RecursiveIteratorIterator::CATCH_GET_CHILD
+            );
+            foreach ($iterator as $f) {
+                try {
+                    $s += $f->getSize();
+                } catch (\Throwable) {
+                }
+            }
+        } catch (\Throwable) {
+            return 0;
         }
         return $s;
     }

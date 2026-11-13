@@ -49,11 +49,8 @@ final class CacheCommand {
         }
 
         if (is_dir(GRATIS_CACHE_NGINX_CACHE)) {
-            $size = 0;
-            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(GRATIS_CACHE_NGINX_CACHE, \FilesystemIterator::SKIP_DOTS)) as $f) {
-                $size += $f->getSize();
-            }
-            $mb = round($size / 1048576, 1);
+            $size = Plugin::dirSize(GRATIS_CACHE_NGINX_CACHE);
+            $mb   = round($size / 1048576, 1);
             WP_CLI::success("Nginx FastCGI: {$mb} MB");
         } else {
             WP_CLI::warning('Nginx FastCGI: cache directory not found');
