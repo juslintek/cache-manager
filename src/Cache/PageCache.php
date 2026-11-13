@@ -119,7 +119,17 @@ final class PageCache {
             foreach ($exclusions as $entry) {
                 $parsed = parse_url((string) $entry);
                 $exPath = rtrim($parsed['path'] ?? (string) $entry, '/');
-                if ($exPath !== '' && $reqPath === $exPath) {
+                if ($exPath === '') {
+                    continue;
+                }
+                if (str_ends_with($exPath, '*')) {
+                    $prefix = rtrim(substr($exPath, 0, -1), '/');
+                    if ($prefix !== '' && ($reqPath === $prefix || str_starts_with($reqPath, $prefix . '/'))) {
+                        return false;
+                    }
+                    continue;
+                }
+                if ($reqPath === $exPath) {
                     return false;
                 }
             }

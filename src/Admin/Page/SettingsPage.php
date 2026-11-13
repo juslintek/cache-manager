@@ -130,7 +130,7 @@ final class SettingsPage extends AdminPage {
         $exclusions      = get_option('vlt_cm_cache_exclusions', []);
         $exclusions_text = is_array($exclusions) ? implode("\n", $exclusions) : '';
         echo '<tr><th>Talpyklos išimtys</th><td><textarea name="vlt_cm_cache_exclusions" rows="6" class="large-text code">' . esc_textarea($exclusions_text) . '</textarea>';
-        echo '<p class="description">URL keliai arba pilni URL, kurie nebus talpinami (po vieną eilutėje).<br>Pvz.: <code>/wpo/sso/start</code> arba <code>' . esc_html(home_url('/wpo/sso/start')) . '</code></p></td></tr>';
+        echo '<p class="description">URL keliai arba pilni URL, kurie nebus talpinami (po vieną eilutėje). Galima naudoti <code>*</code> pabaigoje prefiksui.<br>Pvz.: <code>/checkout</code>, <code>/account/*</code> arba <code>' . esc_html(home_url('/custom-path')) . '</code></p></td></tr>';
 
         echo '</table>';
 
@@ -501,6 +501,11 @@ final class SettingsPage extends AdminPage {
             $parsed = parse_url($path);
             $uri    = rtrim($parsed['path'] ?? $path, '/');
             if ($uri === '') {
+                continue;
+            }
+            if (str_ends_with($uri, '*')) {
+                $prefix  = rtrim(substr($uri, 0, -1), '/');
+                $lines[] = '    ~^' . preg_quote($prefix, '~') . '(/|$) 1;';
                 continue;
             }
             $lines[] = '    ' . $uri . ' 1;';
