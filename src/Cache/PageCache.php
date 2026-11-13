@@ -112,6 +112,18 @@ final class PageCache {
         if (defined('DOING_CRON') && DOING_CRON) return false;
         if (defined('REST_REQUEST') && REST_REQUEST) return false;
         if (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) return false;
+
+        $exclusions = get_option('vlt_cm_cache_exclusions', []);
+        if (is_array($exclusions) && $exclusions) {
+            $reqPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
+            foreach ($exclusions as $entry) {
+                $parsed = parse_url((string) $entry);
+                $exPath = rtrim($parsed['path'] ?? (string) $entry, '/');
+                if ($exPath !== '' && $reqPath === $exPath) {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 

@@ -776,14 +776,10 @@ final class RestApi {
         }
 
         if ($sub === 'history') {
-            $date = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
-            $f    = TracerConfig::getDir() . '/trace-' . $date . '.json';
-            if (!file_exists($f)) {
-                return new \WP_REST_Response([]);
-            }
-            $lines  = file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
-            return new \WP_REST_Response(array_filter(array_map(fn($l) => $decode($l, true), $lines ?: [])));
+            $date   = sanitize_text_field($req->get_param('date') ?? gmdate('Y-m-d'));
+            $limit  = min(500, max(1, (int) ($req->get_param('limit') ?? 200)));
+            $offset = max(0, (int) ($req->get_param('offset') ?? 0));
+            return new \WP_REST_Response(TracerConfig::readHistory($date, $limit, $offset));
         }
 
         if ($sub === 'set_rate') {

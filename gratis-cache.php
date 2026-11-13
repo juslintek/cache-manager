@@ -21,13 +21,13 @@ if (!defined('GRATIS_CACHE_NGINX_CACHE')) {
 
 require_once __DIR__ . '/autoload.php';
 
-// Tracer — skip on admin/cron/CLI/REST to avoid OOM
+// Tracer — skip on admin/cron/CLI/REST and only boot when sampling or explicitly enabled
 $_vlt_skip_tracer = is_admin()
     || (isset($_GET['action']) && str_starts_with($_GET['action'] ?? '', 'vlt_'))
     || (defined('REST_REQUEST') && REST_REQUEST)
     || (defined('DOING_CRON') && DOING_CRON)
     || (defined('WP_CLI') && WP_CLI);
-if (!$_vlt_skip_tracer) {
+if (!$_vlt_skip_tracer && \Gratis\Cache\Tracer\TracerConfig::shouldTrace()) {
     if (!defined('SAVEQUERIES')) {
         define('SAVEQUERIES', true);
     }
