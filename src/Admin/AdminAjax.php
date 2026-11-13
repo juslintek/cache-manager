@@ -193,9 +193,10 @@ final class AdminAjax {
                 wp_send_json_success([]);
             }
         } elseif ($sub === 'history') {
-            $date  = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
-            $limit = min(500, max(1, (int) ($_GET['limit'] ?? 200)));
-            wp_send_json_success(TracerConfig::readHistory($date, $limit));
+            $date   = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
+            $limit  = min(500, max(1, (int) ($_GET['limit'] ?? 200)));
+            $offset = max(0, (int) ($_GET['offset'] ?? 0));
+            wp_send_json_success(TracerConfig::readHistory($date, $limit, $offset));
         } elseif ($sub === 'set_rate') {
             $rate = max(0, min(100, (int) ($_GET['rate'] ?? 0)));
             update_option('vlt_trace_sample_rate', $rate);

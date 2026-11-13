@@ -48,12 +48,14 @@ final class CacheCommand {
             }
         }
 
-        if (is_dir(GRATIS_CACHE_NGINX_CACHE)) {
+        if (!is_dir(GRATIS_CACHE_NGINX_CACHE)) {
+            WP_CLI::warning('Nginx FastCGI: cache directory not found');
+        } elseif (!is_readable(GRATIS_CACHE_NGINX_CACHE)) {
+            WP_CLI::warning('Nginx FastCGI: cache directory is not readable');
+        } else {
             $size = Plugin::dirSize(GRATIS_CACHE_NGINX_CACHE);
             $mb   = round($size / 1048576, 1);
             WP_CLI::success("Nginx FastCGI: {$mb} MB");
-        } else {
-            WP_CLI::warning('Nginx FastCGI: cache directory not found');
         }
 
         $el_dir = WP_CONTENT_DIR . '/uploads/elementor/css/';
@@ -80,11 +82,12 @@ final class CacheCommand {
      * @subcommand purge
      */
     public function purge($args, $assoc): void {
-        $type = $assoc['type'] ?? 'all';
-        if ($type === 'all') {
-            $this->plugin->purge()->purgeAll();
-        } else {
-            $this->plugin->purge()->purge($type);
+        $type  = $assoc['type'] ?? 'all';
+        $purge = $this->plugin->purge();
+        $ok    = ($type === 'all') ? $purge->purgeAll() : $purge->purge($type);
+        if (!$ok) {
+            $err = $purge->getError($type === 'all' ? null : $type) ?? 'unknown error';
+            WP_CLI::error("Cache purge incomplete ({$type}): {$err}");
         }
         WP_CLI::success("Cache purged: {$type}");
     }

@@ -115,16 +115,28 @@ final class PageCache {
 
         $exclusions = get_option('vlt_cm_cache_exclusions', []);
         if (is_array($exclusions) && $exclusions) {
-            $reqPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
+            $normalize = static function (string $rawPath): string {
+                $trimmed = rtrim($rawPath, '/');
+                return $trimmed === '' ? '/' : $trimmed;
+            };
+            $reqPath = $normalize(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
             foreach ($exclusions as $entry) {
-                $parsed = parse_url((string) $entry);
-                $exPath = rtrim($parsed['path'] ?? (string) $entry, '/');
-                if ($exPath === '') {
+                $entry = trim((string) $entry);
+                if ($entry === '') {
                     continue;
                 }
+                $parsed = parse_url($entry);
+                if ($parsed === false) {
+                    continue;
+                }
+                $rawExPath = $parsed['path'] ?? (str_contains($entry, '://') ? '/' : $entry);
+                $exPath    = $normalize($rawExPath);
                 if (str_ends_with($exPath, '*')) {
                     $prefix = rtrim(substr($exPath, 0, -1), '/');
-                    if ($prefix !== '' && ($reqPath === $prefix || str_starts_with($reqPath, $prefix . '/'))) {
+                    if ($prefix === '') {
+                        return false;
+                    }
+                    if ($reqPath === $prefix || str_starts_with($reqPath, $prefix . '/')) {
                         return false;
                     }
                     continue;
