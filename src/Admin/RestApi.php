@@ -621,10 +621,14 @@ final class RestApi {
         $type  = sanitize_key($req->get_param('type'));
         $start = microtime(true);
 
-        \Gratis\Cache\Plugin::instance()->purge()->purge($type);
+        $purge = \Gratis\Cache\Plugin::instance()->purge();
+        $ok    = $purge->purge($type);
 
         $ms    = round((microtime(true) - $start) * 1000, 1);
-        $entry = ['type' => $type, 'ms' => $ms, 'ts' => time(), 'user' => wp_get_current_user()->user_login];
+        $entry = ['type' => $type, 'ok' => $ok, 'ms' => $ms, 'ts' => time(), 'user' => wp_get_current_user()->user_login];
+        if (!$ok) {
+            $entry['error'] = $purge->getError($type) ?? 'Purge failed';
+        }
 
         // Store in Redis purge log (capped at 200 entries)
         $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
@@ -634,7 +638,7 @@ final class RestApi {
             $r->close();
         }
 
-        return new \WP_REST_Response(['ok' => true, 'type' => $type, 'ms' => $ms]);
+        return new \WP_REST_Response($entry);
     }
 
     public static function traceWorkerStatus(): \WP_REST_Response {
@@ -677,11 +681,14 @@ final class RestApi {
 
         foreach ($types as $type) {
             $start = microtime(true);
-            $purge->purge($type);
-            $ms = round((microtime(true) - $start) * 1000, 1);
+            $ok    = $purge->purge($type);
+            $ms    = round((microtime(true) - $start) * 1000, 1);
             ++$done;
 
-            $entry = ['event' => 'progress', 'type' => $type, 'ms' => $ms, 'done' => $done, 'total' => $total, 'pct' => round($done / $total * 100), 'ts' => time(), 'user' => $user, 'session' => $session];
+            $entry = ['event' => 'progress', 'type' => $type, 'ok' => $ok, 'ms' => $ms, 'done' => $done, 'total' => $total, 'pct' => round($done / $total * 100), 'ts' => time(), 'user' => $user, 'session' => $session];
+            if (!$ok) {
+                $entry['error'] = $purge->getError($type) ?? 'Purge failed';
+            }
 
             // Persist to Redis log
             $r = \Gratis\Cache\Redis\RedisFactory::create(0.3);

@@ -123,9 +123,16 @@ final class TracerPage extends AdminPage {
         <!-- ==================== EXPLORER PANEL ==================== -->
         <div class="tw-border tw-border-gray-300 tw-rounded-b tw-rounded-tr tw-bg-white tw-p-3" x-show="tab==='explorer'">
             <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2 tw-mb-2">
-                <label class="tw-flex tw-items-center tw-gap-1">Data: <input type="date" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5" x-model="expDate" @change="loadExp()"></label>
-                <button class="button" @click="loadExp()">Įkelti</button>
-                <span class="tw-text-gray-500" x-text="expFiltered.length+'/'+expData.length+' įrašų'"></span>
+                <label class="tw-flex tw-items-center tw-gap-1">Data: <input type="date" class="tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5" x-model="expDate" @change="loadExp(true)"></label>
+                <button class="button" @click="loadExp(true)">Įkelti</button>
+                <span class="tw-text-gray-500" x-text="expFiltered.length+'/'+expData.length+(expTotal>expData.length?' (iš '+expTotal+')':'')+' įrašų'"></span>
+                <template x-if="expTotal>expLimit">
+                    <span class="tw-flex tw-items-center tw-gap-1">
+                        <button class="button" :disabled="expOffset<=0" @click="expOffset=Math.max(0,expOffset-expLimit);loadExp(false)">←</button>
+                        <span class="tw-text-gray-500" x-text="(Math.floor(expOffset/expLimit)+1)+'/'+Math.ceil(expTotal/expLimit)"></span>
+                        <button class="button" :disabled="expOffset+expLimit>=expTotal" @click="expOffset+=expLimit;loadExp(false)">→</button>
+                    </span>
+                </template>
             </div>
             <!-- Filters -->
             <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-1.5 tw-bg-gray-50 tw-border tw-border-gray-200 tw-rounded tw-p-2 tw-mb-2">
@@ -489,7 +496,7 @@ final class TracerPage extends AdminPage {
         function vltT(){return{
             tab:'live',live:[],maxT:<?php echo $max; ?>,
             sc:'total_ms',sd:'desc',detailTrace:null,evtSource:null,sseConnected:false,
-            expDate:'',expData:[],esc:'total_ms',esd:'desc',
+            expDate:'',expData:[],expTotal:0,expOffset:0,expLimit:200,esc:'total_ms',esd:'desc',
             ef:{method:'',uri:'',status:'',ip:'',minMs:0,maxMs:0,minDb:0,minDbMs:0,minMem:'',user:'',co:''},
 
             init(){
@@ -513,7 +520,7 @@ final class TracerPage extends AdminPage {
                 this.evtSource.onerror=()=>{this.sseConnected=false};
             },
             async goLive(){const d=await this.rpc('live');if(d)this.live=d},
-            async loadExp(){if(!this.expDate)return;const d=await this.rpc('history',{date:this.expDate});if(d)this.expData=Array.isArray(d)?d.reverse():(d.rows||[])},
+            async loadExp(reset=true){if(!this.expDate)return;if(reset)this.expOffset=0;const d=await this.rpc('history',{date:this.expDate,limit:this.expLimit,offset:this.expOffset});if(d){this.expData=Array.isArray(d)?d.reverse():(d.rows||[]);this.expTotal=Array.isArray(d)?this.expData.length:(d.total??this.expData.length)}},
             get currentRows(){return this.tab==='explorer'?this.expFiltered:this.live},
 
             ss(c){if(this.sc===c)this.sd=this.sd==='asc'?'desc':'asc';else{this.sc=c;this.sd='desc'}},

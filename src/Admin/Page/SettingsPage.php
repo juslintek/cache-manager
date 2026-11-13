@@ -41,12 +41,19 @@ final class SettingsPage extends AdminPage {
             update_option('vlt_img_optm_enabled', isset($_POST['vlt_img_optm_enabled']));
             update_option('vlt_img_optm_serve_webp', isset($_POST['vlt_img_optm_serve_webp']));
             update_option('vlt_img_optm_quality', max(1, min(100, (int) ($_POST['vlt_img_optm_quality'] ?? 82))));
-            // Cache exclusions
-            $exclusions_raw = sanitize_textarea_field($_POST['vlt_cm_cache_exclusions'] ?? '');
-            $exclusions     = array_values(array_filter(array_map('trim', explode("\n", $exclusions_raw))));
-            update_option('vlt_cm_cache_exclusions', $exclusions);
-            self::writeNginxExclusions($exclusions);
-            echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
+            // Cache exclusions: only when the main settings form submits the field
+            $nginxOk = true;
+            if (isset($_POST['vlt_cm_cache_exclusions'])) {
+                $exclusions_raw = sanitize_textarea_field($_POST['vlt_cm_cache_exclusions']);
+                $exclusions     = array_values(array_filter(array_map('trim', explode("\n", $exclusions_raw))));
+                update_option('vlt_cm_cache_exclusions', $exclusions);
+                $nginxOk = self::writeNginxExclusions($exclusions);
+            }
+            if ($nginxOk) {
+                echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>Nustatymai išsaugoti, tačiau Nginx konfigūracijos patikra (<code>nginx -t</code>) nepavyko — ankstesnis Nginx išimčių failas atkurtas.</p></div>';
+            }
         }
 
         if (!empty($_GET['dropin_installed'])) {
@@ -478,18 +485,65 @@ final class SettingsPage extends AdminPage {
         exit;
     }
 
-    public static function writeNginxExclusions(array $exclusions): void {
+    public static function writeNginxExclusions(array $exclusions): bool {
         $defaultMap = defined('GRATIS_CACHE_NGINX_EXCLUSIONS_FILE')
             ? GRATIS_CACHE_NGINX_EXCLUSIONS_FILE
             : '/etc/nginx/conf.d/vlt-cache-exclusions.conf';
         $mapFile = (string) apply_filters('gratis_cache_nginx_exclusions_file', $defaultMap);
         if ($mapFile === '') {
-            return;
+            return true;
         }
         $writable = (file_exists($mapFile) && is_writable($mapFile))
             || (!file_exists($mapFile) && is_dir(dirname($mapFile)) && is_writable(dirname($mapFile)));
         if (!$writable) {
-            return;
+            return true;
+        }
+
+        $rules = [];
+        foreach ($exclusions as $path) {
+            $path = trim((string) $path);
+            if ($path === '') {
+                continue;
+            }
+            $parsed = parse_url($path);
+            if ($parsed === false) {
+                continue;
+            }
+            $rawUri = $parsed['path'] ?? (str_contains($path, '://') ? '/' : $path);
+            $uri    = rtrim($rawUri, '/');
+            if ($uri === '') {
+                $uri = '/';
+            }
+            // Strict allowlist to prevent Nginx config injection.
+            if (!preg_match('#^/[a-zA-Z0-9/_\-\.~%\*]*$#', $uri)) {
+                continue;
+            }
+
+            if (str_ends_with($uri, '*')) {
+                $prefix = rtrim(substr($uri, 0, -1), '/');
+                $rule   = $prefix === ''
+                    ? '~^/ 1;'
+                    : '~^' . preg_quote($prefix, '~') . '(/|\?|$) 1;';
+                $rules[$rule] = true;
+                continue;
+            }
+
+            if (!empty($parsed['query'])) {
+                $query = (string) $parsed['query'];
+                if (!preg_match('/^[a-zA-Z0-9_=&%\-\.~]*$/', $query)) {
+                    continue;
+                }
+                $rule = $uri === '/'
+                    ? '~^/\?' . preg_quote($query, '~') . '(&|$) 1;'
+                    : '~^' . preg_quote($uri, '~') . '/?\?' . preg_quote($query, '~') . '(&|$) 1;';
+                $rules[$rule] = true;
+                continue;
+            }
+
+            $rule = $uri === '/'
+                ? '~^/(\?.*)?$ 1;'
+                : '~^' . preg_quote($uri, '~') . '/?(\?|$) 1;';
+            $rules[$rule] = true;
         }
 
         $lines = [
@@ -497,33 +551,29 @@ final class SettingsPage extends AdminPage {
             'map $request_uri $vlt_skip_cache {',
             '    default 0;',
         ];
-        foreach ($exclusions as $path) {
-            $parsed = parse_url($path);
-            $uri    = rtrim($parsed['path'] ?? $path, '/');
-            if ($uri === '') {
-                continue;
-            }
-            if (str_ends_with($uri, '*')) {
-                $prefix  = rtrim(substr($uri, 0, -1), '/');
-                $lines[] = '    ~^' . preg_quote($prefix, '~') . '(/|$) 1;';
-                continue;
-            }
-            $lines[] = '    ' . $uri . ' 1;';
-            $lines[] = '    ' . $uri . '/ 1;';
-            if (!empty($parsed['query'])) {
-                $lines[] = '    ' . $uri . '?' . $parsed['query'] . ' 1;';
-            }
+        foreach (array_keys($rules) as $rule) {
+            $lines[] = '    ' . $rule;
         }
         $lines[] = '}';
 
+        $hadPrev = file_exists($mapFile);
+        $prev    = $hadPrev ? @file_get_contents($mapFile) : null;
+
         if (@file_put_contents($mapFile, implode("\n", $lines) . "\n") === false) {
-            return;
+            return false;
         }
         if (function_exists('shell_exec')) {
             $test = shell_exec('nginx -t 2>&1');
-            if (str_contains($test ?? '', 'successful')) {
-                shell_exec('nginx -s reload 2>&1');
+            if (!str_contains($test ?? '', 'successful')) {
+                if ($hadPrev && $prev !== false) {
+                    @file_put_contents($mapFile, $prev);
+                } elseif (!$hadPrev) {
+                    @unlink($mapFile);
+                }
+                return false;
             }
+            shell_exec('nginx -s reload 2>&1');
         }
+        return true;
     }
 }

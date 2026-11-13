@@ -48,10 +48,25 @@ final class TracerConfig {
         }
         $size    = filesize($file) ?: 0;
         $maxRead = min($size, 10 * 1024 * 1024);
-        fseek($fh, max(0, $size - $maxRead));
-        if ($size > $maxRead) {
-            fgets($fh);
+        $tailStart = max(0, $size - $maxRead);
+
+        $prefixCount = 0;
+        if ($tailStart > 0) {
+            $remaining = $tailStart;
+            while ($remaining > 0 && !feof($fh)) {
+                $chunk = fread($fh, min(1048576, $remaining));
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+                $prefixCount += substr_count($chunk, "\n");
+                $remaining   -= strlen($chunk);
+            }
+            // Skip partial line at the 10MB boundary and account for it in prefixCount.
+            if (fgets($fh) !== false) {
+                ++$prefixCount;
+            }
         }
+
         $lines = [];
         while (($line = fgets($fh)) !== false) {
             $line = trim($line);
@@ -61,7 +76,7 @@ final class TracerConfig {
         }
         fclose($fh);
 
-        $total  = count($lines);
+        $total  = $prefixCount + count($lines);
         $slice  = array_slice(array_reverse($lines), $offset, $limit);
         $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
         $rows   = [];
