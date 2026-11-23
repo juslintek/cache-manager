@@ -14,12 +14,13 @@ final class RedirectManager {
     }
 
     public static function process(): void {
-        $path = $_SERVER['REQUEST_URI'] ?? '';
+        $path = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
         $redirects = self::all();
 
         foreach ($redirects as $rule) {
             if (self::matches($path, $rule['from'])) {
                 $code = (int) ($rule['code'] ?? 301);
+                // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- Admin-configured redirect rules intentionally allow external destinations.
                 wp_redirect($rule['to'], $code);
                 exit;
             }

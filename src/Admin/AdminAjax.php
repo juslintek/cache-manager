@@ -17,18 +17,19 @@ final class AdminAjax {
         }
 
         $logger = Plugin::instance()->logger();
-        $date   = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
-        $type   = sanitize_key($_GET['type'] ?? '');
-        $ip     = sanitize_text_field($_GET['ip'] ?? '');
-        $uri    = sanitize_text_field($_GET['uri'] ?? '');
-        $user   = sanitize_text_field($_GET['user'] ?? '');
-        $since  = sanitize_text_field($_GET['since'] ?? '');
-        $groups = array_filter(explode(',', sanitize_text_field($_GET['group'] ?? '')));
+        $date   = sanitize_text_field(wp_unslash($_GET['date'] ?? gmdate('Y-m-d')));
+        $type   = sanitize_key(wp_unslash($_GET['type'] ?? ''));
+        $ip     = sanitize_text_field(wp_unslash($_GET['ip'] ?? ''));
+        $uri    = sanitize_text_field(wp_unslash($_GET['uri'] ?? ''));
+        $user   = sanitize_text_field(wp_unslash($_GET['user'] ?? ''));
+        $since  = sanitize_text_field(wp_unslash($_GET['since'] ?? ''));
+        $groups = array_filter(explode(',', sanitize_text_field(wp_unslash($_GET['group'] ?? ''))));
 
         $entries = $logger->readLog($date);
 
         foreach ($entries as &$e) {
-            $e['hits'] = $e['misses'] = 0;
+            $e['hits']   = 0;
+            $e['misses'] = 0;
             if (($e['type'] ?? '') === 'stats' && is_array($e['details'] ?? null)) {
                 $e['hits']   = (int) ($e['details']['hits'] ?? 0);
                 $e['misses'] = (int) ($e['details']['misses'] ?? 0);
@@ -85,7 +86,7 @@ final class AdminAjax {
         if (!current_user_can('manage_options')) {
             wp_send_json_error();
         }
-        $date    = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
+        $date    = sanitize_text_field(wp_unslash($_GET['date'] ?? gmdate('Y-m-d')));
         $entries = Plugin::instance()->logger()->readLog($date);
         $uris    = array_values(array_unique(array_filter(array_column($entries, 'uri'))));
         sort($uris);
@@ -104,7 +105,7 @@ final class AdminAjax {
             return;
         }
 
-        $sub = sanitize_key($_GET['sub'] ?? '');
+        $sub = sanitize_key(wp_unslash($_GET['sub'] ?? ''));
 
         match ($sub) {
             'stats'        => self::redisStats($r),
@@ -122,7 +123,7 @@ final class AdminAjax {
             wp_send_json_error();
         }
 
-        $date = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
+        $date = sanitize_text_field(wp_unslash($_GET['date'] ?? gmdate('Y-m-d')));
 
         if ($date === gmdate('Y-m-d')) {
             try {
@@ -136,6 +137,8 @@ final class AdminAjax {
                     }
                 }
             } catch (\Throwable $e) {
+                // Fall back to persisted daily log when Redis is unavailable.
+                unset($e);
             }
         }
 
@@ -178,7 +181,7 @@ final class AdminAjax {
             wp_send_json_error();
         }
 
-        $sub = sanitize_key($_GET['sub'] ?? '');
+        $sub = sanitize_key(wp_unslash($_GET['sub'] ?? ''));
 
         if ($sub === 'live') {
             try {
@@ -193,22 +196,25 @@ final class AdminAjax {
                 wp_send_json_success([]);
             }
         } elseif ($sub === 'history') {
-            $date  = sanitize_text_field($_GET['date'] ?? gmdate('Y-m-d'));
-            $limit = min(500, max(1, (int) ($_GET['limit'] ?? 200)));
-            wp_send_json_success(TracerConfig::readHistory($date, $limit));
+            $date   = sanitize_text_field(wp_unslash($_GET['date'] ?? gmdate('Y-m-d')));
+            $limit  = min(500, max(1, (int) sanitize_text_field(wp_unslash($_GET['limit'] ?? '200'))));
+            $offset = max(0, (int) sanitize_text_field(wp_unslash($_GET['offset'] ?? '0')));
+            wp_send_json_success(TracerConfig::readHistory($date, $limit, $offset));
         } elseif ($sub === 'set_rate') {
-            $rate = max(0, min(100, (int) ($_GET['rate'] ?? 0)));
+            $rate = max(0, min(100, (int) sanitize_text_field(wp_unslash($_GET['rate'] ?? '0'))));
             update_option('vlt_trace_sample_rate', $rate);
             if (!is_dir(TracerConfig::getDir())) wp_mkdir_p(TracerConfig::getDir());
-            file_put_contents(TracerConfig::getDir() . '/.sample_rate', $rate);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Small tracer config flag file in local trace dir.
+            file_put_contents(TracerConfig::getDir() . '/.sample_rate', (string) $rate);
             wp_send_json_success();
         } elseif ($sub === 'set_max') {
-            $max = max(10, min(10000, (int) ($_GET['max'] ?? 200)));
+            $max = max(10, min(10000, (int) sanitize_text_field(wp_unslash($_GET['max'] ?? '200'))));
             update_option('vlt_trace_max', $max);
             if (!is_dir(TracerConfig::getDir())) {
                 wp_mkdir_p(TracerConfig::getDir());
             }
-            file_put_contents(TracerConfig::getDir() . '/.max_traces', $max);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Small tracer config flag file in local trace dir.
+            file_put_contents(TracerConfig::getDir() . '/.max_traces', (string) $max);
             wp_send_json_success();
         } else {
             wp_send_json_error();
@@ -224,7 +230,7 @@ final class AdminAjax {
                     'minute' => substr($e['timestamp'] ?? '', 0, 16),
                     'hour'   => substr($e['timestamp'] ?? '', 0, 13),
                     'day'    => substr($e['timestamp'] ?? '', 0, 10),
-                    'week'   => date('Y-\WW', strtotime($e['timestamp'] ?? 'now')),
+                    'week'   => gmdate('Y-\WW', strtotime($e['timestamp'] ?? 'now') ?: time()),
                     'month'  => substr($e['timestamp'] ?? '', 0, 7),
                     'year'   => substr($e['timestamp'] ?? '', 0, 4),
                     'uri'    => $e['uri'] ?? '—',
@@ -303,7 +309,8 @@ final class AdminAjax {
     }
 
     private static function redisKeys(\Redis $r): void {
-        $group   = sanitize_text_field($_GET['group'] ?? 'default');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in AdminAjax::redis().
+        $group   = sanitize_text_field(wp_unslash($_GET['group'] ?? 'default'));
         $pattern = 'vlt_' . $group . ':*';
         $keys    = $r->keys($pattern);
         if (!$keys && $group === 'default') {
@@ -320,7 +327,8 @@ final class AdminAjax {
     }
 
     private static function redisPreview(\Redis $r): void {
-        $key = sanitize_text_field($_GET['key'] ?? '');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in AdminAjax::redis().
+        $key = sanitize_text_field(wp_unslash($_GET['key'] ?? ''));
         if (!$key || !$r->exists($key)) {
             wp_send_json_error('Raktas nerastas');
         }
@@ -331,14 +339,16 @@ final class AdminAjax {
         $type_names = [0 => 'none', 1 => 'string', 2 => 'set', 3 => 'list', 4 => 'zset', 5 => 'hash'];
         $serialized = false;
         $pretty = $raw;
-        $unserialized = @unserialize($raw);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- Inspecting arbitrary cached Redis value with allowed_classes disabled.
+        $unserialized = @unserialize((string) $raw, ['allowed_classes' => false]);
         if ($unserialized !== false || $raw === 'b:0;') {
             $serialized = true;
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Admin-only cache value inspector preview.
             $pretty = print_r($unserialized, true);
         } else {
             $decoded = json_decode($raw, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                $pretty = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         }
         if (strlen($raw) > 50000) $raw = substr($raw, 0, 50000) . "\n\n... (sutrumpinta)";
@@ -350,13 +360,15 @@ final class AdminAjax {
     }
 
     private static function redisDelete(\Redis $r): void {
-        $key = sanitize_text_field($_GET['key'] ?? '');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in AdminAjax::redis().
+        $key = sanitize_text_field(wp_unslash($_GET['key'] ?? ''));
         if ($key) $r->del($key);
         wp_send_json_success();
     }
 
     private static function redisDeleteGroup(\Redis $r): void {
-        $group = sanitize_text_field($_GET['group'] ?? '');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in AdminAjax::redis().
+        $group = sanitize_text_field(wp_unslash($_GET['group'] ?? ''));
         if (!$group) {
             wp_send_json_error();
         }

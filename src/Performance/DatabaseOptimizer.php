@@ -60,18 +60,37 @@ final class DatabaseOptimizer {
         return $deleted;
     }
 
-    /** Delete expired transients. */
+    /** Delete expired transients (compatible with both MySQL and SQLite). */
     public static function cleanTransients(): int {
         global $wpdb;
-        $time = time();
-        $expired = $wpdb->query(
-            "DELETE a, b FROM {$wpdb->options} a
-             INNER JOIN {$wpdb->options} b ON b.option_name = CONCAT('_transient_timeout_', SUBSTRING(a.option_name, 12))
-             WHERE a.option_name LIKE '_transient_%'
-             AND b.option_name LIKE '_transient_timeout_%'
-             AND CAST(b.option_value AS UNSIGNED) < {$time}"
+        $time    = time();
+        $prefix  = '_transient_timeout_';
+        $expired = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options}
+                 WHERE option_name LIKE %s
+                 AND CAST(option_value AS UNSIGNED) < %d",
+                $wpdb->esc_like($prefix) . '%',
+                $time
+            )
         );
-        return (int) $expired;
+        if (empty($expired)) {
+            return 0;
+        }
+
+        $names = [];
+        foreach ($expired as $timeout_name) {
+            $names[] = (string) $timeout_name;
+            $names[] = '_transient_' . substr((string) $timeout_name, strlen($prefix));
+        }
+
+        $deleted = 0;
+        foreach (array_chunk($names, 100) as $chunk) {
+            $placeholders = implode(', ', array_fill(0, count($chunk), '%s'));
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic %s placeholder list matches chunk count.
+            $deleted += (int) $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name IN ({$placeholders})", $chunk));
+        }
+        return $deleted;
     }
 
     /** Delete spam comments. */
@@ -110,7 +129,7 @@ final class DatabaseOptimizer {
         global $wpdb;
         $tables = $wpdb->get_col("SHOW TABLES LIKE '{$wpdb->prefix}%'");
         foreach ($tables as $table) {
-            $wpdb->query("OPTIMIZE TABLE `{$table}`");
+            $wpdb->query($wpdb->prepare('OPTIMIZE TABLE %i', $table));
         }
         return count($tables);
     }

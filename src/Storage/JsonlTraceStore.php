@@ -10,12 +10,13 @@ final class JsonlTraceStore implements TraceStoreInterface {
 
     public function __construct(string $dir) {
         $this->dir = rtrim($dir, '/');
-        if (!is_dir($this->dir)) @mkdir($this->dir, 0755, true);
+        if (!is_dir($this->dir)) wp_mkdir_p($this->dir);
     }
 
     public function record(string $channel, array $event): void {
         $event['_ts'] = $event['_ts'] ?? time();
-        $line = json_encode($event, JSON_UNESCAPED_SLASHES) . "\n";
+        $line = wp_json_encode($event, JSON_UNESCAPED_SLASHES) . "\n";
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic FILE_APPEND|LOCK_EX JSONL append.
         file_put_contents($this->file($channel), $line, FILE_APPEND | LOCK_EX);
     }
 
@@ -41,6 +42,7 @@ final class JsonlTraceStore implements TraceStoreInterface {
             if (($e['_ts'] ?? 0) >= $olderThan) $kept[] = $line;
             else $pruned++;
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic LOCK_EX rewrite of pruned JSONL log.
         file_put_contents($file, implode("\n", $kept) . ($kept ? "\n" : ''), LOCK_EX);
         return $pruned;
     }

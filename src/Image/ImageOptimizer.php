@@ -99,6 +99,7 @@ final class ImageOptimizer {
     /**
      * Rewrite srcset entries to prefer WebP (AVIF not supported in srcset).
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress wp_calculate_image_srcset filter signature.
     public static function rewriteSrcset(array $sources, array $sizeArray, string $imageSrc, array $imageMeta, int $attachmentId): array {
         if (!self::browserSupportsWebP()) {
             return $sources;
@@ -117,6 +118,7 @@ final class ImageOptimizer {
      * For wp_get_attachment_image(): swap src to WebP when available.
      * The <picture> wrapping for attachment images is handled by the_content filter.
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress wp_get_attachment_image_src filter signature.
     public static function rewriteAttachmentSrc(array|false $image, int $attachmentId, mixed $size, bool $icon): array|false {
         if (!$image || !self::browserSupportsWebP()) {
             return $image;
@@ -131,6 +133,7 @@ final class ImageOptimizer {
     /**
      * Add srcset with WebP variants to attachment image attributes.
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress wp_get_attachment_image_attributes filter signature.
     public static function rewriteImgAttrs(array $attr, \WP_Post $attachment, mixed $size): array {
         if (!self::browserSupportsWebP() || empty($attr['srcset'])) {
             return $attr;
@@ -266,19 +269,23 @@ final class ImageOptimizer {
                     $im->writeImage($webpPath);
                     $im->destroy();
                     $ok = true;
-                } catch (\Throwable) {
+                } catch (\Throwable $e) {
+                    // Fall back to GD if Imagick fails on this input image.
+                    unset($e);
                 }
             }
             if (!$ok && function_exists('imagewebp')) {
                 $ext = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
                 $src = match ($ext) {
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Corrupt JPEG inputs emit GD warnings; handled via false check.
                     'jpg', 'jpeg' => @imagecreatefromjpeg($sourcePath),
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Corrupt PNG inputs emit GD warnings; handled via false check.
                     'png'         => @imagecreatefrompng($sourcePath),
                     default       => false,
                 };
                 if ($src) {
                     $ok = imagewebp($src, $webpPath, $quality);
-                    imagedestroy($src);
+                    $src = null;
                 }
             }
         } else {
@@ -296,7 +303,9 @@ final class ImageOptimizer {
                 $im->stripImage();
                 $im->writeImage($avifPath);
                 $im->destroy();
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                // AVIF generation is best-effort alongside WebP.
+                unset($e);
             }
         }
 
@@ -319,7 +328,7 @@ final class ImageOptimizer {
     }
 
     private static function browserSupportsWebP(): bool {
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $accept = sanitize_text_field(wp_unslash($_SERVER['HTTP_ACCEPT'] ?? ''));
         return str_contains($accept, 'image/webp');
     }
 

@@ -42,7 +42,7 @@ final class LazyLoad {
             foreach (array_slice($fonts, 0, 2) as $font) {
                 $url = get_template_directory_uri() . '/assets/fonts/' . basename($font);
                 $type = str_ends_with($font, '.woff2') ? 'font/woff2' : 'font/woff';
-                echo '<link rel="preload" href="' . esc_url($url) . '" as="font" type="' . $type . '" crossorigin>' . "\n";
+                echo '<link rel="preload" href="' . esc_url($url) . '" as="font" type="' . esc_attr($type) . '" crossorigin>' . "\n";
             }
         }
     }

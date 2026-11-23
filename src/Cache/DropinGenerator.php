@@ -247,13 +247,14 @@ class VLT_WP_Object_Cache {
 
 	public function flush() {
 		$this->cache = [];
+		$result = true;
 		if ( $this->connected ) {
-			$this->redis->flushDb();
+			$result = $this->redis->flushDb();
 		}
 		if ( function_exists( 'do_action' ) ) {
 			do_action( 'wp_cache_flushed' );
 		}
-		return true;
+		return $result;
 	}
 
 	public function flush_runtime() {

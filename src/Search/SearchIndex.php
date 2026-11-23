@@ -27,7 +27,8 @@ final class SearchIndex {
     public static function db(): \SQLite3 {
         if (self::$db) return self::$db;
         $dir = WP_CONTENT_DIR . '/gratis-search';
-        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (!is_dir($dir)) wp_mkdir_p($dir);
+        // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.sqliteRemoved -- Uses PHP 8.x sqlite3 extension (\SQLite3), not removed PHP 5.3 sqlite extension.
         self::$db = new \SQLite3($dir . '/index.db');
         self::$db->exec('PRAGMA journal_mode=WAL');
         self::$db->exec('CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(post_id, title, content, post_type, tokenize="porter unicode61")');
@@ -36,7 +37,7 @@ final class SearchIndex {
 
     public static function indexPost(int $postId, \WP_Post $post): void {
         if ($post->post_status !== 'publish') { self::removePost($postId); return; }
-        if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'])) return;
+        if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'], true)) return;
 
         $db = self::db();
         // Remove existing entry
@@ -45,7 +46,7 @@ final class SearchIndex {
         $stmt = $db->prepare('INSERT INTO search_index (post_id, title, content, post_type) VALUES (:id, :title, :content, :type)');
         $stmt->bindValue(':id', $postId);
         $stmt->bindValue(':title', $post->post_title);
-        $stmt->bindValue(':content', strip_tags($post->post_content));
+        $stmt->bindValue(':content', wp_strip_all_tags($post->post_content));
         $stmt->bindValue(':type', $post->post_type);
         $stmt->execute();
     }
@@ -63,7 +64,7 @@ final class SearchIndex {
         $result = $stmt->execute();
 
         $results = [];
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        for ($row = $result->fetchArray(SQLITE3_ASSOC); $row !== false; $row = $result->fetchArray(SQLITE3_ASSOC)) {
             $results[] = $row;
         }
         return $results;
@@ -102,7 +103,7 @@ final class SearchIndex {
         $posts = get_posts(['post_type' => 'any', 'post_status' => 'publish', 'numberposts' => -1]);
         $count = 0;
         foreach ($posts as $post) {
-            if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'])) continue;
+            if (in_array($post->post_type, ['revision', 'nav_menu_item', 'gratis_form_entry'], true)) continue;
             self::indexPost($post->ID, $post);
             ++$count;
         }

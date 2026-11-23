@@ -14,9 +14,9 @@ final class CloudflarePage extends AdminPage {
  return 'Cloudflare'; }
 
     public function render(): void {
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
-        $sse_url  = esc_js(rest_url('vlt-cache/v1/cloudflare/stream') . '?_wpnonce=' . $nonce);
+        $sse_url  = rest_url('vlt-cache/v1/cloudflare/stream') . '?_wpnonce=' . $nonce;
         $date     = gmdate('Y-m-d');
         ?>
         <div class="wrap tw-text-sm" x-data="vltCf()" x-init="init()" x-cloak>
@@ -134,7 +134,7 @@ final class CloudflarePage extends AdminPage {
                 async loadDate() {
                     this.loading = true;
                     try {
-                        const r = await fetch('<?php echo $rest_url; ?>/cloudflare?date='+this.date, {headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});
+                        const r = await fetch('<?php echo esc_js($rest_url); ?>/cloudflare?date='+this.date, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
                         const d = await r.json();
                         if (Array.isArray(d)) {
                             this.rows = d;
@@ -147,7 +147,7 @@ final class CloudflarePage extends AdminPage {
                 // SSE for live updates — backend pushes new requests
                 startSSE() {
                     if (this.evtSource) this.evtSource.close();
-                    this.evtSource = new EventSource('<?php echo $sse_url; ?>');
+                    this.evtSource = new EventSource('<?php echo esc_js($sse_url); ?>');
                     this.evtSource.onopen = () => { this.sseConnected = true; };
                     this.evtSource.onmessage = (e) => {
                         try {

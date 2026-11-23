@@ -17,9 +17,9 @@ final class LiteSpeedPage extends AdminPage {
  return 'LiteSpeed'; }
 
     public function render(): void {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_ls_settings')) {
+        if (isset($_SERVER['REQUEST_METHOD']) && 'POST' === $_SERVER['REQUEST_METHOD'] && check_admin_referer('vlt_ls_settings')) {
             update_option('vlt_ls_cache_enabled', isset($_POST['vlt_ls_cache_enabled']));
-            update_option('vlt_ls_cache_ttl', max(60, (int) ($_POST['vlt_ls_cache_ttl'] ?? 86400)));
+            update_option('vlt_ls_cache_ttl', max(60, (int) sanitize_text_field(wp_unslash($_POST['vlt_ls_cache_ttl'] ?? '86400'))));
             update_option('vlt_ls_cache_logged_in', isset($_POST['vlt_ls_cache_logged_in']));
             update_option('vlt_ls_cache_search', isset($_POST['vlt_ls_cache_search']));
             update_option('vlt_ls_cache_404', isset($_POST['vlt_ls_cache_404']));
@@ -70,7 +70,7 @@ final class LiteSpeedPage extends AdminPage {
                 ($info['config']['lscache_conf'] ?? false)    ? 'konfigūracija' : '',
                 ($info['config']['lscache_headers'] ?? false) ? 'HTTP antraštė' : '',
             ]);
-            if ($signals) echo ' <small class="tw-text-gray-400">(' . implode(', ', $signals) . ')</small>';
+            if ($signals) echo ' <small class="tw-text-gray-400">(' . esc_html(implode(', ', $signals)) . ')</small>';
         } else {
             echo '<span class="tw-text-red-600">❌ Nerastas</span>';
         }
@@ -121,7 +121,7 @@ final class LiteSpeedPage extends AdminPage {
         );
         self::row(
             'Talpyklos gyvavimo laikas (TTL)',
-            '<input type="number" name="vlt_ls_cache_ttl" value="' . esc_attr($ttl) . '" min="60" class="tw-w-24"> sekundžių',
+            '<input type="number" name="vlt_ls_cache_ttl" value="' . esc_attr((string) $ttl) . '" min="60" class="tw-w-24"> sekundžių',
             'Kiek laiko puslapis laikomas talpykloje. Rekomenduojama: 86400 (1 diena). Po turinio keitimo talpykla išvaloma automatiškai.'
         );
         self::row(
@@ -147,6 +147,7 @@ final class LiteSpeedPage extends AdminPage {
         // ── Performance optimizations ─────────────────────────────────────────
         echo '<h2>Papildomos optimizacijos</h2>';
         echo '<table class="widefat fixed striped tw-max-w-4xl tw-mb-5"><thead><tr><th style="width:220px">Optimizacija</th><th style="width:100px">Būsena</th><th>Aprašymas</th></tr></thead><tbody>';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read-only local .htaccess capability inspection.
         $htaccess = @file_get_contents(ABSPATH . '.htaccess') ?: '';
         $opts = [
             ['name'=>'Native Lazy Loading', 'enabled'=>(int)get_option('wp_lazy_loading_enabled', 1)>0, 'desc'=>'WordPress 5.5+ automatiškai prideda loading="lazy" paveikslėliams.', 'link'=>'https://make.wordpress.org/core/2020/07/14/lazy-loading-images-in-5-5/'],
@@ -166,6 +167,7 @@ final class LiteSpeedPage extends AdminPage {
 
         // ── Cache explorer ────────────────────────────────────────────────────
         $cacheDir = $info['cacheDir'] ?? '/usr/local/lsws/cachedata';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cache directory outside WP root may trigger open_basedir warnings.
         if ($cacheDir && @is_dir($cacheDir)) {
             echo '<h2>Talpyklos naršyklė</h2>';
             $it    = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($cacheDir, \FilesystemIterator::SKIP_DOTS));
@@ -177,17 +179,18 @@ final class LiteSpeedPage extends AdminPage {
                     $size += $f->getSize();
                 }
             }
-            echo '<p>Failų: <strong>' . number_format($files) . '</strong> &nbsp; Dydis: <strong>' . Plugin::formatSize($size) . '</strong> &nbsp; Katalogas: <code>' . esc_html($cacheDir) . '</code></p>';
+            echo '<p>Failų: <strong>' . esc_html(number_format($files)) . '</strong> &nbsp; Dydis: <strong>' . esc_html(Plugin::formatSize($size)) . '</strong> &nbsp; Katalogas: <code>' . esc_html($cacheDir) . '</code></p>';
         }
-        echo Plugin::purgeButton('litespeed', 'Valyti LiteSpeed talpyklą');
-        echo Plugin::purgeButton('all', 'Valyti viską');
+        echo '<p>';
+        echo wp_kses_post(Plugin::purgeButton('litespeed', 'Valyti LiteSpeed talpyklą'));
+        echo wp_kses_post(Plugin::purgeButton('all', 'Valyti viską'));
         echo '</p>';
 
         $hierarchy = $info['config']['config_hierarchy'] ?? [];
         if ($hierarchy) {
             echo '<h2>Konfigūracijos failai</h2>';
-            $nonce = wp_create_nonce('wp_rest');
-            $restUrl = esc_js(rest_url('vlt-cache/v1'));
+            $nonce   = wp_create_nonce('wp_rest');
+            $restUrl = rest_url('vlt-cache/v1');
             foreach ($hierarchy as $entry) {
                 $exists   = $entry['exists'] ?? false;
                 $readable = $entry['readable'] ?? false;
@@ -207,7 +210,7 @@ final class LiteSpeedPage extends AdminPage {
                     'template-custom' => '#c9356e',
                 ];
                 $color = $roleColors[$entry['role']] ?? '#666';
-                echo '<div style="background:' . $color . ';color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
+                echo '<div style="background:' . esc_attr($color) . ';color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">';
                 echo '<div><strong>' . esc_html($entry['label']) . '</strong> <code class="tw-bg-black/20 tw-px-1.5 tw-py-0.5 tw-rounded tw-text-[11px]">' . esc_html($path) . '</code></div>';
                 echo '<div class="tw-flex tw-gap-1.5 tw-items-center">';
                 if (!$exists) {
@@ -226,17 +229,18 @@ final class LiteSpeedPage extends AdminPage {
 
                 // Content panel (hidden by default)
                 if ($exists && $readable) {
-                    $content = esc_attr(@file_get_contents($path) ?: '');
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local LiteSpeed config preview.
+                    $rawContent = @file_get_contents($path) ?: '';
                     echo '<div id="' . esc_attr($safeId) . '" class="tw-hidden">';
                     if ($writable) {
-                        echo '<textarea id="' . esc_attr($safeId) . '-ta" style="width:100%;height:400px;font-family:monospace;font-size:12px;border:none;padding:12px;background:#1e1e1e;color:#d4d4d4;box-sizing:border-box" spellcheck="false">' . esc_textarea(@file_get_contents($path) ?: '') . '</textarea>';
+                        echo '<textarea id="' . esc_attr($safeId) . '-ta" style="width:100%;height:400px;font-family:monospace;font-size:12px;border:none;padding:12px;background:#1e1e1e;color:#d4d4d4;box-sizing:border-box" spellcheck="false">' . esc_textarea($rawContent) . '</textarea>';
                         echo '<div style="padding:8px 12px;background:#f0f0f0;display:flex;gap:8px;align-items:center">';
                         echo '<button type="button" onclick="vltSaveConfig(\'' . esc_js($path) . '\',\'' . esc_js($safeId) . '\')" class="button button-primary">Išsaugoti</button>';
                         echo '<span id="' . esc_attr($safeId) . '-status" style="color:#666;font-size:12px"></span>';
                         echo '<span style="color:#d63638;font-size:11px">⚠ Klaidos šiame faile gali sustabdyti serverį. Prieš keičiant padarykite atsarginę kopiją.</span>';
                         echo '</div>';
                     } else {
-                        echo '<pre style="margin:0;padding:12px;background:#1e1e1e;color:#d4d4d4;font-size:12px;overflow:auto;max-height:400px">' . esc_html(@file_get_contents($path) ?: '') . '</pre>';
+                        echo '<pre style="margin:0;padding:12px;background:#1e1e1e;color:#d4d4d4;font-size:12px;overflow:auto;max-height:400px">' . esc_html($rawContent) . '</pre>';
                     }
                     echo '</div>';
                 }
@@ -254,9 +258,9 @@ final class LiteSpeedPage extends AdminPage {
                 var status = document.getElementById(id + "-status");
                 if (!ta) return;
                 status.textContent = "Saugoma...";
-                fetch("' . $restUrl . '/config-save", {
+                fetch("' . esc_js($restUrl) . '/config-save", {
                     method: "POST",
-                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
+                    headers: {"X-WP-Nonce": "' . esc_js($nonce) . '", "Content-Type": "application/json"},
                     body: JSON.stringify({path: path, content: ta.value})
                 }).then(r => r.json()).then(d => {
                     status.textContent = d.ok ? "✅ Išsaugota" : "❌ " + (d.error || "Klaida");
@@ -265,9 +269,9 @@ final class LiteSpeedPage extends AdminPage {
             }
             function vltCreateCustom(path, id) {
                 var masterPath = path.replace("/custom/", "/").replace("custom/", "");
-                fetch("' . $restUrl . '/config-save", {
+                fetch("' . esc_js($restUrl) . '/config-save", {
                     method: "POST",
-                    headers: {"X-WP-Nonce": "' . $nonce . '", "Content-Type": "application/json"},
+                    headers: {"X-WP-Nonce": "' . esc_js($nonce) . '", "Content-Type": "application/json"},
                     body: JSON.stringify({path: path, content: "# Custom OLS vhost template override\n# Pakeitimai čia perrašo: " + masterPath + "\n"})
                 }).then(r => r.json()).then(d => {
                     if (d.ok) location.reload();
@@ -280,9 +284,19 @@ final class LiteSpeedPage extends AdminPage {
     }
 
     private static function row(string $label, string $input, string $desc): void {
+        $allowed_input = [
+            'input' => [
+                'type'    => true,
+                'name'    => true,
+                'value'   => true,
+                'checked' => true,
+                'min'     => true,
+                'class'   => true,
+            ],
+        ];
         echo '<tr><th class="tw-w-64">' . esc_html($label) . '</th><td>';
-        echo '<label>' . $input . '</label>';
-        echo '<p class="description">' . $desc . '</p>';
+        echo '<label>' . wp_kses($input, $allowed_input) . '</label>';
+        echo '<p class="description">' . wp_kses_post($desc) . '</p>';
         echo '</td></tr>';
     }
 }

@@ -81,11 +81,13 @@ final class RedisDetector {
         }
         try {
             $r = new \Redis();
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Connection probe catches unreachable Redis sockets cleanly.
             if (@$r->connect($path, 0, 0.5)) {
                 $r->close();
                 return true;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            unset($e);
         }
         return false;
     }
@@ -96,11 +98,13 @@ final class RedisDetector {
         }
         try {
             $r = new \Redis();
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Connection probe catches unreachable Redis ports cleanly.
             if (@$r->connect($host, $port, 0.5)) {
                 $r->close();
                 return true;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            unset($e);
         }
         return false;
     }
@@ -109,8 +113,10 @@ final class RedisDetector {
         try {
             $r = new \Redis();
             if ($method === 'socket') {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Connection probe handles failure via catch.
                 @$r->connect($hostOrSocket, 0, 0.5);
             } else {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Connection probe handles failure via catch.
                 @$r->connect($hostOrSocket, $port, 0.5);
             }
             $info = $r->info('server');
@@ -144,7 +150,7 @@ final class RedisDetector {
 
     public static function detectPanel(): string {
         // 1. Environment variables (most reliable, no open_basedir issues)
-        $serverSoftware = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
+        $serverSoftware = strtolower(isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '');
         if (isset($_SERVER['DIRECTADMIN']) || str_contains($serverSoftware, 'directadmin')) {
             return 'directadmin';
         }
@@ -161,8 +167,10 @@ final class RedisDetector {
         ];
         foreach ($ports as $panel => $panelPorts) {
             foreach ($panelPorts as $port) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fsockopen -- Localhost TCP port probe for hosting control panel detection.
                 $conn = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.3);
                 if (is_resource($conn)) {
+                    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes localhost TCP probe socket.
                     fclose($conn);
                     return $panel;
                 }
@@ -183,6 +191,7 @@ final class RedisDetector {
         ];
         foreach ($fsPanels as $panel => $paths) {
             foreach ($paths as $path) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot panel directories under possible open_basedir.
                 if (@is_dir($path) || @file_exists($path)) {
                     return $panel;
                 }
@@ -193,8 +202,10 @@ final class RedisDetector {
         // DA: /home/user/domains/... — path structure is DA-specific
         if (defined('ABSPATH') && preg_match('#^/home/[^/]+/domains/#', ABSPATH)) {
             // Confirm with port as secondary signal
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fsockopen -- Localhost TCP probe for DirectAdmin port 2222.
             $conn = @fsockopen('127.0.0.1', 2222, $errno, $errstr, 0.3);
             if (is_resource($conn)) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes localhost TCP probe socket.
                 fclose($conn);
                 return 'directadmin';
             }

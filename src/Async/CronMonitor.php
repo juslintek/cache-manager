@@ -62,7 +62,7 @@ final class CronMonitor {
         ];
 
         // Push to live log list (capped)
-        $r->lPush(self::LOG_KEY, json_encode($entry));
+        $r->lPush(self::LOG_KEY, wp_json_encode($entry));
         $r->lTrim(self::LOG_KEY, 0, self::MAX_LOG - 1);
 
         // Update per-hook stats

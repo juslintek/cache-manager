@@ -5,7 +5,7 @@ namespace Gratis\Cache\Contracts\Cache;
 interface CacheDependencyMapperInterface {
 
     public function addDependency(string $cacheKey, string $dependsOn): void;
-    public function getDependents(string $resource): array;
+    public function getDependents(string $resourceKey): array;
     public function removeDependency(string $cacheKey): void;
     public function clear(): void;
 }

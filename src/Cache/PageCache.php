@@ -40,13 +40,14 @@ final class PageCache {
         // Check TTL (default 1 hour)
         $ttl = (int) get_option('vlt_page_cache_ttl', 3600);
         if (time() - filemtime($file) > $ttl) {
-            @unlink($file);
+            wp_delete_file($file);
             return;
         }
 
         // Serve cached page
         header('X-Gratis-Cache: HIT');
         header('X-Gratis-Cache-Age: ' . (time() - filemtime($file)));
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streams pre-rendered page cache HTML directly.
         readfile($file);
         exit;
     }
@@ -62,10 +63,11 @@ final class PageCache {
 
         $file = self::cacheFile();
         $dir = dirname($file);
-        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        if (!is_dir($dir)) wp_mkdir_p($dir);
 
         // Add cache signature
         $html .= "\n<!-- Gratis Page Cache: " . gmdate('c') . ' -->';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic LOCK_EX write of rendered HTML page cache.
         @file_put_contents($file, $html, LOCK_EX);
 
         header('X-Gratis-Cache: MISS');
@@ -81,7 +83,7 @@ final class PageCache {
 
     public static function purgeUrl(string $url): void {
         $file = self::cacheFileForUrl($url);
-        if (file_exists($file)) @unlink($file);
+        if (file_exists($file)) wp_delete_file($file);
     }
 
     public static function purgeAll(): void {
@@ -91,7 +93,12 @@ final class PageCache {
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($it as $file) {
-            $file->isDir() ? @rmdir($file->getPathname()) : @unlink($file->getPathname());
+            if ($file->isDir()) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removes empty page cache subdirectory during purge.
+                @rmdir($file->getPathname());
+            } else {
+                wp_delete_file($file->getPathname());
+            }
         }
     }
 
@@ -107,7 +114,8 @@ final class PageCache {
         if (!self::$enabled) return false;
         if (is_admin()) return false;
         if (is_user_logged_in()) return false;
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') return false;
+        if (!isset($_SERVER['REQUEST_METHOD']) || 'GET' !== $_SERVER['REQUEST_METHOD']) return false;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Checking presence of any query string to bypass page cache.
         if (!empty($_GET)) return false; // Don't cache query strings
         if (defined('DOING_CRON') && DOING_CRON) return false;
         if (defined('REST_REQUEST') && REST_REQUEST) return false;
@@ -115,16 +123,29 @@ final class PageCache {
 
         $exclusions = get_option('vlt_cm_cache_exclusions', []);
         if (is_array($exclusions) && $exclusions) {
-            $reqPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/');
+            $normalize = static function (string $rawPath): string {
+                $trimmed = rtrim($rawPath, '/');
+                return $trimmed === '' ? '/' : $trimmed;
+            };
+            $rawReqUri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '/';
+            $reqPath   = $normalize(wp_parse_url($rawReqUri, PHP_URL_PATH) ?: '/');
             foreach ($exclusions as $entry) {
-                $parsed = parse_url((string) $entry);
-                $exPath = rtrim($parsed['path'] ?? (string) $entry, '/');
-                if ($exPath === '') {
+                $entry = trim((string) $entry);
+                if ($entry === '') {
                     continue;
                 }
+                $parsed = wp_parse_url($entry);
+                if ($parsed === false) {
+                    continue;
+                }
+                $rawExPath = $parsed['path'] ?? (str_contains($entry, '://') ? '/' : $entry);
+                $exPath    = $normalize($rawExPath);
                 if (str_ends_with($exPath, '*')) {
                     $prefix = rtrim(substr($exPath, 0, -1), '/');
-                    if ($prefix !== '' && ($reqPath === $prefix || str_starts_with($reqPath, $prefix . '/'))) {
+                    if ($prefix === '') {
+                        return false;
+                    }
+                    if ($reqPath === $prefix || str_starts_with($reqPath, $prefix . '/')) {
                         return false;
                     }
                     continue;
@@ -138,13 +159,13 @@ final class PageCache {
     }
 
     private static function cacheFile(): string {
-        return self::cacheFileForUrl(
-            (is_ssl() ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']
-        );
+        $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : 'default';
+        $uri  = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '/';
+        return self::cacheFileForUrl((is_ssl() ? 'https' : 'http') . '://' . $host . $uri);
     }
 
     private static function cacheFileForUrl(string $url): string {
-        $parsed = parse_url($url);
+        $parsed = wp_parse_url($url);
         $host = $parsed['host'] ?? 'default';
         $path = trim($parsed['path'] ?? '/', '/') ?: 'index';
         return self::$cacheDir . "/{$host}/{$path}.html";

@@ -26,11 +26,16 @@ final class OpcacheExplorerPage extends AdminPage {
         else:
             $mem = $status['memory_usage'] ?? [];
             $stats = $status['opcache_statistics'] ?? [];
-            $hit_rate = round($stats['opcache_hit_rate'] ?? 0, 1);
+            $raw_hit_rate = (float) ($stats['opcache_hit_rate'] ?? 0);
+            $hit_rate = is_finite($raw_hit_rate) ? round($raw_hit_rate, 1) : 0.0;
             $used_mem = round(($mem['used_memory'] ?? 0) / 1048576, 1);
             $free_mem = round(($mem['free_memory'] ?? 0) / 1048576, 1);
             $wasted = round(($mem['wasted_memory'] ?? 0) / 1048576, 1);
-            $wasted_pct = round(($mem['current_wasted_percentage'] ?? 0), 1);
+            $raw_wasted_pct = (float) ($mem['current_wasted_percentage'] ?? 0);
+            $wasted_pct = is_finite($raw_wasted_pct) ? round($raw_wasted_pct, 1) : 0.0;
+            $total_mem = $used_mem + $free_mem + $wasted;
+            $used_bar_pct = $total_mem > 0 ? (int) round($used_mem / $total_mem * 100) : 0;
+            $wasted_bar_pct = $total_mem > 0 ? (int) round($wasted / $total_mem * 100) : 0;
             $scripts = $stats['num_cached_scripts'] ?? 0;
             $keys = $stats['num_cached_keys'] ?? 0;
             $max_keys = $stats['max_cached_keys'] ?? 0;
@@ -43,23 +48,23 @@ final class OpcacheExplorerPage extends AdminPage {
         <div class="tw-grid tw-grid-cols-2 tw-md:grid-cols-4 tw-gap-3 tw-mb-4">
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-text-xs tw-text-gray-500">Pataikymų santykis</div>
-                <div class="tw-text-2xl tw-font-bold tw-mt-1 <?php echo $hit_rate > 95 ?'text-green-600' : ($hit_rate > 80 ? 'text-yellow-600' : 'text-red-600'); ?>"><?php echo $hit_rate; ?>%</div>
-                <div class="tw-text-xs tw-text-gray-400"><?php echo number_format($hits); ?> / <?php echo number_format($hits + $misses); ?></div>
+                <div class="tw-text-2xl tw-font-bold tw-mt-1 <?php echo esc_attr($hit_rate > 95 ? 'text-green-600' : ($hit_rate > 80 ? 'text-yellow-600' : 'text-red-600')); ?>"><?php echo esc_html((string) $hit_rate); ?>%</div>
+                <div class="tw-text-xs tw-text-gray-400"><?php echo esc_html(number_format($hits)); ?> / <?php echo esc_html(number_format($hits + $misses)); ?></div>
             </div>
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-text-xs tw-text-gray-500">Atmintis</div>
-                <div class="tw-text-2xl tw-font-bold tw-mt-1"><?php echo $used_mem; ?> MB</div>
-                <div class="tw-text-xs tw-text-gray-400">Laisva: <?php echo $free_mem; ?> MB | Švaistyma: <?php echo $wasted; ?> MB (<?php echo $wasted_pct; ?>%)</div>
+                <div class="tw-text-2xl tw-font-bold tw-mt-1"><?php echo esc_html((string) $used_mem); ?> MB</div>
+                <div class="tw-text-xs tw-text-gray-400">Laisva: <?php echo esc_html((string) $free_mem); ?> MB | Švaistyma: <?php echo esc_html((string) $wasted); ?> MB (<?php echo esc_html((string) $wasted_pct); ?>%)</div>
             </div>
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-text-xs tw-text-gray-500">Talpykloje failų</div>
-                <div class="tw-text-2xl tw-font-bold tw-mt-1"><?php echo number_format($scripts); ?></div>
-                <div class="tw-text-xs tw-text-gray-400">Raktai: <?php echo number_format($keys); ?> / <?php echo number_format($max_keys); ?></div>
+                <div class="tw-text-2xl tw-font-bold tw-mt-1"><?php echo esc_html(number_format($scripts)); ?></div>
+                <div class="tw-text-xs tw-text-gray-400">Raktai: <?php echo esc_html(number_format($keys)); ?> / <?php echo esc_html(number_format($max_keys)); ?></div>
             </div>
             <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-text-xs tw-text-gray-500">Perkrovimai</div>
-                <div class="tw-text-2xl tw-font-bold tw-mt-1 <?php echo $restarts > 0 ?'text-red-600' : 'text-green-600'; ?>"><?php echo $restarts; ?></div>
-                <div class="tw-text-xs tw-text-gray-400">OOM: <?php echo $stats['oom_restarts'] ?? 0; ?> | Hash: <?php echo $stats['hash_restarts'] ?? 0; ?> | Rankiniai: <?php echo $stats['manual_restarts'] ?? 0; ?></div>
+                <div class="tw-text-2xl tw-font-bold tw-mt-1 <?php echo esc_attr($restarts > 0 ? 'text-red-600' : 'text-green-600'); ?>"><?php echo (int) $restarts; ?></div>
+                <div class="tw-text-xs tw-text-gray-400">OOM: <?php echo (int) ($stats['oom_restarts'] ?? 0); ?> | Hash: <?php echo (int) ($stats['hash_restarts'] ?? 0); ?> | Rankiniai: <?php echo (int) ($stats['manual_restarts'] ?? 0); ?></div>
             </div>
         </div>
 
@@ -67,9 +72,9 @@ final class OpcacheExplorerPage extends AdminPage {
         <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4">
             <h3 class="tw-text-xs tw-font-semibold tw-mb-2">Atminties naudojimas</h3>
             <div class="tw-h-6 tw-rounded tw-overflow-hidden tw-flex">
-                <div class="tw-bg-blue-500 tw-h-full" style="width:<?php echo round($used_mem / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Naudojama: <?php echo $used_mem; ?> MB"></div>
-                <div class="tw-bg-red-300 tw-h-full" style="width:<?php echo round($wasted / ($used_mem + $free_mem + $wasted) * 100); ?>%" title="Švaistyma: <?php echo $wasted; ?> MB"></div>
-                <div class="tw-bg-green-200 tw-h-full tw-flex-1" title="Laisva: <?php echo $free_mem; ?> MB"></div>
+                <div class="tw-bg-blue-500 tw-h-full" style="width:<?php echo (int) $used_bar_pct; ?>%" title="Naudojama: <?php echo esc_attr((string) $used_mem); ?> MB"></div>
+                <div class="tw-bg-red-300 tw-h-full" style="width:<?php echo (int) $wasted_bar_pct; ?>%" title="Švaistyma: <?php echo esc_attr((string) $wasted); ?> MB"></div>
+                <div class="tw-bg-green-200 tw-h-full tw-flex-1" title="Laisva: <?php echo esc_attr((string) $free_mem); ?> MB"></div>
             </div>
             <div class="tw-flex tw-gap-4 tw-mt-2 tw-text-xs tw-text-gray-500">
                 <span class="tw-flex tw-items-center tw-gap-1"><span class="w-3 tw-h-3 tw-bg-blue-500 tw-rounded"></span> Naudojama</span>
@@ -85,9 +90,11 @@ final class OpcacheExplorerPage extends AdminPage {
             </h3>
             <div x-show="show" class="tw-mt-2">
                 <table class="tw-w-full tw-text-xs">
-                    <?php if ($config): foreach ($config['directives'] ?? [] as $k => $v): ?>
+                    <?php if ($config) : ?>
+                        <?php foreach ($config['directives'] ?? [] as $k => $v) : ?>
                     <tr class="tw-border-b tw-border-gray-50"><td class="tw-py-1 tw-text-gray-600 tw-w-64"><?php echo esc_html($k); ?></td><td class="tw-py-1 tw-font-mono"><?php echo esc_html(is_bool($v) ? ($v ? 'true' : 'false') : (string) $v); ?></td></tr>
-                    <?php endforeach; endif; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </table>
             </div>
         </div>
@@ -95,7 +102,7 @@ final class OpcacheExplorerPage extends AdminPage {
         <!-- Cached scripts -->
         <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
-                <h3 class="tw-text-xs tw-font-semibold">Talpykloje esantys failai (<?php echo number_format($scripts); ?>)</h3>
+                <h3 class="tw-text-xs tw-font-semibold">Talpykloje esantys failai (<?php echo esc_html(number_format($scripts)); ?>)</h3>
                 <input type="text" class="tw-border tw-border-gray-300 tw-rounded tw-px-2 tw-py-1 tw-text-xs tw-w-64" placeholder="Filtruoti pagal kelią..." x-model="filter">
             </div>
             <div class="tw-overflow-auto tw-max-h-96">
@@ -133,7 +140,7 @@ final class OpcacheExplorerPage extends AdminPage {
             filter:'',sort:'hits',dir:'desc',
             scripts:
             <?php
-            echo json_encode(array_values(array_map(function ($s) {
+            echo wp_json_encode(array_values(array_map(function ($s) {
                 return ['path' => $s['full_path'], 'hits' => $s['hits'], 'memory' => $s['memory_consumption'], 'timestamp' => $s['last_used_timestamp']];
             }, $status ? (opcache_get_status(true)['scripts'] ?? []) : [])));
             ?>

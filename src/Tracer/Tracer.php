@@ -80,7 +80,7 @@ final class Tracer {
             if (is_scalar($arg)) {
                 $out[] = substr((string) $arg, 0, 200);
             } elseif (is_array($arg)) {
-                $out[] = '[array:' . count($arg) . '] ' . substr(json_encode(array_slice($arg, 0, 3, true)), 0, 200);
+                $out[] = '[array:' . count($arg) . '] ' . substr((string) wp_json_encode(array_slice($arg, 0, 3, true)), 0, 200);
             } elseif (is_object($arg)) {
                 $out[] = get_class($arg);
             } else {
@@ -91,6 +91,7 @@ final class Tracer {
     }
 
     private static function shortCaller(): string {
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Diagnostic profiler records hook caller location.
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
         foreach ($bt as $frame) {
             $file = $frame['file'] ?? '';
@@ -132,10 +133,10 @@ final class Tracer {
         }
     }
 
-    public static function measure(string $name, callable $fn, array $meta = []): mixed {
+    public static function measure(string $name, callable $callback, array $meta = []): mixed {
         self::begin($name, $meta);
         try {
-            return $fn();
+            return $callback();
         } finally {
             self::end();
         }
@@ -216,36 +217,47 @@ final class Tracer {
             }
         }
 
+        $ip = '';
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $ip = sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_CONNECTING_IP']));
+        } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+            $ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']));
+        }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only diagnostic request tracer records truncated GET params.
+        $req_get = array_map(static fn($v) => substr(sanitize_text_field(wp_unslash((string) $v)), 0, 500), $_GET);
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only diagnostic request tracer records truncated POST params.
+        $req_post = array_map(static fn($v) => is_string($v) ? substr(sanitize_text_field(wp_unslash($v)), 0, 500) : $v, $_POST);
+
         $trace = [
-            'id'        => self::$i->id,
-            'ts'        => gmdate('c'),
-            'user'      => $uid,
-            'user_name' => $u_name,
-            'user_email'=> $u_email,
-            'user_roles'=> $u_roles,
-            'ip'        => $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '',
-            'method'    => $_SERVER['REQUEST_METHOD'] ?? '',
-            'uri'       => $_SERVER['REQUEST_URI'] ?? '',
-            'status'    => http_response_code() ?: 200,
-            'total_ms'  => round((hrtime(true) - self::$i->t0) / 1e6, 2),
-            'mem'       => memory_get_peak_usage(true),
-            'spans'     => array_map(fn($s) => ['n' => $s['n'], 'ms' => $s['d'], 'm' => $s['m'] ?: null, 'p' => $s['p']], self::$i->spans),
-            'db'        => $dq,
-            'db_n'      => count($dq),
-            'db_ms'     => round($db_ms, 2),
-            'hooks'     => array_slice(
+            'id'           => self::$i->id,
+            'ts'           => gmdate('c'),
+            'user'         => $uid,
+            'user_name'    => $u_name,
+            'user_email'   => $u_email,
+            'user_roles'   => $u_roles,
+            'ip'           => $ip,
+            'method'       => isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '',
+            'uri'          => isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '',
+            'status'       => http_response_code() ?: 200,
+            'total_ms'     => round((hrtime(true) - self::$i->t0) / 1e6, 2),
+            'mem'          => memory_get_peak_usage(true),
+            'spans'        => array_map(fn($s) => ['n' => $s['n'], 'ms' => $s['d'], 'm' => $s['m'] ?: null, 'p' => $s['p']], self::$i->spans),
+            'db'           => $dq,
+            'db_n'         => count($dq),
+            'db_ms'        => round($db_ms, 2),
+            'hooks'        => array_slice(
                 array_filter(self::$i->hookTraces, fn($h) => $h['ms'] >= (float) get_option('vlt_trace_hook_threshold_ms', 1.0)),
                 0, 100
             ),
-            'plugins'   => count(wp_get_active_and_valid_plugins()),
-            'php'       => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
-            'cf_ray'    => $_SERVER['HTTP_CF_RAY'] ?? '',
-            'cf_co'     => $_SERVER['HTTP_CF_IPCOUNTRY'] ?? '',
-            'tpl'       => get_template() ?: '',
+            'plugins'      => count(wp_get_active_and_valid_plugins()),
+            'php'          => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
+            'cf_ray'       => isset($_SERVER['HTTP_CF_RAY']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_RAY'])) : '',
+            'cf_co'        => isset($_SERVER['HTTP_CF_IPCOUNTRY']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_IPCOUNTRY'])) : '',
+            'tpl'          => get_template() ?: '',
             'req_headers'  => $req_headers,
             'req_body'     => $req_body,
-            'req_get'      => array_map(fn($v) => substr((string) $v, 0, 500), $_GET),
-            'req_post'     => array_map(fn($v) => is_string($v) ? substr($v, 0, 500) : $v, $_POST),
+            'req_get'      => $req_get,
+            'req_post'     => $req_post,
             'req_cookies'  => array_map(fn($v) => substr((string) $v, 0, 200), $_COOKIE),
             'resp_headers' => $resp_headers,
             'resp_code'    => http_response_code() ?: 200,
@@ -277,14 +289,16 @@ final class Tracer {
         try {
             $r = RedisFactory::create(0.2);
             if ($r) {
-                $json = json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $json = wp_json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 // Live view list (for real-time Tracer page)
-                $r->lPush(TracerConfig::VLT_TR_KEY, $json);
+                $r->lPush(TracerConfig::VLT_TR_KEY, (string) $json);
                 $r->lTrim(TracerConfig::VLT_TR_KEY, 0, TracerConfig::getMaxTraces() - 1);
                 $r->expire(TracerConfig::VLT_TR_KEY, TracerConfig::VLT_TR_TTL);
                 $r->close();
             }
         } catch (\Throwable $e) {
+            // Redis live trace push is optional best-effort.
+            unset($e);
         }
 
         // Push to background worker stream for disk persistence (non-blocking)

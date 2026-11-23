@@ -11,10 +11,12 @@ namespace Gratis\Cache;
 final class CloudLinuxDetector {
 
     public static function isCloudLinux(): bool {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot OS release marker under possible open_basedir.
         return @file_exists('/etc/cloudlinux-release') || @file_exists('/etc/cl-release');
     }
 
     public static function version(): string {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads OS release version file under possible open_basedir.
         $f = @file_get_contents('/etc/cloudlinux-release') ?: @file_get_contents('/etc/cl-release') ?: '';
         preg_match('/release\s+([\d.]+)/i', $f, $m);
         return $m[1] ?? '';
@@ -23,6 +25,7 @@ final class CloudLinuxDetector {
     /** @return array{cpu:string, pmem:string, ep:string, nproc:string, io:string} */
     public static function lveInfo(): array {
         $uid = posix_getuid();
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Fixed read-only lvectl query for CloudLinux LVE limits.
         $raw = @shell_exec('lvectl list --json 2>/dev/null') ?: '';
         if (!$raw) {
             return [];
@@ -43,23 +46,28 @@ final class CloudLinuxDetector {
     }
 
     public static function accelerateWpInstalled(): bool {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot directory under possible open_basedir.
         return @is_dir('/usr/share/cloudlinux/wpos');
     }
 
     public static function redisEnabled(): bool {
         $user = self::currentUser();
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes home socket path under possible open_basedir.
         return $user && @file_exists("/home/{$user}/.redis/redis.sock");
     }
 
     public static function mysqlGovernorInstalled(): bool {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot binary path under possible open_basedir.
         return @file_exists('/usr/sbin/db_governor');
     }
 
     public static function phpSelectorEnabled(): bool {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot binary paths under possible open_basedir.
         return @file_exists('/usr/bin/cloudlinux-selector') || @file_exists('/usr/sbin/cloudlinux-selector');
     }
 
     public static function cageFsEnabled(): bool {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot binary path under possible open_basedir.
         return @file_exists('/usr/sbin/cagefsctl');
     }
 

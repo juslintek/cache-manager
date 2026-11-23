@@ -13,12 +13,12 @@ final class LoginProtection {
 
     public static function register(): void {
         if (!get_option('vlt_login_protection', true)) return;
-        add_filter('authenticate', [__CLASS__, 'checkLockout'], 30, 3);
-        add_action('wp_login_failed', [__CLASS__, 'recordFailure']);
-        add_action('wp_login', [__CLASS__, 'clearAttempts'], 10, 2);
+        add_filter('authenticate', [__CLASS__, 'checkLockout'], 30, 2);
+        add_action('wp_login_failed', [__CLASS__, 'recordFailure'], 10, 0);
+        add_action('wp_login', [__CLASS__, 'clearAttempts'], 10, 0);
     }
 
-    public static function checkLockout($user, string $username, string $password) {
+    public static function checkLockout($user, string $username = '') {
         if (empty($username)) return $user;
         $ip = self::getIP();
         $key = self::OPTION_PREFIX . md5($ip);
@@ -30,7 +30,7 @@ final class LoginProtection {
         return $user;
     }
 
-    public static function recordFailure(string $username): void {
+    public static function recordFailure(): void {
         $ip = self::getIP();
         $key = self::OPTION_PREFIX . md5($ip);
         $data = get_transient($key) ?: ['count' => 0, 'last' => 0];
@@ -39,11 +39,16 @@ final class LoginProtection {
         set_transient($key, $data, self::LOCKOUT_MINUTES * 60);
     }
 
-    public static function clearAttempts(string $username): void {
+    public static function clearAttempts(): void {
         delete_transient(self::OPTION_PREFIX . md5(self::getIP()));
     }
 
     private static function getIP(): string {
-        return $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+        foreach (['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $header) {
+            if (!empty($_SERVER[$header])) {
+                return sanitize_text_field(wp_unslash($_SERVER[$header]));
+            }
+        }
+        return '';
     }
 }

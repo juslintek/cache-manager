@@ -14,10 +14,11 @@ final class LogsPage extends AdminPage {
  return 'Logs'; }
 
     public function render(): void {
-        $date     = sanitize_text_field($_GET['log_date'] ?? gmdate('Y-m-d'));
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only date filter parameter for admin log view.
+        $date     = sanitize_text_field(wp_unslash($_GET['log_date'] ?? gmdate('Y-m-d')));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
-        $sse_url  = esc_js(rest_url('vlt-cache/v1/logs/stream') . '?_wpnonce=' . $nonce);
+        $sse_url  = rest_url('vlt-cache/v1/logs/stream') . '?_wpnonce=' . $nonce;
         ?>
         <div class="wrap" x-data="vltLogs()" x-init="init()" x-cloak>
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Žurnalai</h1>
@@ -194,7 +195,7 @@ final class LogsPage extends AdminPage {
 
                 startSSE() {
                     if (this.evtSource) this.evtSource.close();
-                    this.evtSource = new EventSource('<?php echo $sse_url; ?>');
+                    this.evtSource = new EventSource('<?php echo esc_js($sse_url); ?>');
                     this.evtSource.onmessage = (e) => {
                         try {
                             const items = JSON.parse(e.data);
@@ -219,7 +220,7 @@ final class LogsPage extends AdminPage {
                         group: this.groupFields.join(',')
                     });
                     try {
-                        const r = await fetch('<?php echo $rest_url; ?>/logs?' + p, {headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});
+                        const r = await fetch('<?php echo esc_js($rest_url); ?>/logs?' + p, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
                         const d = await r.json();
                         if (d.rows) {
                             this.rows = d.rows.map(r => ({...r, _open: false, _fUri:'', _fIp:'', _fType:''}));
@@ -234,7 +235,7 @@ final class LogsPage extends AdminPage {
 
                 async fetchUris() {
                     try {
-                        const r = await fetch('<?php echo $rest_url; ?>/logs/uris?date=' + this.filters.date, {headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});
+                        const r = await fetch('<?php echo esc_js($rest_url); ?>/logs/uris?date=' + this.filters.date, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
                         const d = await r.json();
                         if (Array.isArray(d)) this.allUris = d;
                     } catch(e) {}

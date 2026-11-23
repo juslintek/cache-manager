@@ -32,11 +32,12 @@ final class TraceWorker {
             if (!$r) {
                 return;
             }
-            $r->xAdd(self::STREAM_KEY, '*', ['data' => json_encode($trace)]);
+            $r->xAdd(self::STREAM_KEY, '*', ['data' => wp_json_encode($trace)]);
             $r->xTrim(self::STREAM_KEY, 'MAXLEN', false, 1000);
             $r->close();
-        } catch (\Throwable) {
-            // Silently fail — push is non-critical, must not affect HTTP response code
+        } catch (\Throwable $e) {
+            // Non-critical telemetry push must not affect HTTP response code.
+            unset($e);
         }
     }
 
@@ -48,7 +49,8 @@ final class TraceWorker {
      */
     public static function run(): void {
         // Write PID
-        file_put_contents(self::PID_FILE, getmypid());
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- CLI daemon writes PID file directly.
+        file_put_contents(self::PID_FILE, (string) getmypid());
 
         $r = RedisFactory::create(5.0);
         if (!$r) {
@@ -77,7 +79,8 @@ final class TraceWorker {
                     }
                     // Write to daily file
                     $file = $dir . '/trace-' . gmdate('Y-m-d') . '.json';
-                    file_put_contents($file, json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+                    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic FILE_APPEND|LOCK_EX trace write.
+                    file_put_contents($file, wp_json_encode($trace, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
                     // Acknowledge by trimming
                     $r->xDel(self::STREAM_KEY, [$id]);
                 }
@@ -93,7 +96,7 @@ final class TraceWorker {
         }
 
         $r->close();
-        @unlink(self::PID_FILE);
+        wp_delete_file(self::PID_FILE);
     }
 
     // ── Process management ────────────────────────────────────────────────────
@@ -107,11 +110,11 @@ final class TraceWorker {
 
     public static function spawn(): void {
         $php  = PHP_BINARY ?: '/usr/local/php84/bin/php';
-        $self = __FILE__;
         $wp   = defined('ABSPATH') ? ABSPATH : '';
 
         // Write a runner script to /tmp
         $runner = '/tmp/vlt-trace-runner.php';
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Generates ephemeral CLI worker entrypoint in /tmp.
         file_put_contents($runner, <<<PHP
 <?php
 define('ABSPATH', '$wp');
@@ -130,6 +133,7 @@ PHP);
 
         // Spawn detached background process
         $cmd = escapeshellarg($php) . ' ' . escapeshellarg($runner) . ' > /tmp/vlt-trace-worker.log 2>&1 &';
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_exec -- Intentionally spawns detached background trace worker with escaped args.
         exec($cmd);
     }
 
@@ -140,11 +144,12 @@ PHP);
             $r->close();
         }
         if (file_exists(self::PID_FILE)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local PID file.
             $pid = (int) file_get_contents(self::PID_FILE);
             if ($pid > 0) {
                 posix_kill($pid, SIGTERM);
             }
-            @unlink(self::PID_FILE);
+            wp_delete_file(self::PID_FILE);
         }
     }
 
@@ -161,6 +166,7 @@ PHP);
         }
         // Fallback: check PID file
         if (file_exists(self::PID_FILE)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local PID file.
             $pid = (int) file_get_contents(self::PID_FILE);
             return $pid > 0 && file_exists('/proc/' . $pid);
         }
@@ -177,11 +183,13 @@ PHP);
             $queueLen = $info['length'] ?? 0;
             $r->close();
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local PID file.
+        $pid = file_exists(self::PID_FILE) ? (int) file_get_contents(self::PID_FILE) : null;
         return [
             'running'    => self::isRunning(),
             'heartbeat'  => $hb ? gmdate('H:i:s', $hb) : null,
             'queue_len'  => $queueLen,
-            'pid_file'   => file_exists(self::PID_FILE) ? (int) file_get_contents(self::PID_FILE) : null,
+            'pid_file'   => $pid,
         ];
     }
 }

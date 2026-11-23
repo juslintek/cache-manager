@@ -87,13 +87,15 @@ final class FileChangeScanner implements FileChangeStoreInterface {
 
     private function loadState(): array {
         if (!file_exists($this->stateFile)) return [];
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local scan state JSON file.
         $data = json_decode(file_get_contents($this->stateFile), true);
         return is_array($data) ? $data : [];
     }
 
     private function saveState(array $state): void {
         $dir = dirname($this->stateFile);
-        if (!is_dir($dir)) @mkdir($dir, 0755, true);
-        file_put_contents($this->stateFile, json_encode($state, JSON_UNESCAPED_SLASHES), LOCK_EX);
+        if (!is_dir($dir)) wp_mkdir_p($dir);
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic LOCK_EX write of local scan state JSON.
+        file_put_contents($this->stateFile, wp_json_encode($state, JSON_UNESCAPED_SLASHES), LOCK_EX);
     }
 }

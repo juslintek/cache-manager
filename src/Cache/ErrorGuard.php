@@ -97,6 +97,7 @@ final class ErrorGuard {
             ? WP_CONTENT_DIR . '/gratis-cache-errors.log'
             : '/tmp/gratis-cache-errors.log';
 
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Shutdown handler appends error log directly without WP_Filesystem.
         @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
     }
 }

@@ -103,9 +103,10 @@ final class GCAnalyzer {
         if (function_exists('opcache_get_status')) {
             $oc = opcache_get_status(false);
             if ($oc && isset($oc['memory_usage'])) {
-                $ocUsed = $oc['memory_usage']['used_memory'];
-                $ocFree = $oc['memory_usage']['free_memory'];
-                $ocPct  = $ocUsed / ($ocUsed + $ocFree) * 100;
+                $ocUsed  = (int) ($oc['memory_usage']['used_memory'] ?? 0);
+                $ocFree  = (int) ($oc['memory_usage']['free_memory'] ?? 0);
+                $ocTotal = $ocUsed + $ocFree;
+                $ocPct   = $ocTotal > 0 ? ($ocUsed / $ocTotal * 100) : 0.0;
                 if ($ocPct > 90) {
                     $issues[] = [
                         'severity' => 'warning',

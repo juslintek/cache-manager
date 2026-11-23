@@ -39,7 +39,7 @@ final class CloudLinuxPage extends AdminPage {
         foreach ($rows as [$label, $status, $note]) {
             $color = str_starts_with($status, '✅') ? 'text-green-600' : (str_starts_with($status, '❌') ? 'text-red-600' : '');
             echo '<tr><td><strong>' . esc_html($label) . '</strong></td>';
-            echo '<td class="' . $color . '">' . esc_html($status) . '</td>';
+            echo '<td class="' . esc_attr($color) . '">' . esc_html($status) . '</td>';
             echo '<td class="tw-text-gray-500 tw-text-xs">' . esc_html($note) . '</td></tr>';
         }
         echo '</tbody></table>';
@@ -51,9 +51,9 @@ final class CloudLinuxPage extends AdminPage {
             $isEnabled = in_array($rec['status'], ['enabled', 'installed', 'available'], true);
             $border    = $isEnabled ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50';
             $icon      = $isEnabled ? '✅' : '⚠';
-            echo '<div class="tw-border tw-rounded tw-p-4' . $border . '">';
+            echo '<div class="tw-border tw-rounded tw-p-4 ' . esc_attr($border) . '">';
             echo '<div class="tw-flex tw-items-start tw-gap-3">';
-            echo '<span class="tw-text-lg mt-0.5">' . $icon . '</span>';
+            echo '<span class="tw-text-lg mt-0.5">' . esc_html($icon) . '</span>';
             echo '<div class="tw-flex-1">';
             echo '<div class="tw-font-semibold tw-text-sm">' . esc_html($rec['title']) . '</div>';
             echo '<div class="tw-text-xs tw-text-gray-600 mt-0.5">' . esc_html($rec['benefit']) . '</div>';
@@ -73,6 +73,7 @@ final class CloudLinuxPage extends AdminPage {
         if (CloudLinuxDetector::phpSelectorEnabled()) {
             $user = preg_match('#^/home/([^/]+)/#', ABSPATH, $m) ? $m[1] : '';
             if ($user) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Read-only CloudLinux PHP selector version check with escapeshellarg().
                 $json = @shell_exec('cloudlinux-selector get --json --interpreter php --user ' . escapeshellarg($user) . ' --get-current-version 2>/dev/null');
                 if ($json) {
                     $data = json_decode($json, true);
