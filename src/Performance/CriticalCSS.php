@@ -13,7 +13,9 @@ final class CriticalCSS {
         if (!get_option('vlt_critical_css_enabled')) return;
 
         self::$cacheDir = WP_CONTENT_DIR . '/cache/critical-css';
-        if (!is_dir(self::$cacheDir)) @mkdir(self::$cacheDir, 0755, true);
+        if (!is_dir(self::$cacheDir)) {
+            wp_mkdir_p(self::$cacheDir);
+        }
 
         add_action('wp_head', [__CLASS__, 'inlineCritical'], 1);
         add_filter('style_loader_tag', [__CLASS__, 'deferStylesheet'], 10, 4);
@@ -25,9 +27,10 @@ final class CriticalCSS {
         $file = self::$cacheDir . "/{$key}.css";
         if (!file_exists($file)) return;
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local cached critical CSS file.
         $css = file_get_contents($file);
         if ($css) {
-            echo "<style id=\"gratis-critical-css\">{$css}</style>\n";
+            echo '<style id="gratis-critical-css">' . wp_strip_all_tags($css) . "</style>\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS stripped of HTML tags inside style element.
         }
     }
 
@@ -80,7 +83,10 @@ final class CriticalCSS {
 
         // Cache it
         $key = self::cacheKeyForUrl($url);
-        if (!is_dir(self::$cacheDir)) @mkdir(self::$cacheDir, 0755, true);
+        if (!is_dir(self::$cacheDir)) {
+            wp_mkdir_p(self::$cacheDir);
+        }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Writing local cached critical CSS file.
         file_put_contents(self::$cacheDir . "/{$key}.css", $critical, LOCK_EX);
 
         return $critical;
@@ -119,7 +125,7 @@ final class CriticalCSS {
     }
 
     private static function cacheKeyForUrl(string $url): string {
-        $path = parse_url($url, PHP_URL_PATH) ?: '/';
+        $path = wp_parse_url($url, PHP_URL_PATH) ?: '/';
         if ($path === '/') return 'front';
         return sanitize_file_name(trim($path, '/')) ?: 'default';
     }

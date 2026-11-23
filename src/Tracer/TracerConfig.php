@@ -19,16 +19,19 @@ final class TracerConfig {
     }
 
     public static function shouldTrace(): bool {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only diagnostic trace trigger flag.
         if (isset($_COOKIE['vlt_trace']) || isset($_GET['vlt_trace'])) {
             return true;
         }
         $rateFile = self::getDir() . '/.sample_rate';
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local sample rate config file.
         $rate = file_exists($rateFile) ? (int) file_get_contents($rateFile) : 0;
-        return $rate > 0 && mt_rand(1, 100) <= $rate;
+        return $rate > 0 && wp_rand(1, 100) <= $rate;
     }
 
     public static function getMaxTraces(): int {
         $file = self::getDir() . '/.max_traces';
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local max traces config file.
         return file_exists($file) ? max(10, (int) file_get_contents($file)) : self::VLT_TR_MAX;
     }
 
@@ -42,6 +45,7 @@ final class TracerConfig {
         if (!file_exists($file)) {
             return ['rows' => [], 'total' => 0];
         }
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streams large JSONL trace log from tail without loading whole file.
         $fh = @fopen($file, 'r');
         if (!$fh) {
             return ['rows' => [], 'total' => 0];
@@ -54,6 +58,7 @@ final class TracerConfig {
         if ($tailStart > 0) {
             $remaining = $tailStart;
             while ($remaining > 0 && !feof($fh)) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Streaming chunk read of local trace file.
                 $chunk = fread($fh, min(1048576, $remaining));
                 if ($chunk === false || $chunk === '') {
                     break;
@@ -68,12 +73,13 @@ final class TracerConfig {
         }
 
         $lines = [];
-        while (($line = fgets($fh)) !== false) {
+        for ($line = fgets($fh); $line !== false; $line = fgets($fh)) {
             $line = trim($line);
             if ($line !== '') {
                 $lines[] = $line;
             }
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes streaming trace file handle.
         fclose($fh);
 
         $total  = $prefixCount + count($lines);

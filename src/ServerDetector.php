@@ -28,7 +28,8 @@ final class ServerDetector {
         }
         $stored = get_option(self::OPTION);
         if ($stored) {
-            return self::$cache = $stored;
+            self::$cache = $stored;
+            return self::$cache;
         }
         // First run (plugin just activated or option missing)
         return self::runAndStore();
@@ -38,7 +39,8 @@ final class ServerDetector {
     public static function runAndStore(): array {
         $result = self::run();
         update_option(self::OPTION, $result, false); // autoload=false — no overhead on every request
-        return self::$cache = $result;
+        self::$cache = $result;
+        return self::$cache;
     }
 
     public static function flush(): void {
@@ -47,7 +49,7 @@ final class ServerDetector {
     }
 
     private static function run(): array {
-        $sw      = strtolower($_SERVER['SERVER_SOFTWARE'] ?? '');
+        $sw      = strtolower(isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : '');
         $server  = self::UNKNOWN;
         $version = '';
 
@@ -72,11 +74,15 @@ final class ServerDetector {
 
         // 2. Filesystem signals (may be blocked by open_basedir)
         if ($server === self::UNKNOWN) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed directory under possible open_basedir.
             if (@is_dir('/usr/local/lsws') || @file_exists('/usr/local/lsws/bin/lswsctrl')) {
                 // Distinguish LiteSpeed Enterprise vs OpenLiteSpeed
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed config path under possible open_basedir.
                 $server = @file_exists('/usr/local/lsws/conf/httpd_config.conf') ? self::OLS : self::LITESPEED;
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot Nginx paths under possible open_basedir.
             } elseif (@is_dir('/etc/nginx') || @file_exists('/usr/sbin/nginx')) {
                 $server = self::NGINX;
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot Apache paths under possible open_basedir.
             } elseif (@is_dir('/etc/apache2') || @is_dir('/etc/httpd') || @file_exists('/usr/sbin/apache2')) {
                 $server = self::APACHE;
             }
@@ -85,8 +91,10 @@ final class ServerDetector {
         // 3. Port signals — LiteSpeed admin: 7080 (OLS) or 8090 (LS Enterprise)
         if ($server === self::UNKNOWN) {
             foreach ([7080 => self::OLS, 8090 => self::LITESPEED] as $port => $srv) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fsockopen -- Localhost TCP port probe for LiteSpeed/OLS admin port.
                 $conn = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.3);
                 if (is_resource($conn)) {
+                    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes localhost TCP probe socket.
                     fclose($conn);
                     $server = $srv;
                     break;
@@ -116,9 +124,11 @@ final class ServerDetector {
     private static function parseNginxConfig(): array {
         $paths = ['/etc/nginx/nginx.conf', '/usr/local/nginx/conf/nginx.conf'];
         foreach ($paths as $p) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot Nginx config readability under possible open_basedir.
             if (!@is_readable($p)) {
                 continue;
             }
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local Nginx config file for diagnostics.
             $content = @file_get_contents($p) ?: '';
             return [
                 'fastcgi_cache'      => (bool) preg_match('/fastcgi_cache_path/i', $content),
@@ -143,9 +153,11 @@ final class ServerDetector {
         $content    = '';
         $configFile = '';
         foreach ($paths as $p) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed config readability under possible open_basedir.
             if (!@is_readable($p)) {
                 continue;
             }
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local LiteSpeed config file for diagnostics.
             $content   .= (@file_get_contents($p) ?: '') . "\n";
             if (!$configFile) {
                 $configFile = $p;
@@ -154,6 +166,7 @@ final class ServerDetector {
 
         // ls_enabled 1 in module cache block = module present
         // Check both main config and dedicated lscache conf
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local OLS lscache config under possible open_basedir.
         $lscacheConfContent = @file_get_contents('/etc/openlitespeed/httpd-lscache.conf') ?: '';
         $allContent = $content . "\n" . $lscacheConfContent;
         $moduleEnabled = (bool) preg_match('/ls_enabled\s+1/', $allContent);
@@ -195,6 +208,7 @@ final class ServerDetector {
         // Probe via loopback HTTP request — most reliable when files aren't readable
         // Check if the site itself returns x-litespeed-cache header
         if (!$lscacheHeaders) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Loopback HTTP header probe handles unreachable site cleanly.
             $probe = @get_headers(home_url('/'), true);
             if ($probe) {
                 foreach ($probe as $k => $v) {
@@ -207,8 +221,8 @@ final class ServerDetector {
         }
 
         // 3. Module .so file
-        $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so')
-            || @file_exists('/usr/local/lsws/modules/lscache.so');
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed module binaries under possible open_basedir.
+        $lscacheSo = @file_exists('/usr/local/lsws/modules/mod_lscache.so') || @file_exists('/usr/local/lsws/modules/lscache.so');
 
         // 4. Cache storage directory — DA+OLS: /home/$user/lscache, OLS default: /usr/local/lsws/sitecache
         $user = '';
@@ -223,6 +237,7 @@ final class ServerDetector {
             '/usr/local/lsws/sitecache',
             '/tmp/lscache',
         ]) as $path) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed cache directories under possible open_basedir.
             if (@is_dir($path)) {
                 $cacheStoragePath   = $path;
                 $cacheStorageExists = true;
@@ -277,17 +292,22 @@ final class ServerDetector {
 
         // Enrich with readable/writable flags
         foreach ($configHierarchy as &$entry) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot OLS config readability under possible open_basedir.
             $entry['readable'] = @is_readable($entry['path']);
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Probes outside-docroot OLS config writability for admin diagnostics.
             $entry['writable'] = @is_writable($entry['path']);
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot OLS config existence under possible open_basedir.
             $entry['exists']   = @file_exists($entry['path']);
         }
         unset($entry);
 
         // Primary config file for backward compat
         $configFile = '/etc/openlitespeed/httpd_config.conf';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local OLS main config for diagnostics.
         $content    = @file_get_contents($configFile) ?: '';
 
         // LSCache check from dedicated file
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local OLS lscache config for diagnostics.
         $lscacheContent = @file_get_contents('/etc/openlitespeed/httpd-lscache.conf') ?: '';
         $allLsContent   = $content . "\n" . $lscacheContent;
         $lscacheConf    = str_contains($allLsContent, 'lscache') || str_contains($allLsContent, 'LSCache');
@@ -300,6 +320,7 @@ final class ServerDetector {
                 '/usr/local/directadmin/data/templates/openlitespeed_vhost.conf',
                 '/usr/local/directadmin/data/templates/custom/openlitespeed_vhost.conf',
             ] as $tp) {
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local DirectAdmin OLS template for diagnostics.
                 $tc = @file_get_contents($tp) ?: '';
                 if (str_contains($tc, 'lscache') || str_contains($tc, 'CacheRoot') || str_contains($tc, 'LSCache')) {
                     $lscacheConf = true;
@@ -329,9 +350,11 @@ final class ServerDetector {
     private static function parseApacheConfig(): array {
         $paths = ['/etc/apache2/apache2.conf', '/etc/httpd/conf/httpd.conf', '/usr/local/apache/conf/httpd.conf'];
         foreach ($paths as $p) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot Apache config readability under possible open_basedir.
             if (!@is_readable($p)) {
                 continue;
             }
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local Apache config file for diagnostics.
             $content = @file_get_contents($p) ?: '';
             return [
                 'mod_cache'   => str_contains($content, 'mod_cache'),
@@ -366,6 +389,7 @@ final class ServerDetector {
             '/tmp/lscache',
             '/home/' . (defined('ABSPATH') && preg_match('#^/home/([^/]+)/#', ABSPATH, $m) ? $m[1] : '') . '/lscache',
         ] as $dir) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Probes outside-docroot LiteSpeed cache directories under possible open_basedir.
             if ($dir && @is_dir($dir)) {
                 return $dir;
             }

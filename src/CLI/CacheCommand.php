@@ -23,6 +23,7 @@ final class CacheCommand {
      *
      * @subcommand status
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function status($args, $assoc): void {
         try {
             $r = new \Redis();
@@ -100,6 +101,7 @@ final class CacheCommand {
      *
      * @subcommand stats
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function stats($args, $assoc): void {
         $stats = $this->plugin->logger()->getTodayStats();
         $total = $stats['hits'] + $stats['misses'];

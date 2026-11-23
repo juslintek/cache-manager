@@ -138,6 +138,7 @@ final class CacheInvalidator {
         $this->purge->purgeAll();
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress upgrader_process_complete action signature.
     public function onUpgrade($upgrader, array $options): void {
         $this->purge->purge('opcache');
         $this->purge->purge('nginx');
@@ -165,6 +166,7 @@ final class CacheInvalidator {
         $this->purge->purge('litespeed');
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Elementor after_save action signature.
     public function onElementorSave(int $postId, array $data): void {
         $this->purgePost($postId);
         $this->purge->purge('elementor');
@@ -196,6 +198,7 @@ final class CacheInvalidator {
         $this->purgeRelated($post);
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Retained for taxonomy-aware invalidation signature.
     private function purgeTermArchive(int $termId, string $taxonomy): void {
         LiteSpeedCache::purgeTag('_T' . $termId);
         $this->purge->purge('nginx');

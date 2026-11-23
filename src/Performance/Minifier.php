@@ -25,19 +25,21 @@ final class Minifier {
     }
 
     /** Minify inline CSS in style tags. */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress style_loader_tag filter signature.
     public static function minifyStyleTag(string $html, string $handle, string $href, string $media): string {
         // Only minify inline styles, not external files
         return $html;
     }
 
     /** Defer non-critical JS. */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WordPress script_loader_tag filter signature.
     public static function minifyScriptTag(string $tag, string $handle, string $src): string {
         // Skip admin scripts and already-deferred
         if (is_admin() || str_contains($tag, 'defer') || str_contains($tag, 'async')) return $tag;
 
         // Don't defer jQuery or critical scripts
         $nodefer = ['jquery-core', 'jquery-migrate', 'wp-hooks', 'wp-i18n'];
-        if (in_array($handle, $nodefer)) return $tag;
+        if (in_array($handle, $nodefer, true)) return $tag;
 
         return str_replace(' src=', ' defer src=', $tag);
     }

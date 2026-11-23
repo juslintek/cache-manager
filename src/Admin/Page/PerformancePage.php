@@ -17,13 +17,13 @@ final class PerformancePage extends AdminPage {
  return 'Performance'; }
 
     public function render(): void {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_perf_settings')) {
+        if (isset($_SERVER['REQUEST_METHOD']) && 'POST' === $_SERVER['REQUEST_METHOD'] && check_admin_referer('vlt_perf_settings')) {
             update_option('vlt_async_offload_cron', isset($_POST['vlt_async_offload_cron']));
             echo '<div class="notice notice-success"><p>Nustatymai išsaugoti.</p></div>';
         }
 
         Plugin::notice();
-        $restUrl = esc_js(rest_url('vlt-cache/v1'));
+        $restUrl = rest_url('vlt-cache/v1');
         $nonce   = wp_create_nonce('wp_rest');
 
         echo '<div class="wrap"><h1>Podėlio Valdymas — Našumas</h1>';
@@ -34,13 +34,13 @@ final class PerformancePage extends AdminPage {
 
         // Stats bar
         $stats = $gc['stats'];
-        echo '<table class="widefat fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
+        echo '<table class="widefat fixed striped tw-max-w-2xl tw-mb-4"><tbody>';
         echo '<tr><td><strong>GC būsena</strong></td><td>' . (gc_enabled() ? '<span class="tw-text-green-600">✅ Įjungtas</span>' : '<span class="tw-text-red-600">❌ Išjungtas</span>') . '</td></tr>';
-        echo '<tr><td><strong>GC paleidimų</strong></td><td>' . number_format($stats['runs']) . '</td></tr>';
-        echo '<tr><td><strong>Surinkta ciklų</strong></td><td>' . number_format($stats['collected']) . '</td></tr>';
-        echo '<tr><td><strong>Šaknų buferis</strong></td><td>' . number_format($stats['roots']) . ' / ' . number_format($stats['threshold']) . ' (slenkstis)</td></tr>';
-        echo '<tr><td><strong>Atminties naudojimas</strong></td><td>' . size_format($stats['memory_used']) . ' / ' . esc_html($stats['memory_limit']) . '</td></tr>';
-        echo '<tr><td><strong>Atminties pikas</strong></td><td>' . size_format($stats['memory_peak']) . '</td></tr>';
+        echo '<tr><td><strong>GC paleidimų</strong></td><td>' . esc_html(number_format($stats['runs'])) . '</td></tr>';
+        echo '<tr><td><strong>Surinkta ciklų</strong></td><td>' . esc_html(number_format($stats['collected'])) . '</td></tr>';
+        echo '<tr><td><strong>Šaknų buferis</strong></td><td>' . esc_html(number_format($stats['roots'])) . ' / ' . esc_html(number_format($stats['threshold'])) . ' (slenkstis)</td></tr>';
+        echo '<tr><td><strong>Atminties naudojimas</strong></td><td>' . esc_html((string) size_format($stats['memory_used'])) . ' / ' . esc_html($stats['memory_limit']) . '</td></tr>';
+        echo '<tr><td><strong>Atminties pikas</strong></td><td>' . esc_html((string) size_format($stats['memory_peak'])) . '</td></tr>';
         echo '</tbody></table>';
 
         // Issues
@@ -53,7 +53,7 @@ final class PerformancePage extends AdminPage {
                     'warning'  => 'warning',
                     default    => 'info',
                 };
-                echo '<div class="notice notice-' . $color . ' inline" class="tw-my-1"><p>';
+                echo '<div class="notice notice-' . esc_attr($color) . ' inline tw-my-1"><p>';
                 echo '<strong>' . esc_html($issue['title']) . '</strong> — ' . esc_html($issue['detail']);
                 if (($issue['fix'] ?? '') === 'suggest' && !empty($issue['suggestion'])) {
                     echo '<br><em>' . esc_html($issue['suggestion']) . '</em>';
@@ -65,13 +65,13 @@ final class PerformancePage extends AdminPage {
         // Auto-fix button
         $autoFixable = array_filter($gc['issues'], fn($i) => ($i['fix'] ?? '') === 'auto');
         if ($autoFixable) {
-            echo '<p><button type="button" id="vlt-gc-fix" class="button button-primary">🔧 Automatiškai taisyti (' . count($autoFixable) . ')</button> ';
+            echo '<p><button type="button" id="vlt-gc-fix" class="button button-primary">🔧 Automatiškai taisyti (' . (int) count($autoFixable) . ')</button> ';
             echo '<span id="vlt-gc-fix-status" class="tw-ml-2 tw-text-gray-500"></span></p>';
             echo '<script>
             document.getElementById("vlt-gc-fix").addEventListener("click", function() {
                 const s = document.getElementById("vlt-gc-fix-status");
                 this.disabled = true; s.textContent = "Taisoma...";
-                fetch("' . $restUrl . '/gc-fix", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '"}})
+                fetch("' . esc_js($restUrl) . '/gc-fix", {method:"POST",headers:{"X-WP-Nonce":"' . esc_js($nonce) . '"}})
                 .then(r=>r.json()).then(d=>{
                     s.textContent = "✅ " + (d.applied||[]).join(", ");
                     s.style.color = "#46b450";
@@ -84,17 +84,17 @@ final class PerformancePage extends AdminPage {
         echo '<h2>Asinchroninė eilė (Redis)</h2>';
         $qStatus = AsyncQueue::status();
 
-        echo '<table class="widefat fixed striped" class="tw-max-w-2xl tw-mb-4"><tbody>';
+        echo '<table class="widefat fixed striped tw-max-w-2xl tw-mb-4"><tbody>';
         echo '<tr><td><strong>Redis</strong></td><td>' . ($qStatus['redis'] ? '<span class="tw-text-green-600">✅ Prijungtas</span>' : '<span class="tw-text-red-600">❌ Neprijungtas</span>') . '</td></tr>';
-        echo '<tr><td><strong>Eilėje laukia</strong></td><td>' . $qStatus['queue_length'] . ' darbų</td></tr>';
+        echo '<tr><td><strong>Eilėje laukia</strong></td><td>' . (int) $qStatus['queue_length'] . ' darbų</td></tr>';
         echo '<tr><td><strong>Vykdoma</strong></td><td>' . ($qStatus['running'] ? '<span class="tw-text-yellow-600">⚙ Taip</span>' : 'Ne') . '</td></tr>';
-        echo '<tr><td><strong>PHP Fibers</strong></td><td>' . (class_exists('Fiber') ? '<span class="tw-text-green-600">✅ PHP ' . PHP_VERSION . '</span>' : '<span class="tw-text-red-600">❌ Reikia PHP 8.1+</span>') . '</td></tr>';
+        echo '<tr><td><strong>PHP Fibers</strong></td><td>' . (class_exists('Fiber') ? '<span class="tw-text-green-600">✅ PHP ' . esc_html(PHP_VERSION) . '</span>' : '<span class="tw-text-red-600">❌ Reikia PHP 8.1+</span>') . '</td></tr>';
         echo '</tbody></table>';
 
         // Cron offload settings
         echo '<form method="post">';
         wp_nonce_field('vlt_perf_settings');
-        echo '<table class="form-table" class="tw-max-w-2xl">';
+        echo '<table class="form-table tw-max-w-2xl">';
         echo '<tr><th>WP-Cron → Redis eilė</th><td>';
         echo '<label><input type="checkbox" name="vlt_async_offload_cron" value="1"' . checked(get_option('vlt_async_offload_cron'), true, false) . '> Įjungti</label>';
         echo '<p class="description">WP-Cron užduotys bus vykdomos per Redis eilę, o ne sinchroniškai su HTTP užklausa. Sumažina puslapio įkėlimo laiką. Reikia Redis.</p>';
@@ -112,7 +112,7 @@ final class PerformancePage extends AdminPage {
         document.getElementById("vlt-queue-run").addEventListener("click", function() {
             const s = document.getElementById("vlt-queue-status");
             this.disabled = true; s.textContent = "Vykdoma...";
-            fetch("' . $restUrl . '/queue-run", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '"}})
+            fetch("' . esc_js($restUrl) . '/queue-run", {method:"POST",headers:{"X-WP-Nonce":"' . esc_js($nonce) . '"}})
             .then(r=>r.json()).then(d=>{
                 s.textContent = "✅ Apdorota: " + (d.processed||0) + " darbų";
                 s.style.color = "#46b450";
@@ -141,7 +141,7 @@ final class PerformancePage extends AdminPage {
         }
         usort($scheduled, fn($a, $b) => $a['ts'] <=> $b['ts']);
 
-        echo '<p>Suplanuota: <strong>' . $total . '</strong> | Vėluoja: <strong style="color:' . ($overdue > 0 ? '#d63638' : '#46b450') . '">' . $overdue . '</strong></p>';
+        echo '<p>Suplanuota: <strong>' . (int) $total . '</strong> | Vėluoja: <strong style="color:' . ($overdue > 0 ? '#d63638' : '#46b450') . '">' . (int) $overdue . '</strong></p>';
 
         // Live execution log (SSE)
         echo '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
@@ -162,27 +162,30 @@ final class PerformancePage extends AdminPage {
 
         // Scheduled table
         echo '<h3>Suplanuotos užduotys</h3>';
-        echo '<table class="widefat fixed striped" class="tw-max-w-4xl"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
+        echo '<table class="widefat fixed striped tw-max-w-4xl"><thead><tr><th>Hook</th><th>Kitas paleidimas</th><th>Intervalas</th></tr></thead><tbody id="vlt-cron-schedule">';
         foreach (array_slice($scheduled, 0, 30) as $job) {
-            $diff    = $job['ts'] - $now;
-            $timeStr = $diff < 0 ? '<span class="tw-text-red-600">Vėluoja ' . human_time_diff($job['ts'], $now) . '</span>' : 'Po ' . human_time_diff($now, $job['ts']);
+            $diff = $job['ts'] - $now;
             echo '<tr id="cron-row-' . esc_attr($job['hook']) . '">';
             echo '<td><code>' . esc_html($job['hook']) . '</code></td>';
-            echo '<td>' . $timeStr . '</td>';
+            if ($diff < 0) {
+                echo '<td><span class="tw-text-red-600">Vėluoja ' . esc_html(human_time_diff($job['ts'], $now)) . '</span></td>';
+            } else {
+                echo '<td>Po ' . esc_html(human_time_diff($now, $job['ts'])) . '</td>';
+            }
             echo '<td>' . esc_html($job['schedule']) . '</td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
 
         // SSE live update script
-        $streamUrl = esc_js(rest_url('vlt-cache/v1/cron-stream'));
-        $statsUrl  = esc_js(rest_url('vlt-cache/v1/cron-stats'));
+        $streamUrl = rest_url('vlt-cache/v1/cron-stream');
+        $statsUrl  = rest_url('vlt-cache/v1/cron-stats');
         echo '<script>
         (function() {
             const log = document.getElementById("vlt-cron-log");
             const statsEl = document.getElementById("vlt-cron-stats");
             const dot = document.getElementById("vlt-cron-live-dot");
-            const nonce = "' . $nonce . '";
+            const nonce = "' . esc_js($nonce) . '";
             let lastTs = 0;
 
             function statusColor(s) {
@@ -207,7 +210,7 @@ final class PerformancePage extends AdminPage {
             }
 
             function refreshStats() {
-                fetch("' . $statsUrl . '", {headers:{"X-WP-Nonce":nonce}})
+                fetch("' . esc_js($statsUrl) . '", {headers:{"X-WP-Nonce":nonce}})
                 .then(r=>r.json()).then(d=>{
                     if (!d.stats) return;
                     statsEl.innerHTML = "<table class=\'widefat fixed striped\' style=\'font-size:11px\'><thead><tr><th>Hook</th><th>Paleista</th><th>Klaidos</th><th>Vid. ms</th></tr></thead><tbody>"
@@ -221,7 +224,7 @@ final class PerformancePage extends AdminPage {
             refreshStats();
 
             // SSE stream
-            const es = new EventSource("' . $streamUrl . '?since=" + lastTs + "&_wpnonce=" + nonce);
+            const es = new EventSource("' . esc_js($streamUrl) . '?since=" + lastTs + "&_wpnonce=" + nonce);
             es.onopen = () => { dot.style.background = "#4ade80"; };
             es.onerror = () => { dot.style.background = "#f87171"; };
             es.onmessage = (ev) => {

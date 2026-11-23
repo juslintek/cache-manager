@@ -224,11 +224,11 @@ HTML
         foreach ($sections as $title => $section) {
             echo '<div style="margin-bottom:24px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden">';
             echo '<div style="background:#f6f7f7;padding:12px 16px;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;gap:8px">';
-            echo '<span style="font-size:20px">' . $section['icon'] . '</span>';
+            echo '<span style="font-size:20px">' . esc_html($section['icon']) . '</span>';
             echo '<h2 style="margin:0;font-size:15px">' . esc_html($title) . '</h2>';
             echo '</div>';
             echo '<div style="padding:16px 20px;font-size:13px;line-height:1.7">';
-            echo $section['content']; // trusted internal content
+            echo wp_kses_post($section['content']);
             echo '</div></div>';
         }
 

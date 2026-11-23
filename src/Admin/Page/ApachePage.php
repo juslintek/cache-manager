@@ -37,14 +37,16 @@ final class ApachePage extends AdminPage {
         }
 
         echo '<h2>Talpyklos valdymas</h2><p>';
-        echo Plugin::purgeButton('opcache', 'Valyti OPcache');
-        echo Plugin::purgeButton('all', 'Valyti viską');
+        echo wp_kses_post(Plugin::purgeButton('opcache', 'Valyti OPcache'));
+        echo wp_kses_post(Plugin::purgeButton('all', 'Valyti viską'));
         echo '</p>';
 
         $configFile = $info['config']['config_file'] ?? '';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Server config path outside WP root may hit open_basedir.
         if ($configFile && @is_readable($configFile)) {
             echo '<h2>Konfigūracijos failas</h2>';
             echo '<pre class="tw-bg-gray-900 tw-text-gray-300 tw-p-4 tw-overflow-auto tw-max-h-[400px] tw-text-xs tw-rounded">';
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read-only local Apache config preview.
             echo esc_html(substr(@file_get_contents($configFile) ?: '', 0, 50000));
             echo '</pre>';
         }

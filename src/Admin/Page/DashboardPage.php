@@ -37,17 +37,18 @@ final class DashboardPage extends AdminPage {
         }
         $cpu_idle = 100.0;
         if (is_readable('/proc/stat')) {
-            $stat = explode(' ', trim(file('/proc/stat')[0]));
+            $stat = preg_split('/\s+/', trim((string) (file('/proc/stat')[0] ?? ''))) ?: [];
             array_shift($stat);
+            $stat  = array_map('intval', $stat);
             $total = array_sum($stat);
-            $idle  = (int)($stat[3] ?? 0);
+            $idle  = $stat[3] ?? 0;
             $cpu_idle = $total > 0 ? round($idle / $total * 100, 1) : 100;
         }
         $cpu_used = round(100 - $cpu_idle, 1);
 
         Plugin::notice();
         $types   = $p->purge()->types();
-        $restUrl = esc_js(rest_url('vlt-cache/v1'));
+        $restUrl = rest_url('vlt-cache/v1');
         $nonce   = wp_create_nonce('wp_rest');
         ?>
         <div class="wrap">
@@ -58,15 +59,15 @@ final class DashboardPage extends AdminPage {
 
         <?php
         // Helper: render a card
-        $card = function (string $icon, string $title, string $value, string $sub, float $pct, string $color, string $action = '') {
-            $bar = '<div class="tw-h-1 tw-bg-gray-200 tw-rounded tw-mt-2"><div style="height:4px;background:' . $color . ';width:' . min(100, $pct) . '%;border-radius:2px;transition:width .5s"></div></div>';
+        $card = function (string $icon, string $title, string $value, string $sub, float $pct, string $color) {
+            $width = min(100, $pct);
             echo '<div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-shadow-sm">';
             echo '<div class="tw-flex tw-justify-between tw-items-start">';
             echo '<div><div class="tw-text-[11px] tw-text-gray-400 tw-uppercase tw-tracking-wide">' . esc_html($title) . '</div>';
-            echo '<div class="tw-text-xl tw-font-bold tw-mt-0.5 tw-text-gray-900">' . $value . '</div>';
-            echo '<div class="tw-text-[11px] tw-text-gray-500 tw-mt-0.5">' . $sub . '</div></div>';
-            echo '<span class="tw-text-2xl tw-opacity-70">' . $icon . '</span></div>';
-            echo $bar;
+            echo '<div class="tw-text-xl tw-font-bold tw-mt-0.5 tw-text-gray-900">' . esc_html($value) . '</div>';
+            echo '<div class="tw-text-[11px] tw-text-gray-500 tw-mt-0.5">' . esc_html($sub) . '</div></div>';
+            echo '<span class="tw-text-2xl tw-opacity-70">' . esc_html($icon) . '</span></div>';
+            echo '<div class="tw-h-1 tw-bg-gray-200 tw-rounded tw-mt-2"><div style="height:4px;background:' . esc_attr($color) . ';width:' . esc_attr((string) $width) . '%;border-radius:2px;transition:width .5s"></div></div>';
             echo '</div>';
         };
 
@@ -88,11 +89,12 @@ final class DashboardPage extends AdminPage {
 
         // OPcache
         if ($opcache) {
-            $oc_used  = $opcache['memory_usage']['used_memory'] ?? 0;
-            $oc_free  = $opcache['memory_usage']['free_memory'] ?? 1;
-            $oc_pct   = round($oc_used / ($oc_used + $oc_free) * 100, 1);
-            $oc_hit   = round($opcache['opcache_statistics']['opcache_hit_rate'] ?? 0, 1);
-            $oc_files = $opcache['opcache_statistics']['num_cached_scripts'] ?? 0;
+            $oc_used  = (int) ($opcache['memory_usage']['used_memory'] ?? 0);
+            $oc_free  = (int) ($opcache['memory_usage']['free_memory'] ?? 0);
+            $oc_total = $oc_used + $oc_free;
+            $oc_pct   = $oc_total > 0 ? round($oc_used / $oc_total * 100, 1) : 0.0;
+            $oc_hit   = round((float) ($opcache['opcache_statistics']['opcache_hit_rate'] ?? 0), 1);
+            $oc_files = (int) ($opcache['opcache_statistics']['num_cached_scripts'] ?? 0);
             $card('⚡', 'OPcache', Plugin::formatSize($oc_used), $oc_files . ' failų · ' . $oc_hit . '% hit', $oc_pct, '#f0b849');
         }
 
@@ -135,11 +137,11 @@ final class DashboardPage extends AdminPage {
         <!-- Purge section with SSE progress -->
         <h2 class="tw-mb-2">Greitas valymas</h2>
         <p class="tw-mb-3">
-            <button id="vlt-purge-all" class="button button-primary" class="!h-[34px] !px-4">
+            <button id="vlt-purge-all" class="button button-primary !h-[34px] !px-4">
                 🗑 Valyti viską
             </button>
             <?php foreach ($types as $type): ?>
-            <button class="button vlt-purge-one" data-type="<?php echo esc_attr($type); ?>" class="!ml-1 !h-[34px]">
+            <button class="button vlt-purge-one !ml-1 !h-[34px]" data-type="<?php echo esc_attr($type); ?>">
                 <?php echo esc_html(ucfirst($type)); ?>
             </button>
             <?php endforeach; ?>
@@ -185,11 +187,11 @@ final class DashboardPage extends AdminPage {
             echo '<table class="widefat fixed striped" style="max-width:700px"><thead><tr><th>Laikas</th><th>Kas valė</th><th>Kas išvalyta</th></tr></thead><tbody>';
             foreach ($groups as $g) {
                 $types_str  = implode(', ', $g['types']);
-                $user_label = esc_html($g['user_name']);
-                if ($g['user_id']) $user_label .= ' (ID:' . $g['user_id'] . ')';
+                $user_label = (string) $g['user_name'];
+                if ($g['user_id']) $user_label .= ' (ID:' . (int) $g['user_id'] . ')';
                 echo '<tr class="vlt-purge-group" onclick="this.classList.toggle(\'open\')">';
                 echo '<td>▸ ' . esc_html($g['timestamp']) . '</td>';
-                echo '<td>' . $user_label . '</td>';
+                echo '<td>' . esc_html($user_label) . '</td>';
                 echo '<td>' . esc_html($types_str) . '</td></tr>';
                 echo '<tr class="vlt-purge-detail" style="display:none"><td colspan="3"><strong>IP:</strong> ' . esc_html($g['ip']) . '</td></tr>';
             }
@@ -199,8 +201,8 @@ final class DashboardPage extends AdminPage {
 
         <script>
         (function() {
-            const restUrl = '<?php echo $restUrl; ?>';
-            const nonce   = '<?php echo $nonce; ?>';
+            const restUrl = '<?php echo esc_js($restUrl); ?>';
+            const nonce   = '<?php echo esc_js($nonce); ?>';
 
             function loadHistory() {
                 fetch(restUrl + '/purge-log', {headers: {'X-WP-Nonce': nonce}})

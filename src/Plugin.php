@@ -154,6 +154,7 @@ final class Plugin {
         if (!wp_next_scheduled('vlt_trace_worker_check')) {
             wp_schedule_event(time(), 'vlt_five_minutes', 'vlt_trace_worker_check');
         }
+        // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval -- Trace worker keepalive check runs every 5 minutes.
         add_filter('cron_schedules', function ($s) {
             $s['vlt_five_minutes'] = ['interval' => 300, 'display' => 'Every 5 minutes'];
             return $s;
@@ -224,7 +225,7 @@ final class Plugin {
         $cut = gmdate('Y-m-d', strtotime('-7 days'));
         foreach (glob($dir . '/trace-*.json') as $f) {
             if (preg_match('/trace-(\d{4}-\d{2}-\d{2})\.json$/', $f, $m) && $m[1] < $cut) {
-                @unlink($f);
+                wp_delete_file($f);
             }
         }
         $maxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
@@ -238,9 +239,12 @@ final class Plugin {
         if (!str_contains($hook, 'vlt-cache')) {
             return;
         }
-        wp_enqueue_script('vlt-tailwind', 'https://cdn.tailwindcss.com', [], null, false);
+        wp_enqueue_script('vlt-tailwind', 'https://cdn.tailwindcss.com', [], '3.4.0', false);
         // Alpine must load in footer (after body) to avoid "Alpine before body" warning
-        wp_enqueue_script('vlt-alpine', 'https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js', [], null, true);
+        wp_enqueue_script('vlt-alpine', 'https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js', [], '3.14.9', true);
+        if (str_contains($hook, 'vlt-cache-redis')) {
+            wp_enqueue_script('vlt-chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js', [], '4.5.0', false);
+        }
         // Prefix all Tailwind utilities with tw- to avoid conflicts with WP admin classes
         // e.g. WP uses .fixed for table-layout:fixed, Tailwind uses .fixed for position:fixed
         wp_add_inline_script('vlt-tailwind', 'tailwind.config={prefix:"tw-",theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
@@ -252,7 +256,7 @@ final class Plugin {
         $isNginx  = $server === \Gratis\Cache\ServerDetector::NGINX;
         $isApache = $server === \Gratis\Cache\ServerDetector::APACHE;
 
-        $host    = parse_url(home_url(), PHP_URL_HOST) ?? '';
+        $host    = wp_parse_url(home_url(), PHP_URL_HOST) ?? '';
         $hasCf   = \Gratis\Cache\Admin\Page\SettingsPage::isDomainBehindCloudflare($host)
                    || get_option('vlt_cm_cf_tracking', false);
 
@@ -291,7 +295,7 @@ final class Plugin {
         add_submenu_page('vlt-cache', __('Dashboard', 'gratis-cache'), __('Dashboard', 'gratis-cache'), 'manage_options', 'vlt-cache', [$pages[0], 'render']);
 
         for ($i = 1, $c = count($pages); $i < $c; $i++) {
-            $title = __($pages[$i]->title(), 'gratis-cache');
+            $title = $pages[$i]->title();
             add_submenu_page('vlt-cache', $title, $title, 'manage_options', $pages[$i]->slug(), [$pages[$i], 'render']);
         }
     }
@@ -300,13 +304,15 @@ final class Plugin {
         if (!current_user_can('manage_options')) {
             return;
         }
-        $hits = $misses = 0;
+        $hits   = 0;
+        $misses = 0;
         if (isset($GLOBALS['wp_object_cache']) && property_exists($GLOBALS['wp_object_cache'], 'cache_hits')) {
             $hits   = $GLOBALS['wp_object_cache']->cache_hits;
             $misses = $GLOBALS['wp_object_cache']->cache_misses;
         }
         $wp_admin_bar->add_node([
             'id'    => 'vlt-cache',
+            /* translators: 1: object cache hit count, 2: object cache miss count */
             'title' => sprintf(__('Cache Manager (H:%1$d M:%2$d)', 'gratis-cache'), $hits, $misses),
             'href'  => admin_url('admin.php?page=vlt-cache'),
         ]);
@@ -332,11 +338,11 @@ final class Plugin {
     }
 
     public function handleActions(): void {
-        $action = $_GET['action'] ?? '';
+        $action = sanitize_key(wp_unslash($_GET['action'] ?? ''));
 
         if ($action === 'vlt_purge') {
-            @ini_set('memory_limit', '768M');
-            if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_purge') || !current_user_can('manage_options')) {
+            wp_raise_memory_limit('admin');
+            if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'vlt_purge') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
             // Redirect to dashboard — purging now happens via SSE stream from the UI
@@ -346,7 +352,7 @@ final class Plugin {
         }
 
         if ($action === 'vlt_install_dropin') {
-            if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_install_dropin') || !current_user_can('manage_options')) {
+            if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'vlt_install_dropin') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
             $this->dropin->install();
@@ -355,7 +361,7 @@ final class Plugin {
         }
 
         if ($action === 'vlt_toggle_debug') {
-            if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_toggle_debug') || !current_user_can('manage_options')) {
+            if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'vlt_toggle_debug') || !current_user_can('manage_options')) {
                 wp_die('Neautorizuota');
             }
             if (isset($_COOKIE['vlt_debug_cache'])) {
@@ -368,7 +374,7 @@ final class Plugin {
         }
 
         if ($action === 'vlt_trace_toggle') {
-            if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_trace_toggle') || !current_user_can('manage_options')) {
+            if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'vlt_trace_toggle') || !current_user_can('manage_options')) {
                 return;
             }
             if (isset($_COOKIE['vlt_trace'])) {
@@ -376,7 +382,7 @@ final class Plugin {
             } else {
                 setcookie('vlt_trace', '1', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
             }
-            wp_redirect(admin_url('admin.php?page=vlt-cache-tracer'));
+            wp_safe_redirect(admin_url('admin.php?page=vlt-cache-tracer'));
             exit;
         }
     }
@@ -394,7 +400,7 @@ final class Plugin {
         echo '<p><strong>Redis:</strong> ' . ($redis['connected']
             ? 'Prijungtas (' . esc_html($redis['memory']) . ')'
             : '<span style="color:red">Nepasiekiamas</span>') . '</p>';
-        echo '<p><strong>Pataikymų santykis šiandien:</strong> ' . $ratio . '% (' . $stats['hits'] . '/' . ($stats['hits'] + $stats['misses']) . ')</p>';
+        echo '<p><strong>Pataikymų santykis šiandien:</strong> ' . esc_html((string) $ratio) . '% (' . (int) $stats['hits'] . '/' . (int) ($stats['hits'] + $stats['misses']) . ')</p>';
         echo '<p><strong>Nginx talpykla:</strong> ' . esc_html(self::formatSize(self::dirSize(GRATIS_CACHE_NGINX_CACHE))) . '</p>';
 
         $purges = $this->logger->getRecentPurges(5);
@@ -438,7 +444,7 @@ final class Plugin {
         }
 
         $nonce = wp_create_nonce('wp_rest');
-        $url   = esc_js(rest_url('vlt-cache/v1/dismiss-notice'));
+        $url   = rest_url('vlt-cache/v1/dismiss-notice');
 
         if ($allOptimal) {
             // Green success — auto-dismiss after 4s
@@ -453,7 +459,7 @@ final class Plugin {
             setTimeout(function() {
                 var n = document.getElementById("vlt-img-optm-notice");
                 if (n) n.style.display = "none";
-                fetch("' . $url . '", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
+                fetch("' . esc_js($url) . '", {method:"POST",headers:{"X-WP-Nonce":"' . esc_js($nonce) . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
             }, 4000);
             </script>';
             return;
@@ -497,26 +503,27 @@ final class Plugin {
         echo '<div class="notice notice-warning is-dismissible" id="vlt-img-optm-notice"><p>';
         echo '<strong>Paveikslėlių optimizavimas:</strong> ';
         if (!empty($activeOptimizers)) {
-            echo 'Aktyvūs keli optimizavimo įskiepiai: <strong>' . implode(', ', $activeOptimizers) . '</strong> — gali konfliktuoti. ';
+            echo 'Aktyvūs keli optimizavimo įskiepiai: <strong>' . esc_html(implode(', ', $activeOptimizers)) . '</strong> — gali konfliktuoti. ';
         }
         if (!empty($missing)) {
-            echo 'Trūksta: ' . implode(', ', $missing) . '. ';
+            echo 'Trūksta: ' . wp_kses_post(implode(', ', $missing)) . '. ';
             echo '<details style="margin-top:4px"><summary style="cursor:pointer">Kaip įdiegti ▾</summary><ul style="margin:4px 0 0 16px">';
             foreach ($tips as $tip) {
-                echo '<li>' . $tip . '</li>';
+                echo '<li>' . wp_kses_post($tip) . '</li>';
             }
             echo '</ul></details>';
         }
         echo '</p></div>';
         echo '<script>
         document.querySelector("#vlt-img-optm-notice .notice-dismiss")?.addEventListener("click", function() {
-            fetch("' . $url . '", {method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
+            fetch("' . esc_js($url) . '", {method:"POST",headers:{"X-WP-Nonce":"' . esc_js($nonce) . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_img_optm_notice_dismissed"})});
         });
         </script>';
     }
 
     private static function commandExists(string $cmd): bool {
         foreach (explode(':', getenv('PATH') ?: '/usr/bin:/usr/local/bin:/bin') as $dir) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- PATH probe may hit open_basedir restrictions.
             if (@is_executable(rtrim($dir, '/') . '/' . $cmd)) {
                 return true;
             }
@@ -536,12 +543,12 @@ final class Plugin {
             return;
         }
         $nonce = wp_create_nonce('wp_rest');
-        $url   = esc_js(rest_url('vlt-cache/v1/dismiss-notice'));
+        $url   = rest_url('vlt-cache/v1/dismiss-notice');
         echo '<div class="notice notice-info is-dismissible" id="vlt-cl-notice"><p>';
-        echo '☁ <strong>CloudLinux aptiktas.</strong> Neaktyvios optimizacijos: <strong>' . implode(', ', $missing) . '</strong>. ';
+        echo '☁ <strong>CloudLinux aptiktas.</strong> Neaktyvios optimizacijos: <strong>' . esc_html(implode(', ', $missing)) . '</strong>. ';
         echo '<a href="' . esc_url(admin_url('admin.php?page=vlt-cache-cloudlinux')) . '">Žiūrėti CloudLinux puslapį →</a>';
         echo '</p></div>';
-        echo '<script>document.querySelector("#vlt-cl-notice .notice-dismiss")?.addEventListener("click",()=>{fetch("' . $url . '",{method:"POST",headers:{"X-WP-Nonce":"' . $nonce . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_cl_notice_dismissed"})});});</script>';
+        echo '<script>document.querySelector("#vlt-cl-notice .notice-dismiss")?.addEventListener("click",()=>{fetch("' . esc_js($url) . '",{method:"POST",headers:{"X-WP-Nonce":"' . esc_js($nonce) . '","Content-Type":"application/json"},body:JSON.stringify({notice:"vlt_cl_notice_dismissed"})});});</script>';
     }
 
     public function simdjsonNotice(): void {
@@ -558,7 +565,7 @@ final class Plugin {
         echo '<div class="notice notice-warning is-dismissible"><p>';
         echo '<strong>Podėlio Valdymas:</strong> <code>simdjson</code> PHP plėtinys neįdiegtas. ';
         echo 'Žurnalų ir pėdsakų skaitymas naudoja lėtesnį <code>json_decode</code>. ';
-        echo 'Įdiegimui: ' . $instructions . '. ';
+        echo 'Įdiegimui: ' . wp_kses_post($instructions) . '. ';
         echo 'Po įdiegimo paleiskite iš naujo PHP-FPM: <code>sudo systemctl restart php-fpm</code>';
         echo '</p></div>';
     }
@@ -587,6 +594,8 @@ final class Plugin {
                 $r->close();
             }
         } catch (\Exception $e) {
+            // Leave disconnected status when Redis is unavailable.
+            unset($e);
         }
         return $info;
     }
@@ -615,7 +624,9 @@ final class Plugin {
             foreach ($iterator as $f) {
                 try {
                     $s += $f->getSize();
-                } catch (\Throwable) {
+                } catch (\Throwable $e) {
+                    // Skip files removed concurrently during directory traversal.
+                    unset($e);
                 }
             }
         } catch (\Throwable) {
@@ -629,6 +640,7 @@ final class Plugin {
     }
 
     public static function notice(): void {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only status notice query flag.
         if (!empty($_GET['vlt_purged'])) {
             echo '<div class="notice notice-success is-dismissible"><p>Talpykla sėkmingai išvalyta.</p></div>';
         }

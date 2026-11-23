@@ -15,13 +15,13 @@ final class NginxStrategy implements PurgeStrategyInterface {
             return;
         }
         if (!is_readable($dir)) {
-            throw new \RuntimeException("Nginx cache directory is not readable: {$dir}");
+            throw new \RuntimeException('Nginx cache directory is not readable: ' . esc_html($dir));
         }
 
         $failures = 0;
         $this->purgeDir($dir, $failures, false);
         if ($failures > 0) {
-            throw new \RuntimeException("Incomplete Nginx cache purge: {$failures} item(s) could not be removed or read.");
+            throw new \RuntimeException('Incomplete Nginx cache purge: ' . (int) $failures . ' item(s) could not be removed or read.');
         }
     }
 
@@ -36,6 +36,7 @@ final class NginxStrategy implements PurgeStrategyInterface {
                 $path = $item->getPathname();
                 if ($item->isDir() && !$item->isLink()) {
                     $this->purgeDir($path, $failures, true);
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Direct Nginx FastCGI cache file deletion outside WP_Filesystem.
                 } elseif (!@unlink($path) && file_exists($path)) {
                     ++$failures;
                 }
@@ -43,6 +44,7 @@ final class NginxStrategy implements PurgeStrategyInterface {
         } catch (\Throwable) {
             ++$failures;
         }
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Direct Nginx FastCGI cache directory removal outside WP_Filesystem.
         if ($removeSelf && !@rmdir($dir) && is_dir($dir)) {
             ++$failures;
         }

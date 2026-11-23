@@ -36,10 +36,12 @@ final class RedisFactory {
     private static function connectSocket(string $path, float $timeout): ?Redis {
         try {
             $r = new Redis();
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Redis socket may be absent or unavailable.
             if (@$r->connect($path, 0, $timeout)) {
                 return $r;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            unset($e);
         }
         return null;
     }
@@ -47,10 +49,12 @@ final class RedisFactory {
     private static function connectTcp(string $host, int $port, float $timeout): ?Redis {
         try {
             $r = new Redis();
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Redis port may be closed or unreachable.
             if (@$r->connect($host, $port, $timeout)) {
                 return $r;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            unset($e);
         }
         return null;
     }

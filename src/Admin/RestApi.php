@@ -45,6 +45,7 @@ final class RestApi {
                     return new \WP_Error('fs', 'Cannot create mu-plugins dir');
                 }
                 $path = WPMU_PLUGIN_DIR . '/' . $name;
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Admin-gated MU-plugin writer endpoint.
                 file_put_contents($path, $code);
                 return ['written' => $name, 'path' => $path];
             },
@@ -63,6 +64,7 @@ final class RestApi {
                 if (!wp_mkdir_p(dirname($full))) {
                     return new \WP_Error('fs', 'Cannot create directory');
                 }
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Admin-gated theme file writer endpoint.
                 file_put_contents($full, $req['content']);
                 return ['written' => $file, 'path' => $full, 'theme' => get_stylesheet()];
             },
@@ -80,6 +82,7 @@ final class RestApi {
                 if (!file_exists($full)) {
                     return new \WP_Error('not_found', 'File not found: ' . $file, ['status' => 404]);
                 }
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local theme file read.
                 return ['path' => $file, 'content' => file_get_contents($full)];
             },
             'permission_callback' => $admin,
@@ -228,7 +231,8 @@ final class RestApi {
         $entries = $logger->readLog($date);
 
         foreach ($entries as &$e) {
-            $e['hits'] = $e['misses'] = 0;
+            $e['hits']   = 0;
+            $e['misses'] = 0;
             if (($e['type'] ?? '') === 'stats' && is_array($e['details'] ?? null)) {
                 $e['hits']   = (int) ($e['details']['hits'] ?? 0);
                 $e['misses'] = (int) ($e['details']['misses'] ?? 0);
@@ -398,14 +402,16 @@ final class RestApi {
         $names = [0 => 'none', 1 => 'string', 2 => 'set', 3 => 'list', 4 => 'zset', 5 => 'hash'];
         $serialized = false;
         $pretty = $raw;
-        $unserialized = @unserialize($raw);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- Admin-only Redis preview with allowed_classes disabled.
+        $unserialized = @unserialize((string) $raw, ['allowed_classes' => false]);
         if ($unserialized !== false || $raw === 'b:0;') {
             $serialized = true;
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Admin-only cache value inspector preview.
             $pretty = print_r($unserialized, true);
         } else {
             $decoded = json_decode($raw, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                $pretty = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pretty = wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         }
         if (strlen($raw) > 50000) $raw = substr($raw, 0, 50000) . "\n…truncated";
@@ -540,7 +546,7 @@ final class RestApi {
                         $fresh[] = $entry;
                     }
                     if ($fresh) {
-                        echo 'data: ' . json_encode($fresh) . "\n\n";
+                        echo 'data: ' . wp_json_encode($fresh) . "\n\n";
                         flush();
                     }
                     $lastId = $currentId;
@@ -606,18 +612,21 @@ final class RestApi {
             return new \WP_REST_Response(['ok' => false, 'error' => 'Path not allowed'], 403);
         }
 
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Server config path check outside WP root.
         if (!@is_writable($path) && @file_exists($path)) {
             return new \WP_REST_Response(['ok' => false, 'error' => 'File not writable'], 403);
         }
 
         // Create parent dir if needed (for custom/ template)
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Server config directory may already exist or lack parent permissions.
         @wp_mkdir_p(dirname($path));
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Admin-gated server config file write.
         $ok = file_put_contents($path, $content);
         return new \WP_REST_Response(['ok' => $ok !== false]);
     }
 
     public static function purgeType(\WP_REST_Request $req): \WP_REST_Response {
-        @ini_set('memory_limit', '512M');
+        wp_raise_memory_limit('admin');
         $type  = sanitize_key($req->get_param('type'));
         $start = microtime(true);
 
@@ -633,7 +642,7 @@ final class RestApi {
         // Store in Redis purge log (capped at 200 entries)
         $r = \Gratis\Cache\Redis\RedisFactory::create(0.5);
         if ($r) {
-            $r->lPush('vlt_purge_log', json_encode($entry));
+            $r->lPush('vlt_purge_log', (string) wp_json_encode($entry));
             $r->lTrim('vlt_purge_log', 0, 199);
             $r->close();
         }
@@ -656,8 +665,8 @@ final class RestApi {
         return new \WP_REST_Response(['ok' => true]);
     }
 
-    public static function purgeStream(): void {
-        @ini_set('memory_limit', '512M');
+    public static function purgeStream(\WP_REST_Request $req): void {
+        wp_raise_memory_limit('admin');
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache, no-store');
         header('X-Accel-Buffering: no');
@@ -668,7 +677,7 @@ final class RestApi {
         $allTypes = $purge->types();
 
         // Optional filter: ?types=redis,opcache
-        $filter = sanitize_text_field($_GET['types'] ?? '');
+        $filter = sanitize_text_field((string) ($req->get_param('types') ?? ''));
         $types  = $filter ? array_intersect(explode(',', $filter), $allTypes) : $allTypes;
         $types  = array_values($types);
         $total  = count($types);
@@ -693,7 +702,7 @@ final class RestApi {
             // Persist to Redis log
             $r = \Gratis\Cache\Redis\RedisFactory::create(0.3);
             if ($r) {
-                $r->lPush('vlt_purge_log', json_encode(array_diff_key($entry, ['event' => 1])));
+                $r->lPush('vlt_purge_log', (string) wp_json_encode(array_diff_key($entry, ['event' => 1])));
                 $r->lTrim('vlt_purge_log', 0, 199);
                 $r->close();
             }
@@ -709,7 +718,7 @@ final class RestApi {
     }
 
     private static function sse(array $data): void {
-        echo 'data: ' . json_encode($data) . "\n\n";
+        echo 'data: ' . wp_json_encode($data) . "\n\n";
     }
 
     public static function purgeLog(): \WP_REST_Response {
@@ -742,7 +751,7 @@ final class RestApi {
         ]);
     }
 
-    public static function cronStream(): void {
+    public static function cronStream(\WP_REST_Request $req): void {
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache, no-store');
         header('X-Accel-Buffering: no');
@@ -750,12 +759,12 @@ final class RestApi {
         set_time_limit(0);
         ignore_user_abort(false);
 
-        $lastTs = (float) ($_GET['since'] ?? 0);
+        $lastTs = (float) ($req->get_param('since') ?? 0);
 
         while (!connection_aborted()) {
             $entries = \Gratis\Cache\Async\CronMonitor::recentLog(20, (string) $lastTs);
             if ($entries) {
-                echo 'data: ' . json_encode($entries) . "\n\n";
+                echo 'data: ' . wp_json_encode($entries) . "\n\n";
                 $lastTs = max(array_column($entries, 'ts'));
                 flush();
             } else {
@@ -795,7 +804,8 @@ final class RestApi {
             if (!is_dir(TracerConfig::getDir())) {
                 wp_mkdir_p(TracerConfig::getDir());
             }
-            file_put_contents(TracerConfig::getDir() . '/.sample_rate', $rate);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Small tracer config flag file in local trace dir.
+            file_put_contents(TracerConfig::getDir() . '/.sample_rate', (string) $rate);
             return new \WP_REST_Response(['ok' => true]);
         }
 
@@ -805,7 +815,8 @@ final class RestApi {
             if (!is_dir(TracerConfig::getDir())) {
                 wp_mkdir_p(TracerConfig::getDir());
             }
-            file_put_contents(TracerConfig::getDir() . '/.max_traces', $max);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Small tracer config flag file in local trace dir.
+            file_put_contents(TracerConfig::getDir() . '/.max_traces', (string) $max);
             return new \WP_REST_Response(['ok' => true]);
         }
 

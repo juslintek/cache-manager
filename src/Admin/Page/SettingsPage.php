@@ -15,36 +15,36 @@ final class SettingsPage extends AdminPage {
  return 'Settings'; }
 
     public function render(): void {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_admin_referer('vlt_cm_settings')) {
+        if (isset($_SERVER['REQUEST_METHOD']) && 'POST' === $_SERVER['REQUEST_METHOD'] && check_admin_referer('vlt_cm_settings')) {
             // Each option saved independently — unchecking one must not affect others
             update_option('vlt_cm_logging', isset($_POST['vlt_cm_logging']));
             update_option('vlt_cm_cf_tracking', isset($_POST['vlt_cm_cf_tracking']));
-            update_option('vlt_cm_log_days', max(1, (int) ($_POST['vlt_cm_log_days'] ?? 30)));
+            update_option('vlt_cm_log_days', max(1, (int) sanitize_text_field(wp_unslash($_POST['vlt_cm_log_days'] ?? '30'))));
             if (!empty($_POST['vlt_cm_log_path'])) {
-                update_option('vlt_cm_log_path', sanitize_text_field($_POST['vlt_cm_log_path']));
+                update_option('vlt_cm_log_path', sanitize_text_field(wp_unslash($_POST['vlt_cm_log_path'])));
             }
             if (!empty($_POST['vlt_cm_trace_path'])) {
-                update_option('vlt_cm_trace_path', sanitize_text_field($_POST['vlt_cm_trace_path']));
+                update_option('vlt_cm_trace_path', sanitize_text_field(wp_unslash($_POST['vlt_cm_trace_path'])));
             }
-            update_option('vlt_cm_log_max_mb', max(0, (int) ($_POST['vlt_cm_log_max_mb'] ?? 500)));
-            update_option('vlt_cm_trace_max_mb', max(0, (int) ($_POST['vlt_cm_trace_max_mb'] ?? 200)));
+            update_option('vlt_cm_log_max_mb', max(0, (int) sanitize_text_field(wp_unslash($_POST['vlt_cm_log_max_mb'] ?? '500'))));
+            update_option('vlt_cm_trace_max_mb', max(0, (int) sanitize_text_field(wp_unslash($_POST['vlt_cm_trace_max_mb'] ?? '200'))));
             // Hook tracing
             update_option('vlt_trace_hooks', isset($_POST['vlt_trace_hooks']));
-            update_option('vlt_trace_hook_threshold_ms', max(0.1, (float) ($_POST['vlt_trace_hook_threshold_ms'] ?? 1.0)));
+            update_option('vlt_trace_hook_threshold_ms', max(0.1, (float) sanitize_text_field(wp_unslash($_POST['vlt_trace_hook_threshold_ms'] ?? '1.0'))));
             // Redis manual config
-            update_option('vlt_redis_socket', sanitize_text_field($_POST['vlt_redis_socket'] ?? ''));
-            update_option('vlt_redis_host', sanitize_text_field($_POST['vlt_redis_host'] ?? ''));
-            update_option('vlt_redis_port', max(0, (int) ($_POST['vlt_redis_port'] ?? 0)));
+            update_option('vlt_redis_socket', sanitize_text_field(wp_unslash($_POST['vlt_redis_socket'] ?? '')));
+            update_option('vlt_redis_host', sanitize_text_field(wp_unslash($_POST['vlt_redis_host'] ?? '')));
+            update_option('vlt_redis_port', max(0, (int) sanitize_text_field(wp_unslash($_POST['vlt_redis_port'] ?? '0'))));
             // LiteSpeed
             update_option('vlt_litespeed_purge', isset($_POST['vlt_litespeed_purge']));
             // Image optimization
             update_option('vlt_img_optm_enabled', isset($_POST['vlt_img_optm_enabled']));
             update_option('vlt_img_optm_serve_webp', isset($_POST['vlt_img_optm_serve_webp']));
-            update_option('vlt_img_optm_quality', max(1, min(100, (int) ($_POST['vlt_img_optm_quality'] ?? 82))));
+            update_option('vlt_img_optm_quality', max(1, min(100, (int) sanitize_text_field(wp_unslash($_POST['vlt_img_optm_quality'] ?? '82')))));
             // Cache exclusions: only when the main settings form submits the field
             $nginxOk = true;
             if (isset($_POST['vlt_cm_cache_exclusions'])) {
-                $exclusions_raw = sanitize_textarea_field($_POST['vlt_cm_cache_exclusions']);
+                $exclusions_raw = sanitize_textarea_field(wp_unslash($_POST['vlt_cm_cache_exclusions']));
                 $exclusions     = array_values(array_filter(array_map('trim', explode("\n", $exclusions_raw))));
                 update_option('vlt_cm_cache_exclusions', $exclusions);
                 $nginxOk = self::writeNginxExclusions($exclusions);
@@ -60,19 +60,19 @@ final class SettingsPage extends AdminPage {
             echo '<div class="notice notice-success"><p>Object-cache.php drop-in sėkmingai įdiegtas.</p></div>';
         }
 
-        if (!empty($_GET['action']) && $_GET['action'] === 'vlt_download_logs'
-            && wp_verify_nonce($_GET['_wpnonce'] ?? '', 'vlt_download_logs')) {
+        if (!empty($_GET['action']) && 'vlt_download_logs' === sanitize_key(wp_unslash($_GET['action']))
+            && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? '')), 'vlt_download_logs')) {
             $this->downloadLogsZip();
             return;
         }
 
-        $logging   = get_option('vlt_cm_logging', true);
+        $logging    = get_option('vlt_cm_logging', true);
         // Auto-detect Cloudflare: default off if domain not behind CF
-        $cf_default = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
-        $cf_track  = get_option('vlt_cm_cf_tracking', $cf_default);
-        $log_days  = (int) get_option('vlt_cm_log_days', 30);
-        $debug_on  = isset($_COOKIE['vlt_debug_cache']);
-        $dropin_ok = Plugin::instance()->dropin()->isOurs();
+        $cf_default = self::isDomainBehindCloudflare(wp_parse_url(home_url(), PHP_URL_HOST) ?? '');
+        $cf_track   = get_option('vlt_cm_cf_tracking', $cf_default);
+        $log_days   = (int) get_option('vlt_cm_log_days', 30);
+        $debug_on   = isset($_COOKIE['vlt_debug_cache']);
+        $dropin_ok  = Plugin::instance()->dropin()->isOurs();
 
         $redis_socket = get_option('vlt_redis_socket', '');
         $redis_host   = get_option('vlt_redis_host', '');
@@ -82,7 +82,7 @@ final class SettingsPage extends AdminPage {
         $img_webp     = get_option('vlt_img_optm_serve_webp', true);
         $img_quality  = (int) get_option('vlt_img_optm_quality', 82);
 
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
 
         echo '<div class="wrap"><h1>Podėlio Valdymas — Nustatymai</h1>';
@@ -95,10 +95,10 @@ final class SettingsPage extends AdminPage {
 
         echo '<tr><th>Užklausų registravimas</th><td><label><input type="checkbox" name="vlt_cm_logging" value="1"' . checked($logging, true, false) . '> Įjungtas</label></td></tr>';
         echo '<tr><th>Cloudflare stebėjimas</th><td>';
-        $cf_behind = self::isDomainBehindCloudflare(parse_url(home_url(), PHP_URL_HOST) ?? '');
+        $cf_behind = self::isDomainBehindCloudflare(wp_parse_url(home_url(), PHP_URL_HOST) ?? '');
         echo '<label><input type="checkbox" name="vlt_cm_cf_tracking" id="vlt_cm_cf_tracking" value="1"' . checked($cf_track, true, false) . '> Įjungtas</label>';
         if (!$cf_behind) {
-            echo '<p class="description" class="tw-text-red-600" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
+            echo '<p class="description tw-text-red-600" id="vlt_cf_warning">⚠ Jūsų domenas nenaudoja Cloudflare DNS / proxy — Cloudflare užklausų nebus, todėl šis stebėjimas neturi prasmės.</p>';
         }
         echo '</td></tr>';
         echo '<script>
@@ -111,7 +111,7 @@ final class SettingsPage extends AdminPage {
             }
         });
         </script>';
-        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . $log_days . '" min="1" max="365" class="tw-w-20"></td></tr>';
+        echo '<tr><th>Žurnalų saugojimas (dienų)</th><td><input type="number" name="vlt_cm_log_days" value="' . esc_attr((string) $log_days) . '" min="1" max="365" class="tw-w-20"></td></tr>';
 
         $logPath   = get_option('vlt_cm_log_path', WP_CONTENT_DIR . '/uploads/vlt-cache-logs');
         $tracePath = get_option('vlt_cm_trace_path', WP_CONTENT_DIR . '/uploads/vlt-traces');
@@ -120,8 +120,8 @@ final class SettingsPage extends AdminPage {
 
         $logMaxMb   = (int) get_option('vlt_cm_log_max_mb', 500);
         $traceMaxMb = (int) get_option('vlt_cm_trace_max_mb', 200);
-        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . $logMaxMb . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
-        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . $traceMaxMb . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max žurnalų dydis (MB)</th><td><input type="number" name="vlt_cm_log_max_mb" value="' . esc_attr((string) $logMaxMb) . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
+        echo '<tr><th>Max pėdsakų dydis (MB)</th><td><input type="number" name="vlt_cm_trace_max_mb" value="' . esc_attr((string) $traceMaxMb) . '" min="0" max="10000" class="tw-w-20"><p class="description">0 = neribota. Seniausi failai trinami viršijus limitą.</p></td></tr>';
 
         $traceHooks = get_option('vlt_trace_hooks', false);
         $traceHookMs = (float) get_option('vlt_trace_hook_threshold_ms', 1.0);
@@ -130,7 +130,7 @@ final class SettingsPage extends AdminPage {
         echo '<p class="description">Fiksuoja kiekvieno WP hook iškvietimą su argumentais, laiku ir iškvietimo vieta. ⚠ Padidina apkrovą — naudokite tik derinimui.</p>';
         echo '</td></tr>';
         echo '<tr><th>Hook sekimo slenkstis (ms)</th><td>';
-        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr($traceHookMs) . '" min="0.1" max="1000" step="0.1" class="tw-w-20"> ms';
+        echo '<input type="number" name="vlt_trace_hook_threshold_ms" value="' . esc_attr((string) $traceHookMs) . '" min="0.1" max="1000" step="0.1" class="tw-w-20"> ms';
         echo '<p class="description">Fiksuojami tik lėtesni nei nurodytas laikas hook\'ai. Rekomenduojama: 1ms.</p>';
         echo '</td></tr>';
 
@@ -176,7 +176,7 @@ final class SettingsPage extends AdminPage {
             <input type="text" name="vlt_redis_host" id="vlt_redis_host" value="<?php echo esc_attr($redis_host); ?>" class="regular-text" placeholder="127.0.0.1">
         </td></tr>
         <tr><th>Port</th><td>
-            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ?: ''); ?>" class="tw-w-24" placeholder="6379">
+            <input type="number" name="vlt_redis_port" id="vlt_redis_port" value="<?php echo esc_attr($redis_port ? (string) $redis_port : ''); ?>" class="tw-w-24" placeholder="6379">
             <p class="description">Palikite tuščią — bus naudojamas automatinis aptikimas.</p>
         </td></tr>
         </tbody>
@@ -198,7 +198,7 @@ final class SettingsPage extends AdminPage {
             const result = document.getElementById('vlt-redis-detect-result');
             status.textContent = 'Aptinkama...';
             result.style.display = 'none';
-            fetch('<?php echo $rest_url; ?>/redis/detect', {headers: {'X-WP-Nonce': '<?php echo $nonce; ?>'}})
+            fetch('<?php echo esc_js($rest_url); ?>/redis/detect', {headers: {'X-WP-Nonce': '<?php echo esc_js($nonce); ?>'}})
                 .then(r => r.json())
                 .then(d => {
                     status.textContent = d.connected ? '✅ Redis rastas!' : '❌ Redis nerastas';
@@ -252,18 +252,18 @@ final class SettingsPage extends AdminPage {
             $gd      = $imgStatus['gd'] ? '✅ GD (WebP)' : '❌ GD WebP nepasiekiamas';
             $imagick = $imgStatus['imagick'] ? '✅ Imagick (WebP)' : '❌ Imagick WebP nepasiekiamas';
             $avif    = ($imgStatus['avif'] ?? false) ? '✅ Imagick (AVIF)' : '❌ AVIF nepasiekiamas';
-            echo '<p>' . $gd . ' &nbsp; ' . $imagick . ' &nbsp; ' . $avif . '</p>';
+            echo '<p>' . esc_html($gd) . ' &nbsp; ' . esc_html($imagick) . ' &nbsp; ' . esc_html($avif) . '</p>';
             echo '<p><small>Formatas: AVIF (jei palaikomas) → WebP → originalas (kaip atsarginis)</small></p>';
-            echo '<p>Iš viso paveikslėlių: <strong>' . $imgStatus['total'] . '</strong> &nbsp; '
-                . 'Optimizuota: <strong>' . $imgStatus['optimized'] . '</strong> &nbsp; '
-                . 'Laukia: <strong>' . $imgStatus['pending'] . '</strong></p>';
+            echo '<p>Iš viso paveikslėlių: <strong>' . (int) $imgStatus['total'] . '</strong> &nbsp; '
+                . 'Optimizuota: <strong>' . (int) $imgStatus['optimized'] . '</strong> &nbsp; '
+                . 'Laukia: <strong>' . (int) $imgStatus['pending'] . '</strong></p>';
             if (!$imgStatus['gd'] && !$imgStatus['imagick']) {
                 echo '<div class="notice notice-warning tw-inline"><p>WebP konvertavimui reikalingas GD su WebP palaikymu arba Imagick. '
                     . 'Įdiekite <code>php-gd</code> arba <code>php-imagick</code>.</p></div>';
             }
             echo '<button type="button" id="vlt-img-optm-run" class="button button-primary" '
                 . ($imgStatus['pending'] === 0 ? 'disabled' : '') . '>'
-                . 'Optimizuoti laukiančius (' . $imgStatus['pending'] . ')</button> '
+                . 'Optimizuoti laukiančius (' . (int) $imgStatus['pending'] . ')</button> '
                 . '<span id="vlt-img-optm-status" class="tw-ml-2.5 tw-text-gray-500"></span>';
             ?>
             <script>
@@ -274,7 +274,7 @@ final class SettingsPage extends AdminPage {
                 status.textContent = 'Vykdoma...';
                 fetch('<?php echo esc_js(rest_url('vlt-cache/v1/img-optm/run')); ?>', {
                     method: 'POST',
-                    headers: {'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json'},
+                    headers: {'X-WP-Nonce': '<?php echo esc_js(wp_create_nonce('wp_rest')); ?>', 'Content-Type': 'application/json'},
                     body: JSON.stringify({limit: 100})
                 }).then(r => r.json()).then(d => {
                     if (d.delegated) {
@@ -295,7 +295,7 @@ final class SettingsPage extends AdminPage {
         wp_nonce_field('vlt_cm_settings');
         echo '<tr><th>Įjungti WebP konvertavimą</th><td><label><input type="checkbox" name="vlt_img_optm_enabled" value="1"' . checked($img_enabled, true, false) . '> Konvertuoti JPEG/PNG į WebP įkeliant</label></td></tr>';
         echo '<tr><th>Pateikti WebP naršyklėms</th><td><label><input type="checkbox" name="vlt_img_optm_serve_webp" value="1"' . checked($img_webp, true, false) . '> Pakeisti paveikslėlių URL į .webp (jei failas egzistuoja)</label></td></tr>';
-        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr($img_quality) . '" min="1" max="100" class="tw-w-[70px]"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
+        echo '<tr><th>WebP kokybė</th><td><input type="number" name="vlt_img_optm_quality" value="' . esc_attr((string) $img_quality) . '" min="1" max="100" class="tw-w-[70px]"> <span class="description">1–100, rekomenduojama 80–85</span></td></tr>';
         echo '</table>';
         echo '<p class="submit"><button class="button button-primary" type="submit">Išsaugoti nustatymus</button></p>';
         echo '</form>';
@@ -313,7 +313,7 @@ final class SettingsPage extends AdminPage {
             this.disabled = true; s.textContent = "Aptinkama...";
             fetch("' . esc_js(rest_url('vlt-cache/v1/server-detect')) . '", {
                 method: "POST",
-                headers: {"X-WP-Nonce": "' . wp_create_nonce('wp_rest') . '"}
+                headers: {"X-WP-Nonce": "' . esc_js(wp_create_nonce('wp_rest')) . '"}
             }).then(r => r.json()).then(d => {
                 s.textContent = "✅ Aptikta: " + d.server + (d.version ? " v" + d.version : "");
                 setTimeout(() => location.reload(), 1500);
@@ -339,6 +339,7 @@ final class SettingsPage extends AdminPage {
             '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
         ];
 
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- DNS lookup may warn on offline or local hostnames.
         $ips = @dns_get_record($host, DNS_A);
         if (empty($ips)) {
             return false;
@@ -364,7 +365,7 @@ final class SettingsPage extends AdminPage {
     private function renderLogFiles(): void {
         $logDir   = WP_CONTENT_DIR . '/uploads/vlt-cache-logs';
         $traceDir = WP_CONTENT_DIR . '/uploads/vlt-traces';
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
 
         $logFiles   = glob($logDir . '/cache-log-*.json') ?: [];
@@ -445,7 +446,7 @@ final class SettingsPage extends AdminPage {
                 const endpoint=type==='trace'?'tracer/history':'logs';
                 const date=name.match(/(\d{4}-\d{2}-\d{2})/)?.[1]||'';
                 try{
-                    const r=await fetch('<?php echo $rest_url; ?>/'+endpoint+'?date='+date+'&limit=500',{headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});
+                    const r=await fetch('<?php echo esc_js($rest_url); ?>/'+endpoint+'?date='+date+'&limit=500',{headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
                     const d=await r.json();
                     const rows=Array.isArray(d)?d:(d.rows||d.data||[]);
                     this.entries=rows.map(e=>({...e,_open:false}));
@@ -480,8 +481,9 @@ final class SettingsPage extends AdminPage {
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="vlt-cache-logs-' . gmdate('Y-m-d') . '.zip"');
         header('Content-Length: ' . filesize($tmp));
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming temporary ZIP download to admin browser.
         readfile($tmp);
-        @unlink($tmp);
+        wp_delete_file($tmp);
         exit;
     }
 
@@ -493,7 +495,9 @@ final class SettingsPage extends AdminPage {
         if ($mapFile === '') {
             return true;
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Nginx map file lives outside WP root.
         $writable = (file_exists($mapFile) && is_writable($mapFile))
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Nginx map dir lives outside WP root.
             || (!file_exists($mapFile) && is_dir(dirname($mapFile)) && is_writable(dirname($mapFile)));
         if (!$writable) {
             return true;
@@ -505,7 +509,7 @@ final class SettingsPage extends AdminPage {
             if ($path === '') {
                 continue;
             }
-            $parsed = parse_url($path);
+            $parsed = wp_parse_url($path);
             if ($parsed === false) {
                 continue;
             }
@@ -557,21 +561,26 @@ final class SettingsPage extends AdminPage {
         $lines[] = '}';
 
         $hadPrev = file_exists($mapFile);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Backup existing Nginx exclusions file before rewrite.
         $prev    = $hadPrev ? @file_get_contents($mapFile) : null;
 
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic write to Nginx conf.d map file outside WP root.
         if (@file_put_contents($mapFile, implode("\n", $lines) . "\n") === false) {
             return false;
         }
         if (function_exists('shell_exec')) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Validate generated Nginx exclusions syntax before reloading.
             $test = shell_exec('nginx -t 2>&1');
             if (!str_contains($test ?? '', 'successful')) {
                 if ($hadPrev && $prev !== false) {
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Roll back Nginx exclusions file on failed nginx -t.
                     @file_put_contents($mapFile, $prev);
                 } elseif (!$hadPrev) {
-                    @unlink($mapFile);
+                    wp_delete_file($mapFile);
                 }
                 return false;
             }
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec -- Reload Nginx after verified nginx -t success.
             shell_exec('nginx -s reload 2>&1');
         }
         return true;

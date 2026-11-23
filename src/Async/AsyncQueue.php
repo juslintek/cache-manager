@@ -50,7 +50,7 @@ final class AsyncQueue {
             return $jobId;
         }
 
-        $r->rPush(self::QUEUE_KEY, json_encode($job));
+        $r->rPush(self::QUEUE_KEY, (string) wp_json_encode($job));
         $r->close();
 
         // Trigger background worker (non-blocking loopback)
@@ -98,11 +98,12 @@ final class AsyncQueue {
             return;
         }
 
-        $batch = [];
-        $now   = time();
+        $batch      = [];
+        $batchCount = 0;
+        $now        = time();
 
         // Pull up to MAX_WORKERS ready jobs
-        while (count($batch) < self::MAX_WORKERS) {
+        while ($batchCount < self::MAX_WORKERS) {
             $raw = $r->lPop(self::QUEUE_KEY);
             if (!$raw) {
                 break;
@@ -117,6 +118,7 @@ final class AsyncQueue {
                 break;
             }
             $batch[] = $job;
+            ++$batchCount;
         }
 
         $r->del(self::RUNNING_KEY);
@@ -127,7 +129,7 @@ final class AsyncQueue {
         }
 
         // Execute batch concurrently via Fibers
-        if (PHP_VERSION_ID >= 80100 && class_exists('Fiber') && count($batch) > 1) {
+        if (PHP_VERSION_ID >= 80100 && class_exists('Fiber') && $batchCount > 1) {
             self::runJobsWithFibers($batch);
         } else {
             foreach ($batch as $job) {
@@ -195,11 +197,11 @@ final class AsyncQueue {
         try {
             do_action($job['hook'], ...($job['args'] ?? []));
             if ($r) {
-                $r->setEx(self::RESULT_KEY . $job['id'], 3600, json_encode(['status' => 'done', 'ts' => time()]));
+                $r->setEx(self::RESULT_KEY . $job['id'], 3600, (string) wp_json_encode(['status' => 'done', 'ts' => time()]));
             }
         } catch (\Throwable $e) {
             if ($r) {
-                $r->setEx(self::RESULT_KEY . $job['id'], 3600, json_encode(['status' => 'error', 'error' => $e->getMessage()]));
+                $r->setEx(self::RESULT_KEY . $job['id'], 3600, (string) wp_json_encode(['status' => 'error', 'error' => $e->getMessage()]));
             }
         } finally {
             $r?->close();

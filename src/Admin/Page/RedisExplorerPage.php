@@ -14,10 +14,9 @@ final class RedisExplorerPage extends AdminPage {
  return 'Redis Explorer'; }
 
     public function render(): void {
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
         ?>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
         <script>
         function secOpen(key){try{return localStorage.getItem('vlt_redis_'+key)!=='0'}catch(e){return true}}
         function secSave(key,v){try{localStorage.setItem('vlt_redis_'+key,v?'1':'0')}catch(e){}}
@@ -312,7 +311,7 @@ final class RedisExplorerPage extends AdminPage {
                 async api(action, params={}) {
                     const p = new URLSearchParams(params);
                     try {
-                        const r = await fetch('<?php echo $rest_url; ?>/redis/'+action+'?'+p, {headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});
+                        const r = await fetch('<?php echo esc_js($rest_url); ?>/redis/'+action+'?'+p, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
                         const d = await r.json();
                         return d.error ? null : d;
                     } catch(e) { console.error(e); return null; }

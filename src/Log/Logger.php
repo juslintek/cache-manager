@@ -21,18 +21,21 @@ final class Logger {
         $this->initDir();
         $uid  = get_current_user_id();
         $user = $uid ? get_userdata($uid) : null;
-        $entry = json_encode([
+        $entry = wp_json_encode([
             'timestamp' => gmdate('c'),
             'type'      => $type,
             'details'   => $details,
             'user_id'   => $uid,
             'user_name' => $user ? $user->display_name : (defined('WP_CLI') ? 'WP-CLI' : 'Sistema'),
             'ip'        => $this->ip(),
-            'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+            'uri'       => isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '',
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
         $file = $this->dir . '/cache-log-' . gmdate('Y-m-d') . '.json';
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Atomic append to local cache log file.
         @file_put_contents($file, $entry, FILE_APPEND | LOCK_EX);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_chown -- Align cache log ownership with nginx worker when permitted.
         @chown($file, 'nginx');
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_chgrp -- Align cache log group with nginx worker when permitted.
         @chgrp($file, 'nginx');
         // Push to Redis for live SSE streaming
         try {
@@ -44,6 +47,8 @@ final class Logger {
                 $r->close();
             }
         } catch (\Throwable $e) {
+            // Redis live log push is optional best-effort.
+            unset($e);
         }
     }
 
@@ -51,7 +56,7 @@ final class Logger {
         if (!get_option('vlt_cm_cf_tracking', true)) {
             return;
         }
-        $ray = $_SERVER['HTTP_CF_RAY'] ?? '';
+        $ray = isset($_SERVER['HTTP_CF_RAY']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_RAY'])) : '';
         if (!$ray) {
             return;
         }
@@ -60,24 +65,26 @@ final class Logger {
         $entry = [
             'ts'         => gmdate('c'),
             'ray'        => $ray,
-            'country'    => $_SERVER['HTTP_CF_IPCOUNTRY'] ?? '',
+            'country'    => isset($_SERVER['HTTP_CF_IPCOUNTRY']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_IPCOUNTRY'])) : '',
             'ip'         => $this->ip(),
-            'uri'        => $_SERVER['REQUEST_URI'] ?? '',
+            'uri'        => isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '',
             'user_id'    => $uid,
             'user_name'  => $user ? $user->display_name : '',
             'user_email' => $user ? $user->user_email : '',
             'challenged' => isset($_COOKIE['cf_clearance']),
-            'ua'         => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300),
+            'ua'         => substr(isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '', 0, 300),
         ];
         try {
             $r = RedisFactory::create(0.2);
             if ($r) {
-                $r->lPush('vlt_cf_live', json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                $r->lPush('vlt_cf_live', (string) wp_json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
                 $r->lTrim('vlt_cf_live', 0, 499);
                 $r->expire('vlt_cf_live', 600);
                 $r->close();
             }
         } catch (\Throwable $e) {
+            // Redis live Cloudflare push is optional best-effort.
+            unset($e);
         }
         $this->log('cloudflare', $entry);
     }
@@ -112,12 +119,13 @@ final class Logger {
         if (!file_exists($file)) {
             return $stats;
         }
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streaming read of local daily JSONL log.
         $fh = @fopen($file, 'r');
         if (!$fh) {
             return $stats;
         }
         $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
-        while (($line = fgets($fh)) !== false) {
+        for ($line = fgets($fh); false !== $line; $line = fgets($fh)) {
             $line = trim($line);
             if ($line === '') {
                 continue;
@@ -134,6 +142,7 @@ final class Logger {
                 ++$stats['purges'];
             }
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing local streaming handle.
         fclose($fh);
         return $stats;
     }
@@ -143,6 +152,7 @@ final class Logger {
         if (!file_exists($file)) {
             return [];
         }
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Streaming tail read of local daily JSONL log.
         $fh = @fopen($file, 'r');
         if (!$fh) {
             return [];
@@ -155,7 +165,7 @@ final class Logger {
         }
         $decode = function_exists('simdjson_decode') ? 'simdjson_decode' : 'json_decode';
         $purges = [];
-        while (($line = fgets($fh)) !== false) {
+        for ($line = fgets($fh); false !== $line; $line = fgets($fh)) {
             $line = trim($line);
             if ($line === '' || !str_contains($line, '"purge"')) {
                 continue;
@@ -165,6 +175,7 @@ final class Logger {
                 $purges[] = $e;
             }
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing local streaming handle.
         fclose($fh);
         return array_slice(array_reverse($purges), 0, $limit);
     }
@@ -175,7 +186,7 @@ final class Logger {
         $cutoff = gmdate('Y-m-d', strtotime("-{$days} days"));
         foreach (glob($this->dir . '/cache-log-*.json') as $f) {
             if (preg_match('/cache-log-(\d{4}-\d{2}-\d{2})\.json$/', $f, $m) && $m[1] < $cutoff) {
-                @unlink($f);
+                wp_delete_file($f);
             }
         }
         // Size-based rotation (MB)
@@ -191,11 +202,13 @@ final class Logger {
             return;
         }
         sort($files); // oldest first (date in filename)
-        $total = array_sum(array_map('filesize', $files));
-        while ($total > $maxBytes && count($files) > 1) {
+        $total     = array_sum(array_map('filesize', $files));
+        $remaining = count($files);
+        while ($total > $maxBytes && $remaining > 1) {
             $oldest = array_shift($files);
+            --$remaining;
             $total -= filesize($oldest);
-            @unlink($oldest);
+            wp_delete_file($oldest);
         }
     }
 
@@ -203,15 +216,24 @@ final class Logger {
         if (is_dir($this->dir)) {
             return;
         }
-        if (!@mkdir($this->dir, 0755, true) && !is_dir($this->dir)) {
+        if (!wp_mkdir_p($this->dir) && !is_dir($this->dir)) {
             return;
         }
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Ensure local log directory permissions.
         @chmod($this->dir, 0755);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Protect local log directory from HTTP access.
         @file_put_contents($this->dir . '/.htaccess', "Deny from all\n", LOCK_EX);
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Silence directory listing for local log directory.
         @file_put_contents($this->dir . '/index.php', "<?php\n// Silence.\n", LOCK_EX);
     }
 
     private function ip(): string {
-        return $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            return sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_CONNECTING_IP']));
+        }
+        if (!empty($_SERVER['REMOTE_ADDR'])) {
+            return sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']));
+        }
+        return '';
     }
 }

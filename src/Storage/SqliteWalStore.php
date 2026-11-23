@@ -22,7 +22,7 @@ final class SqliteWalStore implements PersistentStoreInterface {
 
         $dir = dirname($path);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+            wp_mkdir_p($dir);
         }
 
         $this->db = new SQLite3($path);
@@ -44,6 +44,7 @@ final class SqliteWalStore implements PersistentStoreInterface {
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
         $stmt->bindValue(':t', time(), SQLITE3_INTEGER);
         $result = $stmt->execute()->fetchArray(SQLITE3_NUM);
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- Internal persistent KV store must round-trip WordPress/PHP objects (stdClass, WP_Post, etc.).
         return $result ? unserialize($result[0]) : null;
     }
 
@@ -51,6 +52,7 @@ final class SqliteWalStore implements PersistentStoreInterface {
         $expires = $ttl > 0 ? time() + $ttl : 0;
         $stmt = $this->db->prepare('INSERT OR REPLACE INTO kv (key, value, expires_at) VALUES (:k, :v, :e)');
         $stmt->bindValue(':k', $key, SQLITE3_TEXT);
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Persistent KV store encodes arbitrary PHP scalar/array/object values.
         $stmt->bindValue(':v', serialize($value), SQLITE3_BLOB);
         $stmt->bindValue(':e', $expires, SQLITE3_INTEGER);
         return $stmt->execute() !== false;
@@ -86,11 +88,12 @@ final class SqliteWalStore implements PersistentStoreInterface {
     }
 
     public function scan(string $prefix): iterable {
-        $stmt = $this->db->prepare('SELECT key, value FROM kv WHERE key LIKE :p AND (expires_at = 0 OR expires_at > :t)');
+        $stmt = $this->db->prepare("SELECT key, value FROM kv WHERE key LIKE :p ESCAPE '\\' AND (expires_at = 0 OR expires_at > :t)");
         $stmt->bindValue(':p', $this->escapeLike($prefix) . '%', SQLITE3_TEXT);
         $stmt->bindValue(':t', time(), SQLITE3_INTEGER);
         $result = $stmt->execute();
-        while ($row = $result->fetchArray(SQLITE3_NUM)) {
+        for ($row = $result->fetchArray(SQLITE3_NUM); $row !== false; $row = $result->fetchArray(SQLITE3_NUM)) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- Internal persistent KV store must round-trip WordPress/PHP objects (stdClass, WP_Post, etc.).
             yield $row[0] => unserialize($row[1]);
         }
     }
@@ -108,6 +111,6 @@ final class SqliteWalStore implements PersistentStoreInterface {
     }
 
     private function escapeLike(string $s): string {
-        return str_replace(['%', '_'], ['\%', '\_'], $s);
+        return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $s);
     }
 }

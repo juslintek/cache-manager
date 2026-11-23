@@ -188,7 +188,7 @@ final class LiteSpeedCache {
             header('X-LiteSpeed-Purge: ' . $tags);
         } else {
             // CLI or headers already sent — use loopback HTTP request to deliver purge
-            $url = home_url('/?_lscache_purge=' . urlencode($tags) . '&_t=' . time());
+            $url = home_url('/?_lscache_purge=' . rawurlencode($tags) . '&_t=' . time());
             wp_remote_get($url, [
                 'timeout'   => 3,
                 'blocking'  => false,
@@ -221,6 +221,7 @@ final class LiteSpeedCache {
 
     public static function setCacheable(): void {
  self::$cacheable = true; }
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Public API accepts optional diagnostic reason.
     public static function setNocache(string $reason = ''): void {
  self::$cacheable = false; }
     public static function isCacheable(): bool {

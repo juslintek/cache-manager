@@ -15,10 +15,10 @@ final class TracerPage extends AdminPage {
  return 'Tracer'; }
 
     public function render(): void {
-        $rest_url = esc_js(rest_url('vlt-cache/v1'));
+        $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
         $max      = (int) get_option('vlt_trace_max', TracerConfig::VLT_TR_MAX);
-        $sse_url  = esc_js(rest_url('vlt-cache/v1/tracer/stream') . '?_wpnonce=' . $nonce);
+        $sse_url  = rest_url('vlt-cache/v1/tracer/stream') . '?_wpnonce=' . $nonce;
 
         // ── Extension status notices ──────────────────────────────────────────
         $hasExcimer = class_exists('ExcimerProfiler');
@@ -39,12 +39,12 @@ final class TracerPage extends AdminPage {
         echo '<strong>Trace Worker:</strong> ';
         if ($workerStatus['running']) {
             echo '<span style="color:#46b450">● Veikia</span>';
-            echo ' &nbsp; Eilėje: <strong>' . $workerStatus['queue_len'] . '</strong>';
+            echo ' &nbsp; Eilėje: <strong>' . (int) $workerStatus['queue_len'] . '</strong>';
             echo ' &nbsp; Heartbeat: ' . esc_html($workerStatus['heartbeat'] ?? '—');
             echo ' &nbsp; <button type="button" id="vlt-worker-stop" class="button button-small">⏹ Sustabdyti</button>';
         } else {
             echo '<span style="color:#d63638">● Sustabdytas</span>';
-            echo ' &nbsp; Eilėje: <strong>' . $workerStatus['queue_len'] . '</strong>';
+            echo ' &nbsp; Eilėje: <strong>' . (int) $workerStatus['queue_len'] . '</strong>';
             echo ' &nbsp; <button type="button" id="vlt-worker-start" class="button button-small button-primary">▶ Paleisti</button>';
         }
         echo '<span id="vlt-worker-status" style="color:#666"></span>';
@@ -56,7 +56,7 @@ final class TracerPage extends AdminPage {
                 const s = document.getElementById("vlt-worker-status");
                 this.disabled = true; s.textContent = "...";
                 fetch("' . esc_js(rest_url('vlt-cache/v1/trace-worker/')) . '" + action, {
-                    method: "POST", headers: {"X-WP-Nonce": "' . $nonce . '"}
+                    method: "POST", headers: {"X-WP-Nonce": "' . esc_js($nonce) . '"}
                 }).then(r=>r.json()).then(()=>{ s.textContent="✅"; setTimeout(()=>location.reload(),1000); })
                 .catch(()=>{ s.textContent="❌"; this.disabled=false; });
             });
@@ -494,7 +494,7 @@ final class TracerPage extends AdminPage {
 
         <script>
         function vltT(){return{
-            tab:'live',live:[],maxT:<?php echo $max; ?>,
+            tab:'live',live:[],maxT:<?php echo (int) $max; ?>,
             sc:'total_ms',sd:'desc',detailTrace:null,evtSource:null,sseConnected:false,
             expDate:'',expData:[],expTotal:0,expOffset:0,expLimit:200,esc:'total_ms',esd:'desc',
             ef:{method:'',uri:'',status:'',ip:'',minMs:0,maxMs:0,minDb:0,minDbMs:0,minMem:'',user:'',co:''},
@@ -506,7 +506,7 @@ final class TracerPage extends AdminPage {
             },
             startSSE(){
                 if(this.evtSource)this.evtSource.close();
-                this.evtSource=new EventSource('<?php echo $sse_url; ?>');
+                this.evtSource=new EventSource('<?php echo esc_js($sse_url); ?>');
                 this.evtSource.onopen=()=>{this.sseConnected=true};
                 this.evtSource.onmessage=(e)=>{
                     try{
@@ -605,7 +605,7 @@ final class TracerPage extends AdminPage {
                 q.sort((a,b)=>{const va=a[qsc]??'',vb=b[qsc]??'';const cmp=typeof va==='number'?va-vb:String(va).localeCompare(String(vb));return qsd==='asc'?cmp:-cmp});
                 return q;
             },
-            async rpc(s,p={}){try{const r=await fetch('<?php echo $rest_url; ?>/tracer/'+s+'?'+new URLSearchParams(p),{headers:{'X-WP-Nonce':'<?php echo $nonce; ?>'}});const d=await r.json();return d.error?null:d}catch(e){return null}},
+            async rpc(s,p={}){try{const r=await fetch('<?php echo esc_js($rest_url); ?>/tracer/'+s+'?'+new URLSearchParams(p),{headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});const d=await r.json();return d.error?null:d}catch(e){return null}},
             sz(b){if(!b)return'—';if(b>=1048576)return(b/1048576).toFixed(1)+'MB';if(b>=1024)return(b/1024).toFixed(0)+'KB';return b+'B'}
         }}
         </script>

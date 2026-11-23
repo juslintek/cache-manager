@@ -33,7 +33,7 @@ final class PurgeManager {
         if (!isset($this->strategies[$type])) {
             return false;
         }
-        @ini_set('memory_limit', '512M');
+        wp_raise_memory_limit('admin');
         try {
             $this->strategies[$type]->purge();
         } catch (\Throwable $e) {

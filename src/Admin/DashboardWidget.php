@@ -39,20 +39,23 @@ final class DashboardWidget {
 
         // Forms
         $entries = wp_count_posts('gratis_form_entry');
-        if ($entries && $entries->publish > 0) {
-            self::card('Forms', (string) $entries->publish, 'entries');
+        $entries_publish = (int) ($entries->publish ?? 0);
+        if ($entries_publish > 0) {
+            self::card('Forms', (string) $entries_publish, 'entries');
         }
 
         // CRM contacts
         $contacts = wp_count_posts('gratis_contact');
-        if ($contacts && $contacts->publish > 0) {
-            self::card('CRM', (string) $contacts->publish, 'contacts');
+        $contacts_publish = (int) ($contacts->publish ?? 0);
+        if ($contacts_publish > 0) {
+            self::card('CRM', (string) $contacts_publish, 'contacts');
         }
 
         // Commerce orders
         $orders = wp_count_posts('gratis_order');
-        if ($orders && $orders->publish > 0) {
-            self::card('Orders', (string) $orders->publish, 'total');
+        $orders_publish = (int) ($orders->publish ?? 0);
+        if ($orders_publish > 0) {
+            self::card('Orders', (string) $orders_publish, 'total');
         }
 
         // Security
@@ -66,7 +69,7 @@ final class DashboardWidget {
         }
 
         echo '</div>';
-        echo '<p style="margin-top:12px;font-size:12px;color:#666">Gratis Suite — ' . count(get_option('active_plugins', [])) . ' plugins active | <a href="' . admin_url('admin.php?page=gratis-fleet') . '">Fleet Dashboard →</a></p>';
+        echo '<p style="margin-top:12px;font-size:12px;color:#666">Gratis Suite — ' . (int) count((array) get_option('active_plugins', [])) . ' plugins active | <a href="' . esc_url(admin_url('admin.php?page=gratis-fleet')) . '">Fleet Dashboard →</a></p>';
     }
 
     private static function card(string $label, string $value, string $sub): void {

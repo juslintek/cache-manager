@@ -22,8 +22,10 @@ if (!defined('GRATIS_CACHE_NGINX_CACHE')) {
 require_once __DIR__ . '/autoload.php';
 
 // Tracer — skip on admin/cron/CLI/REST and only boot when sampling or explicitly enabled
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tracer bypass check; action handlers verify nonces.
+$_vlt_action = isset($_GET['action']) ? sanitize_key(wp_unslash($_GET['action'])) : '';
 $_vlt_skip_tracer = is_admin()
-    || (isset($_GET['action']) && str_starts_with($_GET['action'] ?? '', 'vlt_'))
+    || str_starts_with($_vlt_action, 'vlt_')
     || (defined('REST_REQUEST') && REST_REQUEST)
     || (defined('DOING_CRON') && DOING_CRON)
     || (defined('WP_CLI') && WP_CLI);
@@ -67,8 +69,9 @@ add_filter('template_include', function ($tpl) {
 add_action('shutdown', function () {
     try {
         \Gratis\Cache\Tracer\Tracer::finish();
-    } catch (\Throwable) {
-        // Never let tracer crash affect HTTP response code
+    } catch (\Throwable $e) {
+        // Never let tracer crash affect HTTP response code.
+        unset($e);
     }
 }, 0);
 } // end if (!$_vlt_skip_tracer)

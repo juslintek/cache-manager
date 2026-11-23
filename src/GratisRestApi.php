@@ -35,6 +35,7 @@ final class GratisRestApi {
         return current_user_can('manage_options');
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- WordPress REST route callback signature.
     public static function status(\WP_REST_Request $request): \WP_REST_Response {
         $caps = Diagnostics\CapabilityDetector::detect();
         return new \WP_REST_Response([
@@ -49,6 +50,7 @@ final class GratisRestApi {
         ]);
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- WordPress REST route callback signature.
     public static function stats(\WP_REST_Request $request): \WP_REST_Response {
         $logger = new Log\Logger();
         $stats = $logger->getTodayStats();
@@ -64,6 +66,7 @@ final class GratisRestApi {
         ]);
     }
 
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- WordPress REST route callback signature.
     public static function purge(\WP_REST_Request $request): \WP_REST_Response {
         do_action('gratis_cache_purge_all', 'rest-api');
         return new \WP_REST_Response(['purged' => true, 'timestamp' => gmdate('c')]);

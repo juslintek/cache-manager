@@ -14,7 +14,7 @@ final class ResourceHints {
 
     public static function output(): void {
         $domains = self::detectExternalDomains();
-        $siteHost = parse_url(home_url(), PHP_URL_HOST);
+        $siteHost = wp_parse_url(home_url(), PHP_URL_HOST);
 
         foreach ($domains as $domain) {
             if ($domain === $siteHost) continue;
@@ -36,12 +36,12 @@ final class ResourceHints {
 
         // Check enqueued styles
         global $wp_styles, $wp_scripts;
-        $siteHost = parse_url(home_url(), PHP_URL_HOST);
+        $siteHost = wp_parse_url(home_url(), PHP_URL_HOST);
 
         if ($wp_styles) {
             foreach ($wp_styles->registered as $style) {
                 if (!$style->src || !is_string($style->src)) continue;
-                $host = parse_url($style->src, PHP_URL_HOST);
+                $host = wp_parse_url($style->src, PHP_URL_HOST);
                 if ($host && $host !== $siteHost) $domains[] = $host;
             }
         }
@@ -49,7 +49,7 @@ final class ResourceHints {
         if ($wp_scripts) {
             foreach ($wp_scripts->registered as $script) {
                 if (!$script->src || !is_string($script->src)) continue;
-                $host = parse_url($script->src, PHP_URL_HOST);
+                $host = wp_parse_url($script->src, PHP_URL_HOST);
                 if ($host && $host !== $siteHost) $domains[] = $host;
             }
         }

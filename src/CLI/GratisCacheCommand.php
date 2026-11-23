@@ -12,6 +12,7 @@ final class GratisCacheCommand {
      *     wp gratis-cache status
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function status($args, $assoc_args): void {
         $caps = CapabilityDetector::detect();
 
@@ -79,7 +80,10 @@ final class GratisCacheCommand {
                     $results[] = $this->benchRedis($r, $iterations);
                     $r->close();
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+                // Skip Redis benchmark row if Redis server is unreachable.
+                unset($e);
+            }
         }
 
         // SQLite
@@ -132,6 +136,7 @@ final class GratisCacheCommand {
     }
 
     private function benchSqlite(int $n): array {
+        // phpcs:ignore PHPCompatibility.Extensions.RemovedExtensions.sqliteRemoved -- Uses PHP 8.x sqlite3 extension (\SQLite3), not removed PHP 5.3 sqlite extension.
         $db = new \SQLite3(':memory:');
         $db->exec('CREATE TABLE bench (k TEXT PRIMARY KEY, v BLOB)');
         $val = str_repeat('x', 100);
@@ -161,22 +166,31 @@ final class GratisCacheCommand {
 
     private function benchFile(int $n): array {
         $dir = sys_get_temp_dir() . '/gratis-bench-' . getmypid();
-        @mkdir($dir, 0755, true);
+        wp_mkdir_p($dir);
         $val = str_repeat('x', 100);
-
-        $s = microtime(true);
-        for ($i = 0; $i < min($n, 500); $i++) file_put_contents("{$dir}/key_{$i}", $val);
-        $write = microtime(true) - $s;
         $fileN = min($n, 500);
 
         $s = microtime(true);
-        for ($i = 0; $i < $fileN; $i++) @file_get_contents("{$dir}/key_{$i}");
+        for ($i = 0; $i < $fileN; $i++) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Raw filesystem I/O benchmark.
+            file_put_contents("{$dir}/key_{$i}", $val);
+        }
+        $write = microtime(true) - $s;
+
+        $s = microtime(true);
+        for ($i = 0; $i < $fileN; $i++) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Raw filesystem I/O benchmark.
+            @file_get_contents("{$dir}/key_{$i}");
+        }
         $read = microtime(true) - $s;
 
         $s = microtime(true);
-        for ($i = 0; $i < $fileN; $i++) @unlink("{$dir}/key_{$i}");
+        for ($i = 0; $i < $fileN; $i++) {
+            wp_delete_file("{$dir}/key_{$i}");
+        }
         $del = microtime(true) - $s;
 
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Removes ephemeral benchmark temp directory.
         @rmdir($dir);
         return ['Backend' => 'file', 'Write' => round($write * 1000, 1) . 'ms', 'Read' => round($read * 1000, 1) . 'ms', 'Delete' => round($del * 1000, 1) . 'ms', 'Ops/sec' => number_format((int) ($fileN * 3 / ($write + $read + $del)))];
     }
@@ -187,6 +201,7 @@ final class GratisCacheCommand {
      *     wp gratis-cache purge
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function purge($args, $assoc_args): void {
         do_action('gratis_cache_purge_all', 'cli');
         \WP_CLI::success('All cache layers purged.');
@@ -221,6 +236,7 @@ final class GratisCacheCommand {
      * @subcommand debug-url
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function debug_url($args, $assoc_args): void {
         $url = $args[0];
         \WP_CLI::log("=== Cache Debug: {$url} ===\n");
@@ -230,7 +246,7 @@ final class GratisCacheCommand {
         \WP_CLI::log('  Active: ' . get_stylesheet() . ' ' . wp_get_theme()->get('Version'));
         $themeJson = get_stylesheet_directory() . '/theme.json';
         if (file_exists($themeJson)) {
-            \WP_CLI::log('  theme.json: ' . substr(md5_file($themeJson), 0, 8) . ' (modified ' . date('Y-m-d H:i:s', filemtime($themeJson)) . ')');
+            \WP_CLI::log('  theme.json: ' . substr(md5_file($themeJson), 0, 8) . ' (modified ' . gmdate('Y-m-d H:i:s', filemtime($themeJson)) . ')');
         }
 
         // 2. URL Resolution
@@ -248,6 +264,7 @@ final class GratisCacheCommand {
         \WP_CLI::log("\n── Object Cache ──");
         $dropin = WP_CONTENT_DIR . '/object-cache.php';
         if (file_exists($dropin)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads first 300 bytes of local object-cache.php drop-in.
             $header = file_get_contents($dropin, false, null, 0, 300);
             if (str_contains($header, 'VLT')) {
                 \WP_CLI::log('  Drop-in: Gratis/VLT (Redis)');
@@ -280,6 +297,7 @@ final class GratisCacheCommand {
         // 4. OPcache
         \WP_CLI::log("\n── OPcache ──");
         if (function_exists('opcache_get_status')) {
+            // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- opcache_get_status warns when restricted by opcache.restrict_api.
             $oc = @opcache_get_status(false);
             if ($oc && ($oc['opcache_enabled'] ?? false)) {
                 $scripts = $oc['opcache_statistics']['num_cached_scripts'] ?? 0;
@@ -294,6 +312,7 @@ final class GratisCacheCommand {
 
         // 5. Page Cache (Nginx/LiteSpeed/Cloudflare)
         \WP_CLI::log("\n── Page Cache ──");
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- CLI probe handles unreachable URLs via falsy check.
         $headers = @get_headers($url, true);
         if ($headers) {
             // Nginx FastCGI
@@ -332,7 +351,7 @@ final class GratisCacheCommand {
         $scanner = new \Gratis\Cache\Storage\FileChangeScanner($store);
         $last = $scanner->lastChange(get_stylesheet_directory());
         if ($last) {
-            \WP_CLI::log('  Last theme change: ' . date('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ')');
+            \WP_CLI::log('  Last theme change: ' . gmdate('Y-m-d H:i:s', $last['_ts'] ?? 0) . " ({$last['type']}: " . basename($last['path'] ?? '') . ')');
         } else {
             \WP_CLI::log('  No theme file changes recorded');
         }
@@ -342,7 +361,7 @@ final class GratisCacheCommand {
         if (!empty($meta)) {
             \WP_CLI::log("\n── Integration Meta ──");
             foreach ($meta as $source => $data) {
-                \WP_CLI::log("  [{$source}] " . json_encode($data, JSON_UNESCAPED_SLASHES));
+                \WP_CLI::log("  [{$source}] " . wp_json_encode($data, JSON_UNESCAPED_SLASHES));
             }
         }
     }
@@ -395,6 +414,7 @@ final class GratisCacheCommand {
      * @subcommand history
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function history($args, $assoc_args): void {
         $sub = $args[0] ?? 'tail';
         $store = new \Gratis\Cache\Storage\JsonlTraceStore(WP_CONTENT_DIR . '/gratis-cache-data');
@@ -416,14 +436,14 @@ final class GratisCacheCommand {
             }
 
             foreach ($all as $e) {
-                $ts = date('H:i:s', $e['_ts'] ?? 0);
+                $ts = gmdate('H:i:s', $e['_ts'] ?? 0);
                 if (($e['_source'] ?? '') === 'file') {
                     $type = $e['type'] ?? '?';
                     $path = basename($e['path'] ?? '');
                     \WP_CLI::log("[{$ts}] file.{$type}: {$path}");
                 } else {
                     $type = $e['type'] ?? '?';
-                    $detail = is_array($e['detail'] ?? '') ? json_encode($e['detail']) : ($e['detail'] ?? '');
+                    $detail = is_array($e['detail'] ?? '') ? wp_json_encode($e['detail']) : ($e['detail'] ?? '');
                     \WP_CLI::log("[{$ts}] {$type}: {$detail}");
                 }
             }
@@ -451,6 +471,7 @@ final class GratisCacheCommand {
      *
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function dropin($args, $assoc_args): void {
         $action = $args[0] ?? 'status';
         $installer = new \Gratis\Cache\Cache\DropinInstaller(
@@ -484,7 +505,7 @@ final class GratisCacheCommand {
                 } elseif (!$installer->isOurs()) {
                     \WP_CLI::error('object-cache.php is not ours. Remove manually if intended.');
                 } else {
-                    @unlink($path);
+                    wp_delete_file($path);
                     \WP_CLI::success('object-cache.php removed.');
                 }
                 break;
@@ -535,10 +556,11 @@ final class GratisCacheCommand {
             $webp = preg_replace('/\.(jpe?g|png)$/i', '.webp', $file);
             if (!file_exists($webp)) {
                 if (function_exists('imagewebp')) {
+                    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reads local media file bytes for GD conversion; corrupt images return false.
                     $img = @imagecreatefromstring(file_get_contents($file));
                     if ($img) {
                         imagewebp($img, $webp, 82);
-                        imagedestroy($img);
+                        $img = null;
                         $saved += filesize($file) - filesize($webp);
                     }
                 }
@@ -564,6 +586,7 @@ final class GratisCacheCommand {
      * @subcommand critical-css
      * @when after_wp_load
      */
+    // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- WP-CLI command signature.
     public function critical_css($args, $assoc_args): void {
         $url = $args[0] ?? home_url('/');
         \WP_CLI::log("Generating critical CSS for: {$url}");
