@@ -211,20 +211,22 @@ final class PerformancePage extends AdminPage {
 
             function refreshStats() {
                 fetch("' . esc_js($statsUrl) . '", {headers:{"X-WP-Nonce":nonce}})
-                .then(r=>r.json()).then(d=>{
-                    if (!d.stats) return;
+                .then(r=>r.ok?r.json():null).then(d=>{
+                    if (!d || !d.stats) return;
                     statsEl.innerHTML = "<table class=\'widefat fixed striped\' style=\'font-size:11px\'><thead><tr><th>Hook</th><th>Paleista</th><th>Klaidos</th><th>Vid. ms</th></tr></thead><tbody>"
                         + d.stats.map(s=>"<tr><td><code>"+s.hook+"</code></td><td>"+s.runs+"</td><td style=\'color:"+(s.errors>0?"#d63638":"inherit")+"\'>"+s.errors+"</td><td>"+s.avg_ms+"</td></tr>").join("")
                         + "</tbody></table>";
                     if (d.log) appendLog(d.log.filter(e=>e.ts>lastTs));
-                });
+                }).catch(()=>{});
             }
 
             // Initial load
             refreshStats();
 
             // SSE stream
-            const es = new EventSource("' . esc_js($streamUrl) . '?since=" + lastTs + "&_wpnonce=" + nonce);
+            const streamBase = "' . esc_js($streamUrl) . '";
+            const streamSep = streamBase.includes("?") ? "&" : "?";
+            const es = new EventSource(streamBase + streamSep + "since=" + lastTs + "&_wpnonce=" + nonce);
             es.onopen = () => { dot.style.background = "#4ade80"; };
             es.onerror = () => { dot.style.background = "#f87171"; };
             es.onmessage = (ev) => {

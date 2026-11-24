@@ -18,7 +18,7 @@ final class LogsPage extends AdminPage {
         $date     = sanitize_text_field(wp_unslash($_GET['log_date'] ?? gmdate('Y-m-d')));
         $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
-        $sse_url  = rest_url('vlt-cache/v1/logs/stream') . '?_wpnonce=' . $nonce;
+        $sse_url  = add_query_arg('_wpnonce', $nonce, rest_url('vlt-cache/v1/logs/stream'));
         ?>
         <div class="wrap" x-data="vltLogs()" x-init="init()" x-cloak>
         <h1 class="tw-text-2xl tw-font-bold tw-mb-4">Podėlio Valdymas — Žurnalai</h1>
@@ -195,7 +195,7 @@ final class LogsPage extends AdminPage {
 
                 startSSE() {
                     if (this.evtSource) this.evtSource.close();
-                    this.evtSource = new EventSource('<?php echo esc_js($sse_url); ?>');
+                    this.evtSource = new EventSource(<?php echo wp_json_encode($sse_url); ?>);
                     this.evtSource.onmessage = (e) => {
                         try {
                             const items = JSON.parse(e.data);
@@ -220,7 +220,9 @@ final class LogsPage extends AdminPage {
                         group: this.groupFields.join(',')
                     });
                     try {
-                        const r = await fetch('<?php echo esc_js($rest_url); ?>/logs?' + p, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        const base = '<?php echo esc_js($rest_url); ?>/logs';
+                        const r = await fetch(base + (base.includes('?') ? '&' : '?') + p, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        if (!r.ok) { this.loading = false; return; }
                         const d = await r.json();
                         if (d.rows) {
                             this.rows = d.rows.map(r => ({...r, _open: false, _fUri:'', _fIp:'', _fType:''}));
@@ -235,7 +237,9 @@ final class LogsPage extends AdminPage {
 
                 async fetchUris() {
                     try {
-                        const r = await fetch('<?php echo esc_js($rest_url); ?>/logs/uris?date=' + this.filters.date, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        const base = '<?php echo esc_js($rest_url); ?>/logs/uris';
+                        const r = await fetch(base + (base.includes('?') ? '&' : '?') + 'date=' + encodeURIComponent(this.filters.date), {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        if (!r.ok) return;
                         const d = await r.json();
                         if (Array.isArray(d)) this.allUris = d;
                     } catch(e) {}
