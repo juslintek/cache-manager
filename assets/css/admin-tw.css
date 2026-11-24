@@ -1,8 +1,12 @@
 /* Bundled admin utility styles for Gratis Cache (replaces external Tailwind Play CDN). */
 [x-cloak]{display:none!important}
+[class*="tw-"]{box-sizing:border-box}
+@keyframes tw-pulse{50%{opacity:0.5}}
+.tw-animate-pulse{animation:tw-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite}
 .hover\:tw-bg-blue-50:hover{background-color:#eff6ff}
 .hover\:tw-bg-gray-50:hover{background-color:#f9fafb}
 .hover\:tw-text-gray-700:hover{color:#374151}
+.tw--mr-px{margin-right:-1px}
 .tw-absolute{position:absolute}
 .tw-bg-black\/20{background-color:rgb(0 0 0 / 0.2)}
 .tw-bg-black\/50{background-color:rgb(0 0 0 / 0.5)}
@@ -10,12 +14,15 @@
 .tw-bg-black\/60{background-color:rgb(0 0 0 / 0.6)}
 .tw-bg-blue-50{background-color:#eff6ff}
 .tw-bg-blue-500{background-color:#3b82f6}
+.tw-bg-blue-600{background-color:#2563eb}
 .tw-bg-gray-100{background-color:#f3f4f6}
 .tw-bg-gray-200{background-color:#e5e7eb}
 .tw-bg-gray-50{background-color:#f9fafb}
 .tw-bg-gray-900{background-color:#111827}
 .tw-bg-green-200{background-color:#bbf7d0}
+.tw-bg-green-500{background-color:#22c55e}
 .tw-bg-red-300{background-color:#fca5a5}
+.tw-bg-red-400{background-color:#f87171}
 .tw-bg-red-50{background-color:#fef2f2}
 .tw-bg-white{background-color:#ffffff}
 .tw-bg-yellow-50{background-color:#fefce8}
@@ -193,6 +200,7 @@
 .tw-text-blue-600{color:#2563eb}
 .tw-text-blue-700{color:#1d4ed8}
 .tw-text-center{text-align:center}
+.tw-text-gray-200{color:#e5e7eb}
 .tw-text-gray-300{color:#d1d5db}
 .tw-text-gray-400{color:#9ca3af}
 .tw-text-gray-500{color:#6b7280}
@@ -202,20 +210,25 @@
 .tw-text-green-600{color:#16a34a}
 .tw-text-left{text-align:left}
 .tw-text-lg{font-size:1.125rem;line-height:1.75rem}
+.tw-text-red-500{color:#ef4444}
 .tw-text-red-600{color:#dc2626}
 .tw-text-right{text-align:right}
 .tw-text-sm{font-size:0.875rem;line-height:1.25rem}
+.tw-text-white{color:#ffffff}
 .tw-text-xl{font-size:1.25rem;line-height:1.75rem}
 .tw-text-xs{font-size:0.75rem;line-height:1rem}
 .tw-text-yellow-600{color:#ca8a04}
 .tw-top-0{top:0px}
 .tw-tracking-wide{letter-spacing:0.025em}
 .tw-transition{transition-property:color,background-color,border-color,opacity,transform;transition-duration:150ms}
+.tw-duration-200{transition-duration:200ms}
 .tw-translate-x-0{transform:translateX(0px)}
 .tw-translate-x-4{transform:translateX(1rem)}
 .tw-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tw-uppercase{text-transform:uppercase}
 .tw-w-1\/2{width:50%}
+.tw-w-2{width:0.5rem}
+.tw-w-9{width:2.25rem}
 .tw-w-10{width:2.5rem}
 .tw-w-12{width:3rem}
 .tw-w-16{width:4rem}
@@ -229,6 +242,8 @@
 .tw-w-8{width:2rem}
 .tw-w-\[70px\]{width:70px}
 .tw-w-full{width:100%}
+.tw-border-b-white{border-bottom-color:#ffffff}
+.tw-select-none{user-select:none}
 .tw-whitespace-pre-wrap{white-space:pre-wrap}
 .tw-z-10{z-index:10}
 .tw-z-50{z-index:50}

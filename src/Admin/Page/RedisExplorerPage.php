@@ -157,10 +157,10 @@ final class RedisExplorerPage extends AdminPage {
                     <div><span class="tw-text-gray-500">Serializuota:</span> <span x-text="previewData.serialized?'Taip':'Ne'"></span></div>
                 </div>
                 <div class="tw-flex tw-gap-2 tw-mb-2">
-                    <button :class="previewMode==="pretty'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='pretty'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Struktūra</button>
-                    <button :class="previewMode==="raw'?'bg-blue-600 text-white':'bg-gray-200'" @click="previewMode='raw'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Neapdorotas</button>
+                    <button :class="previewMode==='pretty'?'tw-bg-blue-600 tw-text-white':'tw-bg-gray-200'" @click="previewMode='pretty'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Struktūra</button>
+                    <button :class="previewMode==='raw'?'tw-bg-blue-600 tw-text-white':'tw-bg-gray-200'" @click="previewMode='raw'" class="tw-px-3 tw-py-1 tw-rounded tw-text-sm">Neapdorotas</button>
                 </div>
-                <pre x-show="previewMode==='raw'" class="tw-bg-gray-900 text-gray-200 tw-p-3 tw-rounded tw-overflow-auto tw-max-h-96 tw-text-xs tw-whitespace-pre-wrap tw-break-all" x-text="previewData.raw"></pre>
+                <pre x-show="previewMode==='raw'" class="tw-bg-gray-900 tw-text-gray-200 tw-p-3 tw-rounded tw-overflow-auto tw-max-h-96 tw-text-xs tw-whitespace-pre-wrap tw-break-all" x-text="previewData.raw"></pre>
                 <pre x-show="previewMode==='pretty'" class="tw-bg-gray-50 tw-p-3 tw-rounded tw-overflow-auto tw-max-h-96 tw-text-xs tw-whitespace-pre-wrap tw-break-all" x-text="previewData.pretty"></pre>
                 <div class="tw-mt-3 tw-text-right">
                     <button @click="if(confirm('Ištrinti šį raktą?')){deleteKey(previewData.key);previewVisible=false}" class="tw-text-red-600 tw-hover:underline tw-text-sm">Ištrinti raktą</button>
@@ -189,16 +189,17 @@ final class RedisExplorerPage extends AdminPage {
 
                 async fetchStats() {
                     const d = await this.api('stats');
-                    if (!d) { console.warn('VLT Redis: fetchStats returned no data'); return; }
+                    if (!d || typeof d !== 'object') { console.warn('VLT Redis: fetchStats returned no data'); return; }
+                    const keys = Number(d.keys || 0), hits = Number(d.hits || 0), misses = Number(d.misses || 0), expired = Number(d.expired || 0);
                     this.cards = [
                         {label:'Prisijungimas', value:d.connected?'Prijungtas':'Nepasiekiamas', sub:''},
-                        {label:'Atmintis', value:d.memory, sub:d.memory_peak?'Pikas: '+d.memory_peak:''},
-                        {label:'Raktų', value:d.keys.toLocaleString(), sub:'DB0'},
-                        {label:'Pataikymų santykis', value:d.hit_rate+'%', sub:d.hits.toLocaleString()+' / '+(d.hits+d.misses).toLocaleString()},
-                        {label:'Pataikymai', value:d.hits.toLocaleString(), sub:''},
-                        {label:'Praleidimai', value:d.misses.toLocaleString(), sub:''},
-                        {label:'Pasibaigę', value:d.expired.toLocaleString(), sub:''},
-                        {label:'Veikimo laikas', value:d.uptime, sub:''},
+                        {label:'Atmintis', value:d.memory||'—', sub:d.memory_peak?'Pikas: '+d.memory_peak:''},
+                        {label:'Raktų', value:keys.toLocaleString(), sub:'DB0'},
+                        {label:'Pataikymų santykis', value:(d.hit_rate??0)+'%', sub:hits.toLocaleString()+' / '+(hits+misses).toLocaleString()},
+                        {label:'Pataikymai', value:hits.toLocaleString(), sub:''},
+                        {label:'Praleidimai', value:misses.toLocaleString(), sub:''},
+                        {label:'Pasibaigę', value:expired.toLocaleString(), sub:''},
+                        {label:'Veikimo laikas', value:d.uptime||'—', sub:''},
                     ];
                     this.groups = d.groups || [];
                     this.lastStats = d;
@@ -309,11 +310,14 @@ final class RedisExplorerPage extends AdminPage {
                 },
 
                 async api(action, params={}) {
-                    const p = new URLSearchParams(params);
+                    const p = new URLSearchParams(params).toString();
+                    const base = '<?php echo esc_js($rest_url); ?>/redis/' + action;
+                    const url = p ? base + (base.includes('?') ? '&' : '?') + p : base;
                     try {
-                        const r = await fetch('<?php echo esc_js($rest_url); ?>/redis/'+action+'?'+p, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        const r = await fetch(url, {headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});
+                        if (!r.ok) return null;
                         const d = await r.json();
-                        return d.error ? null : d;
+                        return d && d.error ? null : d;
                     } catch(e) { console.error(e); return null; }
                 },
 

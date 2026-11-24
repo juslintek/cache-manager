@@ -18,19 +18,19 @@ final class TracerPage extends AdminPage {
         $rest_url = rest_url('vlt-cache/v1');
         $nonce    = wp_create_nonce('wp_rest');
         $max      = (int) get_option('vlt_trace_max', TracerConfig::VLT_TR_MAX);
-        $sse_url  = rest_url('vlt-cache/v1/tracer/stream') . '?_wpnonce=' . $nonce;
+        $sse_url  = add_query_arg('_wpnonce', $nonce, rest_url('vlt-cache/v1/tracer/stream'));
 
         // ── Extension status notices ──────────────────────────────────────────
         $hasExcimer = class_exists('ExcimerProfiler');
 
         if (!$hasExcimer) {
-            echo '<div class="notice notice-warning tw-inline"><p>';
+            echo '<div class="notice notice-warning"><p>';
             echo '<strong>Tracer:</strong> <code>excimer</code> PHP plėtinys neįdiegtas. ';
             echo 'Tracer veikia be profiliavimo — tik laiko žymės. ';
             echo 'Įdiekite: <code>pecl install excimer</code>';
             echo '</p></div>';
         } else {
-            echo '<div class="notice notice-success tw-inline"><p>✅ <strong>Excimer</strong> įdiegtas — tikslus mėginių profiliavimas aktyvus (~2% apkrova).</p></div>';
+            echo '<div class="notice notice-success"><p>✅ <strong>Excimer</strong> įdiegtas — tikslus mėginių profiliavimas aktyvus (~2% apkrova).</p></div>';
         }
 
         // ── Trace worker status ───────────────────────────────────────────────
@@ -71,21 +71,21 @@ final class TracerPage extends AdminPage {
             <span class="tw-text-green-600 tw-font-semibold">● Visada aktyvus</span>
             <span class="tw-text-gray-500" x-text="currentRows.length+' pėdsakų'"></span>
             <span class="tw-flex-1"></span>
-            <label class="tw-flex tw-items-center tw-gap-1">Max: <input type="number" min="10" max="10000" class="tw-w-16 tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5" x-model.number="maxT" @change="rpc('set_max',{max:maxT})"></label>
+            <label class="tw-flex tw-items-center tw-gap-1">Max: <input type="number" min="10" max="10000" class="tw-w-20 tw-border tw-border-gray-300 tw-rounded tw-px-1 tw-py-0.5" x-model.number="maxT" @change="rpc('set_max',{max:maxT})"></label>
         </div>
 
         <!-- Tabs -->
         <div class="tw-flex tw-mb-0">
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer -mr-px" :class="tab==="live'&&'bg-white border-b-white z-10 relative'" @click="tab='live'">🔴 Gyvai</div>
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer -mr-px" :class="tab==="explorer'&&'bg-white border-b-white z-10 relative'" @click="tab='explorer'">🔍 Naršyklė</div>
-            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer" :class="tab==="detail'&&'bg-white border-b-white z-10 relative'" x-show="detailTrace" @click="tab='detail'">📋 Detalės</div>
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer tw--mr-px" :class="tab==='live'&&'tw-bg-white tw-border-b-white tw-z-10 tw-relative'" @click="tab='live'">🔴 Gyvai</div>
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer tw--mr-px" :class="tab==='explorer'&&'tw-bg-white tw-border-b-white tw-z-10 tw-relative'" @click="tab='explorer'">🔍 Naršyklė</div>
+            <div class="tw-px-4 tw-py-2 tw-bg-gray-100 tw-border tw-border-gray-300 tw-border-b-0 tw-rounded-t tw-cursor-pointer" :class="tab==='detail'&&'tw-bg-white tw-border-b-white tw-z-10 tw-relative'" x-show="detailTrace" @click="tab='detail'">📋 Detalės</div>
         </div>
 
         <!-- ==================== LIVE PANEL ==================== -->
         <div class="tw-border tw-border-gray-300 tw-rounded-b tw-rounded-tr tw-bg-white tw-p-3" x-show="tab==='live'">
             <div class="tw-flex tw-items-center tw-gap-3 tw-mb-2">
-                <span class="tw-flex tw-items-center tw-gap-1 tw-text-xs" :class="sseConnected?"text-green-600':'text-red-500'">
-                    <span class="w-2 tw-h-2 tw-rounded-full" :class="sseConnected?"bg-green-500 animate-pulse':'bg-red-400'"></span>
+                <span class="tw-flex tw-items-center tw-gap-1 tw-text-xs" :class="sseConnected?'tw-text-green-600':'tw-text-red-500'">
+                    <span class="tw-w-2 tw-h-2 tw-rounded-full" :class="sseConnected?'tw-bg-green-500 tw-animate-pulse':'tw-bg-red-400'"></span>
                     <span x-text="sseConnected?'Gyvai':'Atsijungta'"></span>
                 </span>
                 <span class="tw-text-gray-400 tw-text-xs">Spustelėkite eilutę → detalės</span>
@@ -93,11 +93,11 @@ final class TracerPage extends AdminPage {
             <div class="tw-overflow-auto" style="max-height:calc(100vh - 340px)">
             <table class="tw-w-full tw-text-xs">
                 <thead class="tw-bg-gray-50 tw-sticky tw-top-0 tw-z-10"><tr>
-                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none" @click="ss('ts')">Laikas <span x-text="si('ts')"></span></th>
-                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none tw-w-10" @click="ss('method')">Met.</th>
-                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none w-9" @click="ss('status')">St.</th>
-                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer select-none" @click="ss('uri')">URI</th>
-                    <th class="tw-px-2 tw-py-1.5 tw-text-right tw-cursor-pointer select-none tw-w-16" @click="ss('total_ms')">ms <span x-text="si('total_ms')"></span></th>
+                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer tw-select-none" @click="ss('ts')">Laikas <span x-text="si('ts')"></span></th>
+                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer tw-select-none tw-w-10" @click="ss('method')">Met.</th>
+                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer tw-select-none tw-w-9" @click="ss('status')">St.</th>
+                    <th class="tw-px-2 tw-py-1.5 tw-text-left tw-cursor-pointer tw-select-none" @click="ss('uri')">URI</th>
+                    <th class="tw-px-2 tw-py-1.5 tw-text-right tw-cursor-pointer tw-select-none tw-w-16" @click="ss('total_ms')">ms <span x-text="si('total_ms')"></span></th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-right tw-cursor-pointer select-none tw-w-10" @click="ss('db_n')">DB#</th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-right tw-cursor-pointer select-none w-14" @click="ss('mem')">Mem</th>
                     <th class="tw-px-2 tw-py-1.5 tw-text-left tw-w-20">Vartotojas</th>
@@ -506,7 +506,7 @@ final class TracerPage extends AdminPage {
             },
             startSSE(){
                 if(this.evtSource)this.evtSource.close();
-                this.evtSource=new EventSource('<?php echo esc_js($sse_url); ?>');
+                this.evtSource=new EventSource(<?php echo wp_json_encode($sse_url); ?>);
                 this.evtSource.onopen=()=>{this.sseConnected=true};
                 this.evtSource.onmessage=(e)=>{
                     try{
@@ -519,7 +519,7 @@ final class TracerPage extends AdminPage {
                 };
                 this.evtSource.onerror=()=>{this.sseConnected=false};
             },
-            async goLive(){const d=await this.rpc('live');if(d)this.live=d},
+            async goLive(){const d=await this.rpc('live');if(Array.isArray(d))this.live=d},
             async loadExp(reset=true){if(!this.expDate)return;if(reset)this.expOffset=0;const d=await this.rpc('history',{date:this.expDate,limit:this.expLimit,offset:this.expOffset});if(d){this.expData=Array.isArray(d)?d.reverse():(d.rows||[]);this.expTotal=Array.isArray(d)?this.expData.length:(d.total??this.expData.length)}},
             get currentRows(){return this.tab==='explorer'?this.expFiltered:this.live},
 
@@ -533,6 +533,7 @@ final class TracerPage extends AdminPage {
             get expSorted(){return this.doSort(this.expFiltered,this.esc,this.esd)},
 
             doSort(arr,col,dir){
+                if(!Array.isArray(arr))return[];
                 return[...arr].sort((a,b)=>{
                     let va=a[col]??'',vb=b[col]??'';
                     const cmp=typeof va==='number'&&typeof vb==='number'?va-vb:String(va).localeCompare(String(vb));
@@ -605,7 +606,7 @@ final class TracerPage extends AdminPage {
                 q.sort((a,b)=>{const va=a[qsc]??'',vb=b[qsc]??'';const cmp=typeof va==='number'?va-vb:String(va).localeCompare(String(vb));return qsd==='asc'?cmp:-cmp});
                 return q;
             },
-            async rpc(s,p={}){try{const r=await fetch('<?php echo esc_js($rest_url); ?>/tracer/'+s+'?'+new URLSearchParams(p),{headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});const d=await r.json();return d.error?null:d}catch(e){return null}},
+            async rpc(s,p={}){try{const base='<?php echo esc_js($rest_url); ?>/tracer/'+s;const qs=new URLSearchParams(p).toString();const url=qs?base+(base.includes('?')?'&':'?')+qs:base;const r=await fetch(url,{headers:{'X-WP-Nonce':'<?php echo esc_js($nonce); ?>'}});if(!r.ok)return null;const d=await r.json();return d&&d.error?null:d}catch(e){return null}},
             sz(b){if(!b)return'—';if(b>=1048576)return(b/1048576).toFixed(1)+'MB';if(b>=1024)return(b/1024).toFixed(0)+'KB';return b+'B'}
         }}
         </script>
