@@ -114,15 +114,17 @@ final class TraceWorker {
 
         // Write a runner script to /tmp
         $runner = '/tmp/vlt-trace-runner.php';
+        $runnerCode = implode("\n", [
+            '<?php',
+            "define('ABSPATH', " . var_export($wp, true) . ');', // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Safely serializes path literal for CLI runner.
+            "define('WPINC', 'wp-includes');",
+            "\$_SERVER['HTTP_HOST'] = wp_parse_url(get_option('siteurl'), PHP_URL_HOST) ?? 'localhost';",
+            "require ABSPATH . 'wp-load.php';",
+            'Gratis\\Cache\\Tracer\\TraceWorker::run();',
+            '',
+        ]);
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Generates ephemeral CLI worker entrypoint in /tmp.
-        file_put_contents($runner, <<<PHP
-<?php
-define('ABSPATH', '$wp');
-define('WPINC', 'wp-includes');
-\$_SERVER['HTTP_HOST'] = parse_url(get_option('siteurl'), PHP_URL_HOST) ?? 'localhost';
-require '$wp/wp-load.php';
-Gratis\Cache\Tracer\TraceWorker::run();
-PHP);
+        file_put_contents($runner, $runnerCode);
 
         // Mark as running in Redis before spawn
         $r = RedisFactory::create(0.5);

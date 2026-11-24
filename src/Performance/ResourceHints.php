@@ -26,14 +26,6 @@ final class ResourceHints {
     private static function detectExternalDomains(): array {
         $domains = [];
 
-        // Common CDNs and services
-        $known = [
-            'fonts.googleapis.com', 'fonts.gstatic.com',
-            'cdn.jsdelivr.net', 'cdnjs.cloudflare.com',
-            'www.google-analytics.com', 'www.googletagmanager.com',
-            'connect.facebook.net', 'platform.twitter.com',
-        ];
-
         // Check enqueued styles
         global $wp_styles, $wp_scripts;
         $siteHost = wp_parse_url(home_url(), PHP_URL_HOST);
@@ -54,6 +46,6 @@ final class ResourceHints {
             }
         }
 
-        return array_unique(array_merge($domains, array_intersect($known, $domains)));
+        return array_unique($domains);
     }
 }

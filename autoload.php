@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+defined('ABSPATH') || exit;
+
 spl_autoload_register(function (string $class_name): void {
     $prefix = 'Gratis\\Cache\\';
     if (strncmp($class_name, $prefix, strlen($prefix)) !== 0) {
