@@ -239,15 +239,13 @@ final class Plugin {
         if (!str_contains($hook, 'vlt-cache')) {
             return;
         }
-        wp_enqueue_script('vlt-tailwind', 'https://cdn.tailwindcss.com', [], '3.4.0', false);
+        $baseUrl = plugin_dir_url(dirname(__DIR__) . '/gratis-cache.php');
+        wp_enqueue_style('vlt-admin-tw', $baseUrl . 'assets/css/admin-tw.css', [], '3.0.0');
         // Alpine must load in footer (after body) to avoid "Alpine before body" warning
-        wp_enqueue_script('vlt-alpine', 'https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.9/cdn.min.js', [], '3.14.9', true);
+        wp_enqueue_script('vlt-alpine', $baseUrl . 'assets/vendor/alpine.min.js', [], '3.14.9', true);
         if (str_contains($hook, 'vlt-cache-redis')) {
-            wp_enqueue_script('vlt-chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js', [], '4.5.0', false);
+            wp_enqueue_script('vlt-chartjs', $baseUrl . 'assets/vendor/chart.umd.min.js', [], '4.5.0', false);
         }
-        // Prefix all Tailwind utilities with tw- to avoid conflicts with WP admin classes
-        // e.g. WP uses .fixed for table-layout:fixed, Tailwind uses .fixed for position:fixed
-        wp_add_inline_script('vlt-tailwind', 'tailwind.config={prefix:"tw-",theme:{extend:{colors:{"wp-blue":"#2271b1","wp-green":"#46b450","wp-red":"#dc3232","wp-yellow":"#f0b849"}}}}');
     }
 
     public function registerMenu(): void {

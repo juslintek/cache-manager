@@ -93,9 +93,11 @@ final class ErrorGuard {
             substr($message, 0, 200)
         );
 
-        $logFile = defined('WP_CONTENT_DIR')
-            ? WP_CONTENT_DIR . '/gratis-cache-errors.log'
-            : '/tmp/gratis-cache-errors.log';
+        $uploads = function_exists('wp_upload_dir') ? wp_upload_dir() : null;
+        $logDir  = (is_array($uploads) && !empty($uploads['basedir']))
+            ? rtrim((string) $uploads['basedir'], '/\\')
+            : sys_get_temp_dir();
+        $logFile = $logDir . '/gratis-cache-errors.log';
 
         // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Shutdown handler appends error log directly without WP_Filesystem.
         @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);

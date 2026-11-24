@@ -1,8 +1,8 @@
 === Gratis Cache ===
 Contributors: juslintek
 Tags: cache, performance, redis, opcache, object-cache
-Requires at least: 6.0
-Tested up to: 6.7
+Requires at least: 6.2
+Tested up to: 7.1
 Requires PHP: 8.1
 Stable tag: 3.0.0
 License: GPL-2.0-or-later

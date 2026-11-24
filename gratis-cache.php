@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Gratis Cache
- * Plugin URI: https://github.com/juslintek/gratis-cache
+ * Plugin URI: https://github.com/juslintek/cache-manager
  * Description: Full-stack cache management: Redis object cache, Nginx FastCGI, OPcache, Elementor CSS, Cloudflare monitoring, request tracer with Excimer profiler.
  * Version: 3.0.0
- * Requires at least: 6.0
+ * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: Linas Jusys
  * Author URI: https://github.com/juslintek
