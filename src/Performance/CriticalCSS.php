@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * Critical CSS extraction — inlines above-the-fold CSS and defers the rest.
  * What WP Rocket charges $59/yr for. Free in Gratis.

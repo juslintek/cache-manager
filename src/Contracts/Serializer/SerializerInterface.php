@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Serializer;
 
+defined('ABSPATH') || exit;
 interface SerializerInterface {
 
     public function serialize(mixed $value): string;

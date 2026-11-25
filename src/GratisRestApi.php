@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache;
 
+defined('ABSPATH') || exit;
 /** REST API endpoints for Gratis Cache Manager admin dashboard. */
 final class GratisRestApi {
 

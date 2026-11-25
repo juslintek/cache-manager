@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Redis;
 
+defined('ABSPATH') || exit;
 use Redis;
 
 final class RedisFactory {

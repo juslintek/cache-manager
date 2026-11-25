@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Purge;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 use Gratis\Cache\Log\Logger;
 

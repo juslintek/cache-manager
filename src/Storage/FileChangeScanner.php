@@ -2,6 +2,7 @@
 
 namespace Gratis\Cache\Storage;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Contracts\Storage\FileChangeStoreInterface;
 
 /** Mtime-based file change detection backed by JsonlTraceStore. */

@@ -22,18 +22,19 @@ if (!defined('GRATIS_CACHE_NGINX_CACHE')) {
 require_once __DIR__ . '/autoload.php';
 
 // Tracer — skip on admin/cron/CLI/REST and only boot when sampling or explicitly enabled
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tracer bypass check; action handlers verify nonces.
-$_vlt_action = isset($_GET['action']) ? sanitize_key(wp_unslash($_GET['action'])) : '';
-$_vlt_skip_tracer = is_admin()
-    || str_starts_with($_vlt_action, 'vlt_')
-    || (defined('REST_REQUEST') && REST_REQUEST)
-    || (defined('DOING_CRON') && DOING_CRON)
-    || (defined('WP_CLI') && WP_CLI);
-if (!$_vlt_skip_tracer && \Gratis\Cache\Tracer\TracerConfig::shouldTrace()) {
-    if (!defined('SAVEQUERIES')) {
-        define('SAVEQUERIES', true);
-    }
-    \Gratis\Cache\Tracer\Tracer::boot();
+(static function (): void {
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tracer bypass check; action handlers verify nonces.
+    $action = isset($_GET['action']) ? sanitize_key(wp_unslash($_GET['action'])) : '';
+    $skip   = is_admin()
+        || str_starts_with($action, 'vlt_')
+        || (defined('REST_REQUEST') && REST_REQUEST)
+        || (defined('DOING_CRON') && DOING_CRON)
+        || (defined('WP_CLI') && WP_CLI);
+    if (!$skip && \Gratis\Cache\Tracer\TracerConfig::shouldTrace()) {
+        if (!defined('SAVEQUERIES')) {
+            define('SAVEQUERIES', true);
+        }
+        \Gratis\Cache\Tracer\Tracer::boot();
 
 add_action('plugins_loaded', fn() => \Gratis\Cache\Tracer\Tracer::begin('plugins_loaded'), -9999);
 add_action('plugins_loaded', fn() => \Gratis\Cache\Tracer\Tracer::end(), PHP_INT_MAX);
@@ -73,8 +74,9 @@ add_action('shutdown', function () {
         // Never let tracer crash affect HTTP response code.
         unset($e);
     }
-}, 0);
-} // end if (!$_vlt_skip_tracer)
+    }, 0);
+    } // end if (!$skip)
+})();
 
 // Boot the plugin
 add_action('plugins_loaded', [\Gratis\Cache\Plugin::class, 'boot']);

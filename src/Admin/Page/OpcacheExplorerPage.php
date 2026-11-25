@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Admin\Page;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Admin\AdminPage;
 
 final class OpcacheExplorerPage extends AdminPage {

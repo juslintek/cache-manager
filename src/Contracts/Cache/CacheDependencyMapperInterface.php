@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Cache;
 
+defined('ABSPATH') || exit;
 /** Maps what cache entries depend on what resources. */
 interface CacheDependencyMapperInterface {
 

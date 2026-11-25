@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Scale;
 
+defined('ABSPATH') || exit;
 /**
  * Horizontal scaling readiness checker.
  * Verifies WordPress is stateless and ready for multi-server deployment.

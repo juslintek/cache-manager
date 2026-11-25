@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Storage;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Contracts\Storage\TraceStoreInterface;
 
 /** Append-only JSONL file store for traces and history. */

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Storage;
 
+defined('ABSPATH') || exit;
 /** Durable local store (SQLite, file segments). Survives restarts. */
 interface PersistentStoreInterface extends StorageInterface {
 

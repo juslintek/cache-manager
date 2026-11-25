@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * Heartbeat API control — reduces admin-ajax.php load.
  * What Perfmatters ($25/yr) and Heartbeat Control plugins do. Free in Gratis.

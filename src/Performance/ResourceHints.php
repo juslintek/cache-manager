@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * DNS prefetch + preconnect for external resources.
  * Scans enqueued scripts/styles and adds resource hints automatically.

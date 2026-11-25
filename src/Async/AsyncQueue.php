@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Async;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Redis\RedisFactory;
 
 /**
@@ -262,11 +263,10 @@ final class AsyncQueue {
         // Non-blocking loopback HTTP — WordPress's own async pattern
         $url  = add_query_arg('vlt_async_worker', '1', admin_url('admin-ajax.php'));
         $args = [
-            'timeout'   => 0.01,
-            'blocking'  => false,
-            'sslverify' => false,
-            'cookies'   => [],
-            'headers'   => ['X-VLT-Async' => '1'],
+            'timeout'  => 0.01,
+            'blocking' => false,
+            'cookies'  => [],
+            'headers'  => ['X-VLT-Async' => '1'],
         ];
         wp_remote_post($url, $args);
     }

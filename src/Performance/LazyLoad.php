@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * Lazy load iframes/videos + preload key resources.
  * What WP Rocket and Perfmatters charge for. Free in Gratis.

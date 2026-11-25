@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Diagnostics;
 
+defined('ABSPATH') || exit;
 /** Detects available PHP extensions and backends at runtime. */
 final class CapabilityDetector {
 

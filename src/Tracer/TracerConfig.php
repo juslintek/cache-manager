@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Tracer;
 
+defined('ABSPATH') || exit;
 final class TracerConfig {
 
     public const VLT_TR_KEY = 'vlt_traces';
