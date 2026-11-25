@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Backup;
 
+defined('ABSPATH') || exit;
 /** Stream-first backup source. Never loads full backup into memory. */
 interface BackupSourceInterface {
 

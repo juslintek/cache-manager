@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Storage;
 
+defined('ABSPATH') || exit;
 /** Hot cache layer (Redis, Memcached, APCu). May lose data on restart. */
 interface VolatileCacheBackendInterface extends StorageInterface {
 

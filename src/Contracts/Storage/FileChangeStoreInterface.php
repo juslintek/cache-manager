@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Storage;
 
+defined('ABSPATH') || exit;
 /** Tracks filesystem changes for cache invalidation. */
 interface FileChangeStoreInterface {
 

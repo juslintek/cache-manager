@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Admin;
 
+defined('ABSPATH') || exit;
+
 use Gratis\Cache\Plugin;
 use Gratis\Cache\Redis\RedisFactory;
 use Gratis\Cache\Tracer\TracerConfig;
@@ -13,97 +15,6 @@ final class RestApi {
     private const NS = 'vlt-cache/v1';
 
     public static function register(): void {
-        // MCP Bridge endpoints (mcp-for-page-builders compatibility)
-        $ns_mcp = 'mcp-for-page-builders/v1';
-        $admin   = [self::class, 'canManage'];
-
-        register_rest_route($ns_mcp, '/status', [
-            'methods'             => 'GET',
-            'callback'            => function () {
-                $theme = wp_get_theme();
-                return [
-                    'version'             => '1.1.0',
-                    'mu_plugins_writable' => wp_is_writable(WPMU_PLUGIN_DIR),
-                    'theme'               => $theme->get_stylesheet(),
-                    'parent_theme'        => $theme->get_template(),
-                    'theme_dir'           => $theme->get_stylesheet_directory(),
-                ];
-            },
-            'permission_callback' => '__return_true',
-        ]);
-
-        register_rest_route($ns_mcp, '/write-mu-plugin', [
-            'methods'             => 'POST',
-            'callback'            => function (\WP_REST_Request $req) {
-                $name = sanitize_file_name($req['filename']);
-                $name = preg_replace('/[^a-zA-Z0-9\-_]/', '', pathinfo($name, PATHINFO_FILENAME)) . '.php';
-                $code = $req['php_code'];
-                if (!str_starts_with($code, '<?php')) {
-                    return new \WP_Error('invalid', 'PHP must start with <?php');
-                }
-                if (!wp_mkdir_p(WPMU_PLUGIN_DIR)) {
-                    return new \WP_Error('fs', 'Cannot create mu-plugins dir');
-                }
-                $path = WPMU_PLUGIN_DIR . '/' . $name;
-                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Admin-gated MU-plugin writer endpoint.
-                file_put_contents($path, $code);
-                return ['written' => $name, 'path' => $path];
-            },
-            'permission_callback' => $admin,
-        ]);
-
-        register_rest_route($ns_mcp, '/write-theme-file', [
-            'methods'             => 'POST',
-            'callback'            => function (\WP_REST_Request $req) {
-                $file = ltrim($req['path'], '/');
-                if (str_contains($file, '..')) {
-                    return new \WP_Error('invalid', 'Path traversal not allowed');
-                }
-                $theme_dir = get_stylesheet_directory();
-                $full      = $theme_dir . '/' . $file;
-                if (!wp_mkdir_p(dirname($full))) {
-                    return new \WP_Error('fs', 'Cannot create directory');
-                }
-                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Admin-gated theme file writer endpoint.
-                file_put_contents($full, $req['content']);
-                return ['written' => $file, 'path' => $full, 'theme' => get_stylesheet()];
-            },
-            'permission_callback' => $admin,
-        ]);
-
-        register_rest_route($ns_mcp, '/read-theme-file', [
-            'methods'             => 'GET',
-            'callback'            => function (\WP_REST_Request $req) {
-                $file = ltrim($req['path'], '/');
-                if (str_contains($file, '..')) {
-                    return new \WP_Error('invalid', 'Path traversal not allowed');
-                }
-                $full = get_stylesheet_directory() . '/' . $file;
-                if (!file_exists($full)) {
-                    return new \WP_Error('not_found', 'File not found: ' . $file, ['status' => 404]);
-                }
-                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local theme file read.
-                return ['path' => $file, 'content' => file_get_contents($full)];
-            },
-            'permission_callback' => $admin,
-        ]);
-
-        register_rest_route($ns_mcp, '/option/(?P<name>[a-zA-Z0-9_\-]+)', [
-            'methods'             => 'GET',
-            'callback'            => fn(\WP_REST_Request $req) => rest_ensure_response(get_option($req['name'])),
-            'permission_callback' => $admin,
-        ]);
-
-        register_rest_route($ns_mcp, '/option/(?P<name>[a-zA-Z0-9_\-]+)', [
-            'methods'             => 'POST',
-            'callback'            => function (\WP_REST_Request $req) {
-                $val = $req->get_json_params()['value'] ?? null;
-                update_option($req['name'], $val);
-                return ['updated' => $req['name']];
-            },
-            'permission_callback' => $admin,
-        ]);
-
         // Plugin's own routes
         register_rest_route(self::NS, '/logs', [
             'methods' => 'GET', 'callback' => [self::class, 'logs'],
@@ -520,7 +431,6 @@ final class RestApi {
         while (ob_get_level()) {
             ob_end_clean();
         }
-        set_time_limit(0);
         ignore_user_abort(false);
 
         $lastId = null;
@@ -530,7 +440,8 @@ final class RestApi {
             $lastId = $d[$idField] ?? null;
         }
 
-        while (!connection_aborted()) {
+        $deadline = time() + 25;
+        while (!connection_aborted() && time() < $deadline) {
             $newest = $r->lIndex($key, 0);
             if ($newest) {
                 $d = json_decode(trim($newest), true);
@@ -671,7 +582,6 @@ final class RestApi {
         header('Cache-Control: no-cache, no-store');
         header('X-Accel-Buffering: no');
         while (ob_get_level()) ob_end_clean();
-        set_time_limit(0);
 
         $purge   = \Gratis\Cache\Plugin::instance()->purge();
         $allTypes = $purge->types();
@@ -756,12 +666,12 @@ final class RestApi {
         header('Cache-Control: no-cache, no-store');
         header('X-Accel-Buffering: no');
         while (ob_get_level()) ob_end_clean();
-        set_time_limit(0);
         ignore_user_abort(false);
 
-        $lastTs = (float) ($req->get_param('since') ?? 0);
+        $lastTs   = (float) ($req->get_param('since') ?? 0);
+        $deadline = time() + 25;
 
-        while (!connection_aborted()) {
+        while (!connection_aborted() && time() < $deadline) {
             $entries = \Gratis\Cache\Async\CronMonitor::recentLog(20, (string) $lastTs);
             if ($entries) {
                 echo 'data: ' . wp_json_encode($entries) . "\n\n";

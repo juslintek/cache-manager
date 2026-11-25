@@ -538,6 +538,7 @@ final class GratisCacheCommand {
             'post_type'      => 'attachment',
             'post_mime_type' => ['image/jpeg', 'image/png'],
             'posts_per_page' => $limit,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded WP-CLI batch lookup.
             'meta_query'     => [['key' => '_gratis_webp_done', 'compare' => 'NOT EXISTS']],
         ]);
 
@@ -681,7 +682,7 @@ final class GratisCacheCommand {
 
         $warmed = 0;
         foreach ($urls as $url) {
-            $r = wp_remote_get($url, ['timeout' => 10, 'sslverify' => false]);
+            $r = wp_remote_get($url, ['timeout' => 10]);
             if (!is_wp_error($r) && wp_remote_retrieve_response_code($r) === 200) {
                 ++$warmed;
             }

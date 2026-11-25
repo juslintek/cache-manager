@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Purge\Strategy;
 
+defined('ABSPATH') || exit;
 use FilesystemIterator;
 use Gratis\Cache\Contracts\PurgeStrategyInterface;
 

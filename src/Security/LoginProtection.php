@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Security;
 
+defined('ABSPATH') || exit;
 /**
  * Login security: rate limiting + lockout.
  * What Wordfence/Limit Login Attempts charge for. Free in Gratis.

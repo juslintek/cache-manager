@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Cache;
 
+defined('ABSPATH') || exit;
 use Gratis\Cache\Purge\PurgeManager;
 
 /**

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Search;
 
+defined('ABSPATH') || exit;
 /**
  * Local search indexing — what Elasticsearch/Algolia charge $29-99/mo for.
  * Uses SQLite FTS5 for full-text search with relevance ranking.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * PHP Garbage Collection and memory performance analyzer.
  *

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Cache;
 
+defined('ABSPATH') || exit;
 interface CacheInvalidationInterface {
 
     public function invalidate(string $tag): void;

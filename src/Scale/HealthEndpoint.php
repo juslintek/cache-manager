@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Scale;
 
+defined('ABSPATH') || exit;
+
 final class HealthEndpoint {
 
     public static function register(): void {
@@ -13,6 +15,7 @@ final class HealthEndpoint {
 
     public static function check(): \WP_REST_Response {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Live DB liveness probe must bypass cache.
         $dbOk = (bool) $wpdb->get_var('SELECT 1');
         $status = $dbOk ? 200 : 503;
         return new \WP_REST_Response([

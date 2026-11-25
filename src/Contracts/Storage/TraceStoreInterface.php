@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Contracts\Storage;
 
+defined('ABSPATH') || exit;
 /** Append-only event/trace log store. */
 interface TraceStoreInterface {
 

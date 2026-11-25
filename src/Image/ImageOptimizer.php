@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Image;
 
+defined('ABSPATH') || exit;
 /**
  * Local image optimization: converts JPEG/PNG to WebP (and optionally AVIF)
  * on upload, and serves WebP via the_content / wp_get_attachment_image filters.
@@ -195,6 +196,7 @@ final class ImageOptimizer {
             'post_mime_type' => ['image/jpeg', 'image/png'],
             'posts_per_page' => $limit,
             'fields'         => 'ids',
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded batch lookup of unoptimized images.
             'meta_query'     => [[
                 'key'     => '_vlt_webp_done',
                 'compare' => 'NOT EXISTS',
@@ -227,19 +229,32 @@ final class ImageOptimizer {
             }
         }
 
+        if ($stats['processed'] > 0) {
+            wp_cache_delete('gratis_cache_img_counts', 'gratis_cache');
+        }
+
         return $stats;
     }
 
     /** @return array{total:int, optimized:int, pending:int, lscwp:bool, gd:bool, imagick:bool} */
     public static function status(): array {
-        global $wpdb;
-        $total = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->posts}
-             WHERE post_type='attachment' AND post_mime_type IN ('image/jpeg','image/png','image/jpg')"
-        );
-        $optimized = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key='_vlt_webp_done'"
-        );
+        $counts = wp_cache_get('gratis_cache_img_counts', 'gratis_cache');
+        if (!is_array($counts)) {
+            global $wpdb;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate attachment count.
+            $total = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$wpdb->posts}
+                 WHERE post_type='attachment' AND post_mime_type IN ('image/jpeg','image/png','image/jpg')"
+            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate optimized count.
+            $optimized = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key='_vlt_webp_done'"
+            );
+            $counts = ['total' => $total, 'optimized' => $optimized];
+            wp_cache_set('gratis_cache_img_counts', $counts, 'gratis_cache', 60);
+        }
+        $total     = (int) ($counts['total'] ?? 0);
+        $optimized = (int) ($counts['optimized'] ?? 0);
         return [
             'total'     => $total,
             'optimized' => $optimized,

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * Redirect manager (301/302) — what the Redirection plugin does. Free in Gratis.
  * Stores redirects in wp_options, processes them early in template_redirect.

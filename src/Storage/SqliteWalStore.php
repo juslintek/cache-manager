@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Storage;
 
+defined('ABSPATH') || exit;
 use RuntimeException;
 use SQLite3;
 use SQLite3Stmt;

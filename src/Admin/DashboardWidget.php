@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Admin;
 
+defined('ABSPATH') || exit;
 /**
  * Unified Gratis dashboard widget showing stats from all active plugins.
  */

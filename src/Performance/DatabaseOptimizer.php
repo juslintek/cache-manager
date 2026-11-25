@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * Database optimization — what WP-Optimize charges $49/yr for. Free in Gratis.
  * Cleans revisions, transients, spam, trash, and optimizes tables.
@@ -45,8 +46,10 @@ final class DatabaseOptimizer {
         global $wpdb;
         $deleted = 0;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $posts = $wpdb->get_col("SELECT DISTINCT post_parent FROM {$wpdb->posts} WHERE post_type = 'revision' AND post_parent > 0");
         foreach ($posts as $post_id) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
             $revisions = $wpdb->get_col($wpdb->prepare(
                 "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'revision' AND post_parent = %d ORDER BY post_date DESC",
                 $post_id
@@ -57,6 +60,7 @@ final class DatabaseOptimizer {
                 ++$deleted;
             }
         }
+        wp_cache_delete('gratis_cache_db_stats', 'gratis_cache');
         return $deleted;
     }
 
@@ -65,6 +69,7 @@ final class DatabaseOptimizer {
         global $wpdb;
         $time    = time();
         $prefix  = '_transient_timeout_';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $expired = $wpdb->get_col(
             $wpdb->prepare(
                 "SELECT option_name FROM {$wpdb->options}
@@ -87,18 +92,22 @@ final class DatabaseOptimizer {
         $deleted = 0;
         foreach (array_chunk($names, 100) as $chunk) {
             $placeholders = implode(', ', array_fill(0, count($chunk), '%s'));
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic %s placeholder list matches chunk count.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic %s placeholder list matches chunk count.
             $deleted += (int) $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name IN ({$placeholders})", $chunk));
         }
+        wp_cache_delete('gratis_cache_db_stats', 'gratis_cache');
         return $deleted;
     }
 
     /** Delete spam comments. */
     public static function cleanSpam(): int {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'");
         if ($count > 0) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
             $wpdb->query("DELETE FROM {$wpdb->comments} WHERE comment_approved = 'spam'");
+            wp_cache_delete('gratis_cache_db_stats', 'gratis_cache');
         }
         return $count;
     }
@@ -107,19 +116,24 @@ final class DatabaseOptimizer {
     public static function cleanTrash(): int {
         global $wpdb;
         $cutoff = gmdate('Y-m-d H:i:s', strtotime('-30 days'));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $posts = (int) $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->posts} WHERE post_status = 'trash' AND post_modified < %s", $cutoff
         ));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $comments = (int) $wpdb->query($wpdb->prepare(
             "DELETE FROM {$wpdb->comments} WHERE comment_approved = 'trash' AND comment_date < %s", $cutoff
         ));
+        wp_cache_delete('gratis_cache_db_stats', 'gratis_cache');
         return $posts + $comments;
     }
 
     /** Delete orphaned post/comment/term meta. */
     public static function cleanOrphanMeta(): int {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $pm = (int) $wpdb->query("DELETE pm FROM {$wpdb->postmeta} pm LEFT JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.ID IS NULL");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin maintenance cleanup.
         $cm = (int) $wpdb->query("DELETE cm FROM {$wpdb->commentmeta} cm LEFT JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_ID IS NULL");
         return $pm + $cm;
     }
@@ -127,8 +141,10 @@ final class DatabaseOptimizer {
     /** Run OPTIMIZE TABLE on all WP tables. */
     public static function optimizeTables(): int {
         global $wpdb;
-        $tables = $wpdb->get_col("SHOW TABLES LIKE '{$wpdb->prefix}%'");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin table optimization.
+        $tables = $wpdb->get_col($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($wpdb->prefix) . '%'));
         foreach ($tables as $table) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin table optimization.
             $wpdb->query($wpdb->prepare('OPTIMIZE TABLE %i', $table));
         }
         return count($tables);
@@ -136,14 +152,32 @@ final class DatabaseOptimizer {
 
     /** Get database size stats. */
     public static function getStats(): array {
+        $cached = wp_cache_get('gratis_cache_db_stats', 'gratis_cache');
+        if (is_array($cached)) {
+            return $cached;
+        }
         global $wpdb;
-        return [
-            'total_size'  => $wpdb->get_var('SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()'),
-            'revisions'   => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'revision'"),
-            'transients'  => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'"),
-            'spam'        => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'"),
-            'trash_posts' => (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'trash'"),
-            'tables'      => count($wpdb->get_col("SHOW TABLES LIKE '{$wpdb->prefix}%'")),
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $total_size = $wpdb->get_var('SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = DATABASE()');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $revisions = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'revision'");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $transients = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('_transient_') . '%'));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $spam = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved = 'spam'");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $trash_posts = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_status = 'trash'");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cached aggregate DB telemetry.
+        $tables = count($wpdb->get_col($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($wpdb->prefix) . '%')));
+        $stats = [
+            'total_size'  => $total_size,
+            'revisions'   => $revisions,
+            'transients'  => $transients,
+            'spam'        => $spam,
+            'trash_posts' => $trash_posts,
+            'tables'      => $tables,
         ];
+        wp_cache_set('gratis_cache_db_stats', $stats, 'gratis_cache', 60);
+        return $stats;
     }
 }

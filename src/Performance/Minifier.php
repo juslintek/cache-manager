@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Performance;
 
+defined('ABSPATH') || exit;
 /**
  * CSS/JS minification — what Autoptimize/WP Rocket charge for. Free in Gratis.
  * Simple regex-based minification (no external dependencies).

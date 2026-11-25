@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Cache;
 
+defined('ABSPATH') || exit;
 /**
  * Native LiteSpeed/OpenLiteSpeed cache control.
  * Communicates with the server via X-LiteSpeed-Cache-Control response headers —
@@ -190,10 +191,9 @@ final class LiteSpeedCache {
             // CLI or headers already sent — use loopback HTTP request to deliver purge
             $url = home_url('/?_lscache_purge=' . rawurlencode($tags) . '&_t=' . time());
             wp_remote_get($url, [
-                'timeout'   => 3,
-                'blocking'  => false,
-                'headers'   => ['X-LiteSpeed-Purge' => $tags],
-                'sslverify' => false,
+                'timeout'  => 3,
+                'blocking' => false,
+                'headers'  => ['X-LiteSpeed-Purge' => $tags],
             ]);
         }
     }

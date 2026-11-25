@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gratis\Cache\Cache;
 
+defined('ABSPATH') || exit;
 /**
  * Prevents any cache layer from storing error responses.
  *

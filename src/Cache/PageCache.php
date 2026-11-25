@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 namespace Gratis\Cache\Cache;
 
+defined('ABSPATH') || exit;
 /**
  * Full-page HTML cache — what WP Rocket ($59/yr) and WP Super Cache do.
  * Stores rendered HTML to disk, serves it on subsequent requests without loading WordPress.
