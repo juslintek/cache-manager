@@ -136,6 +136,9 @@ final class Plugin {
             \Gratis\Cache\Cache\LiteSpeedCache::register();
         }
 
+        // Standard HTTP cache headers (Cache-Control, Vary, Cache-Tag, Surrogate-Key)
+        add_action('send_headers', [self::class, 'sendPublicCacheHeaders']);
+
         // Error guard: prevent ALL cache layers from storing error responses
         \Gratis\Cache\Cache\ErrorGuard::register();
 
@@ -163,6 +166,65 @@ final class Plugin {
         if (defined('WP_CLI') && \WP_CLI) {
             \WP_CLI::add_command('vlt-cache', new CLI\CacheCommand($self));
             \WP_CLI::add_command('gratis-cache', \Gratis\Cache\CLI\GratisCacheCommand::class);
+        }
+    }
+
+    /**
+     * Emit public Cache-Control, Vary, and tag headers on cacheable anonymous GET requests.
+     */
+    public static function sendPublicCacheHeaders(): void {
+        if (headers_sent() || is_admin() || is_user_logged_in() || is_404()) {
+            return;
+        }
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return;
+        }
+        $method = isset($_SERVER['REQUEST_METHOD'])
+            ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
+            : 'GET';
+        if ('GET' !== $method) {
+            return;
+        }
+        if (
+            (function_exists('is_cart') && is_cart())
+            || (function_exists('is_checkout') && is_checkout())
+            || (function_exists('is_account_page') && is_account_page())
+        ) {
+            return;
+        }
+
+        $has_nocache = false;
+        foreach (headers_list() as $hdr) {
+            if (preg_match('/^Cache-Control:\s*.*(?:no-cache|no-store|private)/i', $hdr)) {
+                $has_nocache = true;
+                break;
+            }
+        }
+        if (!$has_nocache) {
+            $ttl = max(0, (int) get_option('vlt_page_cache_ttl', 3600));
+            header('Cache-Control: public, max-age=' . $ttl . ', stale-while-revalidate=86400, stale-if-error=604800');
+        }
+        header('Vary: Accept-Encoding');
+
+        if (is_singular()) {
+            $tags = [];
+            $post = get_queried_object();
+            if ($post instanceof \WP_Post) {
+                $tags[] = 'post-' . $post->ID;
+                $tags[] = 'type-' . $post->post_type;
+                foreach (get_post_taxonomies($post) as $tax) {
+                    $terms = wp_get_post_terms($post->ID, $tax, ['fields' => 'ids']);
+                    if (is_array($terms)) {
+                        foreach ($terms as $tid) {
+                            $tags[] = 'term-' . $tid;
+                        }
+                    }
+                }
+            }
+            if ($tags) {
+                header('Cache-Tag: ' . implode(',', $tags));
+                header('Surrogate-Key: ' . implode(' ', $tags));
+            }
         }
     }
 
